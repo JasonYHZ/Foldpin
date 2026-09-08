@@ -23,8 +23,8 @@ struct NoteEditor: NSViewRepresentable {
     func updateNSView(_ host: NativeEditorHost, context: Context) {
         let editor = host.editor
         editor.updateColors(textColor)
-        editor.insertionPointColor = .labelColor
         editor.isEditable = store.loadError == nil
+        editor.tableCellEditor?.isEditable = editor.isEditable
         editor.loadExternalContent(store.document.content)
         editor.onEscape = onEscape
         host.updateLanguage(bundle: languageSettings.bundle)
@@ -33,7 +33,8 @@ struct NoteEditor: NSViewRepresentable {
             DispatchQueue.main.async { [weak editor, weak store] in
                 guard let editor, let store, !store.isCollapsed, !store.document.isShelved,
                       let window = editor.window else { return }
-                if window.makeFirstResponder(editor) {
+                let responder: NSTextView = editor.tableCellEditor as NSTextView? ?? editor
+                if window.makeFirstResponder(responder) {
                     editor.scheduleInsertionPointRefresh()
                 }
             }
@@ -49,13 +50,13 @@ struct NoteEditor: NSViewRepresentable {
 
 final class NativeEditorHost: NSView {
     let editor = PaperTextView(usingTextLayoutManager: true)
+    private let scroll = NSScrollView()
     private let blockButton = NSButton()
     private let statusLabel = NSTextField(labelWithString: "")
     private var status: NoteEditorStatus?
 
     override init(frame: NSRect) {
         super.init(frame: frame)
-        let scroll = NSScrollView()
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
@@ -69,7 +70,7 @@ final class NativeEditorHost: NSView {
         editor.isAutomaticSpellingCorrectionEnabled = false
         editor.usesFontPanel = false
         editor.drawsBackground = false
-        editor.textContainerInset = NSSize(width: 20, height: 16)
+        editor.textContainerInset = NSSize(width: 32, height: 16)
         editor.isVerticallyResizable = true
         editor.isHorizontallyResizable = false
         editor.autoresizingMask = [.width]
@@ -111,12 +112,27 @@ final class NativeEditorHost: NSView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    override func layout() {
+        super.layout()
+        // Keep the blank area below short notes inside the editable view so a
+        // click can create a paragraph after a terminal code block.
+        let height = scroll.contentView.bounds.height
+        editor.minSize = NSSize(width: 0, height: height)
+        if editor.frame.height < height {
+            editor.setFrameSize(NSSize(width: editor.frame.width, height: height))
+        }
+    }
+
     func updateLanguage(bundle: Bundle) {
+        editor.scheduleCodeToolbarUpdate()
+        editor.needsDisplay = true
         editor.setAccessibilityLabel(String(localized: "Note text", bundle: bundle))
         blockButton.title = editor.currentBlockTitle
         blockButton.toolTip = String(localized: "Insert or change a block. Type / in an empty paragraph.", bundle: bundle)
         blockButton.isEnabled = editor.isEditable
-        statusLabel.stringValue = status?.description(bundle: bundle) ?? (editor.currentBlockKind == .code
+        statusLabel.stringValue = status?.description(bundle: bundle) ?? (editor.currentBlockKind == .table
+            ? String(localized: "Tab next cell · ⌘↩ return to text", bundle: bundle)
+            : editor.currentBlockKind == .code
             ? String(localized: "⌘↩ return to text", bundle: bundle)
             : String(localized: "/ blocks · ⌘B bold", bundle: bundle))
         statusLabel.toolTip = statusLabel.stringValue

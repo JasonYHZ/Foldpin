@@ -16,8 +16,9 @@ import Testing
 @Test @MainActor func markdownBlockPrefixesBecomeStructuredBlocksWhenSpaceIsTyped() {
     let cases: [(String, NoteBlockKind, Bool)] = [
         ("#", .heading, false), ("##", .subheading, false),
+        ("###", .heading3, false), ("####", .heading4, false),
         ("-", .bullet, false), ("*", .bullet, false), ("+", .bullet, false),
-        (">", .quote, false), ("[]", .task, false), ("[ ]", .task, false),
+        (">", .quote, false), ("\"", .quote, false), ("[]", .task, false), ("[ ]", .task, false),
         ("[x]", .task, true), ("[X]", .task, true),
         ("- [ ]", .task, false), ("- [x]", .task, true)
     ]
@@ -37,27 +38,31 @@ import Testing
 }
 
 @Test @MainActor func markdownHeadingKeepsFollowingTextMarksAndSavesAsJSON() throws {
-    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    defer { try? FileManager.default.removeItem(at: directory) }
-    let store = NoteStore(file: NoteFile(url: directory.appendingPathComponent("note.json")))
-    let block = NoteBlock(text: "#重点 🌿", marks: [NoteTextMark(location: 1, length: 2, bold: true)])
-    let editor = makeMarkdownEditor(NoteContent(blocks: [block]))
-    editor.onContentChange = { store.edit($0) }
-    editor.setSelectedRange(NSRange(location: 1, length: 0))
-    typeMarkdown(" ", in: editor)
-    #expect(editor.content.blocks[0].text == "重点 🌿")
-    #expect(editor.content.blocks[0].marks == [NoteTextMark(location: 0, length: 2, bold: true)])
-    #expect(editor.selectedRange().location == 0)
-    #expect(store.flush())
-    let restored = try store.file.load()
-    #expect(restored.version == 2)
-    #expect(restored.content.blocks[0].id == block.id)
-    #expect(restored.content.blocks[0].kind == .heading)
-    #expect(restored.text == "重点 🌿")
+    for (prefix, kind) in [("#", NoteBlockKind.heading), ("##", .subheading), ("###", .heading3), ("####", .heading4)] {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = NoteStore(file: NoteFile(url: directory.appendingPathComponent("note.json")))
+        let block = NoteBlock(text: prefix + "重点 🌿", marks: [NoteTextMark(location: prefix.count, length: 2, bold: true)])
+        let editor = makeMarkdownEditor(NoteContent(blocks: [block]))
+        editor.onContentChange = { store.edit($0) }
+        editor.setSelectedRange(NSRange(location: prefix.count, length: 0))
+        typeMarkdown(" ", in: editor)
+        #expect(editor.content.blocks[0].text == "重点 🌿")
+        #expect(editor.content.blocks[0].marks == [NoteTextMark(location: 0, length: 2, bold: true)])
+        #expect(editor.selectedRange().location == 0)
+        #expect(store.flush())
+        let restored = try store.file.load()
+        #expect(restored.version == 2)
+        #expect(restored.content.blocks[0].id == block.id)
+        #expect(restored.content.blocks[0].kind == kind)
+        #expect(restored.text == "重点 🌿")
+        let reopened = makeMarkdownEditor(restored.content)
+        #expect(reopened.content == restored.content && reopened.currentBlockKind == kind)
+    }
 }
 
 @Test @MainActor func markdownCodeFenceSelectsLanguageOnReturnAndCodeStaysLiteral() {
-    for (fence, language) in [("```", CodeLanguage.plain), ("```swift", .swift), ("```js", .javascript), ("```py", .python)] {
+    for (fence, language) in [("```", CodeLanguage.automatic), ("···", .automatic), ("···python", .python), ("｀｀｀", .automatic), ("```auto", .automatic), ("```text", .plain), ("```html", .html), ("```java", .java), ("```swift", .swift), ("```js", .javascript), ("```py", .python)] {
         let editor = makeMarkdownEditor()
         typeMarkdown(fence, in: editor)
         #expect(editor.content.blocks[0].kind == .paragraph)
@@ -81,7 +86,7 @@ import Testing
 }
 
 @Test @MainActor func markdownConversionAndTypingUndoWithoutLosingOriginalCharacters() {
-    for (prefix, kind, language) in [("#", NoteBlockKind.heading, CodeLanguage.plain), ("```swift", .code, .swift)] {
+    for (prefix, kind, language) in [("#", NoteBlockKind.heading, CodeLanguage.plain), ("##", .subheading, .plain), ("###", .heading3, .plain), ("####", .heading4, .plain), ("```swift", .code, .swift), ("···", .code, .automatic)] {
         let editor = makeMarkdownEditor()
         let originalID = editor.content.blocks[0].id
         let delegate = MarkdownUndoDelegate()
@@ -123,7 +128,7 @@ import Testing
     let batch = makeMarkdownEditor()
     batch.insertText("# pasted text", replacementRange: batch.selectedRange())
     #expect(batch.content.blocks[0].kind == .paragraph)
-    for text in ["C# ", "\\# ", "### ", "text > ", "    # "] {
+    for text in ["C# ", "\\# ", "##### ", "###### ", "text > ", "    # ", "名字··· ", "·· ", "···· ", "·`· "] {
         let editor = makeMarkdownEditor()
         typeMarkdown(text, in: editor)
         #expect(editor.content.blocks[0].kind == .paragraph)

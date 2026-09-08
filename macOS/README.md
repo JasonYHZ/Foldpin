@@ -1,5 +1,19 @@
 # Foldpin macOS · M1 单纸片原型
 
+区块书写现支持类型占位提示、空标题回车返回正文与 Shift+Enter 块内换行；占位文字不会保存。菜单提示去掉「+ 空格」，代码围栏也接受 `···` / `｀｀｀` 加空格或回车。换行规则、原生存储方式及块手柄 / 排序建议见[区块书写说明](../docs/engineering/block-writing-behavior.md)。
+
+`/` 建议菜单已按 Notion 参考优化分组、图标、输入提示与选中样式，支持中英文、明暗和短视口滚动。保持原生非激活浮层及 Backspace / 回车 / Esc 行为，只展示已支持区块；引用新增 `"` + 空格并兼容 `>`。截图和范围见[原生菜单记录](../docs/design/native-block-menu/README.md)。
+
+代码高亮已升级为 highlight.js 11.11.1 + 系统 JavaScriptCore，本机后台处理；编辑器仍为 NSTextView / TextKit 2。29 个语言选择、自动识别和现有主题共用同一引擎。资源随 Xcode / SwiftPM 打包，构建不需下载新依赖。见[语法引擎说明](../docs/engineering/syntax-engine.md)，下方旧词法扫描器描述为历史状态。
+
+自动识别现独立缓存有限样本，取消的排队任务进入引擎前跳过，当前块优先处理。工具条区分「识别中」「自动 · 未识别」和语言结果，识别出的语言无需等高亮完成；长代码暂停高亮时仍可识别语言。修正 Go / C# / PHP 等与共享关键字冲突的误判，手动指定仍优先。
+
+本次引擎升级：Debug 构建与 24 项相关检查通过，四个引擎资源打包内容已核对。未启动用户应用做反复 UI 测试，多纸片性能未做基准测试。
+
+随后已做单代码块离屏长度评估，保留 24,000 UTF-16 高亮保护上限，不降低为一万字符；正文不会截断。结果与复现方式见[高亮性能记录](../docs/engineering/syntax-performance.md)，多纸片与真实滚动性能仍未测量。
+
+光标退出代码块：纸片末尾代码的末端按 ↓ / →，或点击代码下方空白可进入正文；纸片开头代码的起点按 ↑ / ← 可在上方继续写。⌘Return / ⌘小键盘 Enter 可直接进入后方正文。原代码与撤销保留，打开笔记不会自动补空行。见[代码块导航说明](../docs/engineering/code-block-navigation.md)。
+
 2026-09-07。以已创建的 macOS App 工程为基础，实现第一张原生纸片。当前是技术原型，不是 PRD 中全部 P0 已完成的 MVP。
 
 ## 运行
@@ -30,7 +44,9 @@ Git 仓库根目录是产品目录 `../`，统一管理本文、工程、PRD 与
 
 ## 原生块编辑器（2026-09-08）
 
-在空段落输入 **/**，或点击编辑区域底部的内容块按钮，可选择正文、两级标题、项目列表、待办、引用、代码块或图片。右键也有内容块菜单。
+设置 →「代码样式」可选择 GitHub、VS Code Light+ / Dark+、Monokai、Solarized Light / Dark，选择后立即更新。导入支持 VS Code `.json` / `.jsonc` 与 TextMate `.tmTheme`；涉及依赖文件时会提示选择共同文件夹。导入后保留本地副本，可移除，不修改原文件。默认 GitHub 跟随应用明暗；其他样式使用自己的配色。完整支持范围与获取文件的方式见 [公共主题格式说明](../docs/engineering/code-theme-formats.md)。
+
+在空段落输入 **/**，或点击编辑区域底部的内容块按钮，可选择正文、四级标题、项目列表、有序列表、待办、引用、分隔线、表格、代码块或图片。右键也有内容块菜单。表格默认 2 列 3 行，直接编辑单元格，Tab / Shift-Tab 切换，末格 Tab 加行，⌘Return 返回正文；六点菜单可增列 / 增行。见[列表、分隔线与表格](../docs/engineering/lists-dividers-tables.md)。
 
 底部按钮现在直接显示当前块类型，例如 **+ 正文** 或 **+ 代码块**，点击即可切换。代码内的 `/` 是普通代码字符；按 **⌘Return** 新开正文段落，再输入 `/` 可打开建议。要保留当前文字并去掉代码格式，点击 **+ 代码块 → 正文**。空代码块 / 空标题也可按 Backspace 回正文。
 
@@ -50,15 +66,19 @@ Git 仓库根目录是产品目录 `../`，统一管理本文、工程、PRD 与
 | --- | --- |
 | `#` + 空格 | H1 一级标题 |
 | `##` + 空格 | H2 二级标题 |
+| `###` + 空格 | H3 三级标题 |
+| `####` + 空格 | H4 四级标题 |
 | `-` / `*` / `+` + 空格 | 无序列表 |
+| `1.` + 空格 | 有序列表，回车续号 |
+| `---` + 回车 / 空格 | 分隔线，并进入后方正文 |
 | `[]` / `[ ]` + 空格 | 未完成待办；也支持连续键入 `- [ ] ` |
 | `[x]` / `[X]` + 空格 | 已完成待办 |
 | `>` + 空格 | 引用 |
 | 三个反引号 + 回车或空格 | 代码块；反引号后可接 `swift`、`js`、`ts`、`python`、`json`、`sql`、`shell` 等现有语言 |
 
-转换去掉输入前缀，保留后续文字和可用格式，光标继续留在当前块，可用 **⌘Z / ⇧⌘Z** 撤销 / 重做。正文仍存为结构化 JSON；这些是输入快捷方式，不会自动把粘贴内容或旧笔记当 Markdown 解析，也不在句中、代码块内、选区替换或输入法组合期间触发。当前支持两级标题，尚无有序列表、行内 Markdown 自动转换或完整 Markdown 导入 / 导出。
+转换去掉输入前缀，保留后续文字和可用格式，光标继续留在当前块，可用 **⌘Z / ⇧⌘Z** 撤销 / 重做。正文仍存为结构化 JSON；这些是输入快捷方式，不会自动把粘贴内容或旧笔记当 Markdown 解析，也不在句中、代码块内、选区替换或输入法组合期间触发。当前支持四级标题，尚无嵌套列表、行内 Markdown 自动转换或完整 Markdown 导入 / 导出。
 
-第一阶段使用 **NSTextView + TextKit 2**，没有 WebView 或第三方编辑器依赖。仍是单纸片原型；语音、可视块拖拽手柄、嵌套列表、图片图注 / 原图预览和多纸片休眠尚未实现。实际 UI 的已测 / 未测边界见 [原生编辑器验证](../docs/engineering/native-editor-validation.md)。
+第一阶段使用 **NSTextView + TextKit 2**，没有 WebView 或第三方编辑器依赖。六点手柄现可直接拖动调整区块顺序，蓝线表示插入位置，靠近上下边缘自动滚动；Esc 取消，⌘Z 撤销移动。仍是单纸片原型；语音、多块 / 跨纸片拖动、嵌套列表、图片图注 / 原图预览和多纸片休眠尚未实现。实际 UI 的已测 / 未测边界见 [原生编辑器验证](../docs/engineering/native-editor-validation.md)。
 
 代码采用 [GitHub 主题](https://github.com/primer/github-vscode-theme)风格配色：关键字、字符串、注释、数字与函数名分别着色，整个块使用圆角底色、细边线和留白，颜色跟随当前主题。语言为纯文本时保留等宽和块背景；在代码块菜单选择 Swift、JavaScript / TypeScript、Python、JSON、SQL 或 Shell 后显示相应高亮。所有渲染在本机完成，留白不改变原始代码；并非 GitHub 语法引擎的完整移植。许可随应用打包，见 [ThirdPartyNotices.txt](Foldpin/ThirdPartyNotices.txt)。
 
@@ -189,3 +209,11 @@ swift test --disable-sandbox --package-path . --scratch-path /private/tmp/Foldpi
 - [Data 原子写入](https://developer.apple.com/documentation/foundation/nsdata/writingoptions/atomic)：先写辅助文件，再替换目标文件。
 - [Apple 材质指南](https://developer.apple.com/design/human-interface-guidelines/materials)、[SwiftUI Liquid Glass](https://developer.apple.com/documentation/swiftui/applying-liquid-glass-to-custom-views)：正文材质与交互控件分层。
 - 快捷键同时核对了 Xcode 26.6 本地 macOS SDK 的 `CarbonEvents.h` 中 `RegisterEventHotKey` / `UnregisterEventHotKey` 声明。
+
+### 代码块语言与悬浮工具条（2026-09-08）
+
+Java 已支持自动识别、手动选择及 java 围栏，原生高亮包括关键字、类型、注解、方法、字符串 / 文本块和数字。滚动闪烁修复把工具条放在滚动区域上层，只更新定位，不再逐帧隐藏、显示。构建及相关离屏检查通过，未反复启动用户窗口。
+
+鼠标移到代码块上，右上角显示语言菜单和复制按钮。新代码块默认自动识别，输入 / 粘贴代码后按本机识别结果着色，工具条显示「自动 · HTML」等状态。也可手动选择语言；明确选择纯文本会关闭着色。旧块保留原选择，可从菜单改为自动识别。选择模式随块保存；三个反引号不带语言时创建自动块，带 html / text 则明确指定 HTML / 纯文本。选择语言可撤销，复制保留原文与缩进。工具条操作悬浮块，不移动别处的编辑选区；主题和界面语言保持即时更新。
+
+实现与验证边界见 [代码工具条记录](../docs/engineering/code-block-toolbar.md)。

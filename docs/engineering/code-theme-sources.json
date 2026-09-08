@@ -1,0 +1,41 @@
+{
+  "retrieved": "2026-09-08",
+  "license": "MIT; Microsoft Corporation; bundled in macOS/Foldpin/ThirdPartyNotices.txt",
+  "files": [
+    {
+      "file": "macOS/Foldpin/CodeThemes/dark_plus.json",
+      "source": "https://raw.githubusercontent.com/microsoft/vscode/main/extensions/theme-defaults/themes/dark_plus.json",
+      "sha256": "409f33088a5cfd6589384900ef80627787c568d367c25b12f31bc7940936e573"
+    },
+    {
+      "file": "macOS/Foldpin/CodeThemes/dark_vs.json",
+      "source": "https://raw.githubusercontent.com/microsoft/vscode/main/extensions/theme-defaults/themes/dark_vs.json",
+      "sha256": "d27c4e9fe22e52ad051c1dfa5bd25acf73c52972d00e720b25f32f92ff1ef30e"
+    },
+    {
+      "file": "macOS/Foldpin/CodeThemes/light_plus.json",
+      "source": "https://raw.githubusercontent.com/microsoft/vscode/main/extensions/theme-defaults/themes/light_plus.json",
+      "sha256": "26fbb053bec8ce2b65706d5fcb993da8c19174cfdbf35a49b465236b5ed26203"
+    },
+    {
+      "file": "macOS/Foldpin/CodeThemes/light_vs.json",
+      "source": "https://raw.githubusercontent.com/microsoft/vscode/main/extensions/theme-defaults/themes/light_vs.json",
+      "sha256": "032fc99cdd61773e3630927426f28c292465352bdccdaaae624a147031c36a74"
+    },
+    {
+      "file": "macOS/Foldpin/CodeThemes/monokai-color-theme.json",
+      "source": "https://raw.githubusercontent.com/microsoft/vscode/main/extensions/theme-monokai/themes/monokai-color-theme.json",
+      "sha256": "a9ebb3b9152ed9ad46a43993dec130253b0d87f07ab7146fa2135bf83c290400"
+    },
+    {
+      "file": "macOS/Foldpin/CodeThemes/solarized-light-color-theme.json",
+      "source": "https://raw.githubusercontent.com/microsoft/vscode/main/extensions/theme-solarized-light/themes/solarized-light-color-theme.json",
+      "sha256": "73b2427fc76c6fd1e9dcb6f4073b58cd6356c4daf85311cd234522c011259f5d"
+    },
+    {
+      "file": "macOS/Foldpin/CodeThemes/solarized-dark-color-theme.json",
+      "source": "https://raw.githubusercontent.com/microsoft/vscode/main/extensions/theme-solarized-dark/themes/solarized-dark-color-theme.json",
+      "sha256": "f36a7fa5e8fafdfac26c0080805e7597567db9432d5aa644cc19f1c7bcf4ae8f"
+    }
+  ]
+}

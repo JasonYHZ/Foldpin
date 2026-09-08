@@ -52,6 +52,23 @@
         }
       }
     },
+    "0% is transparent; 100% uses the theme background. Text stays unchanged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0% is transparent; 100% uses the theme background. Text stays unchanged."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0% 为全透明，100% 使用主题原始底色。文字颜色保持不变。"
+          }
+        }
+      }
+    },
     "1 note": {
       "extractionState": "manual",
       "localizations": {
@@ -65,6 +82,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "1 张纸片"
+          }
+        }
+      }
+    },
+    "A theme dependency is outside the selected folder. Select their common parent folder.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A theme dependency is outside the selected folder. Select their common parent folder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主题依赖位于所选文件夹之外，请选择同时包含它们的上级文件夹。"
           }
         }
       }
@@ -103,6 +137,40 @@
         }
       }
     },
+    "Add Column": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Column"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加列"
+          }
+        }
+      }
+    },
+    "Add Row": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Row"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加行"
+          }
+        }
+      }
+    },
     "An image file is missing. The existing note has not been overwritten.": {
       "extractionState": "manual",
       "localizations": {
@@ -116,6 +184,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "图片文件缺失，原有纸片未被覆盖。"
+          }
+        }
+      }
+    },
+    "Applies immediately to notes and settings. Code blocks use the style selected below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies immediately to notes and settings. Code blocks use the style selected below."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "立即应用于纸片和设置。代码块使用下方选择的代码样式。"
           }
         }
       }
@@ -137,6 +222,57 @@
         }
       }
     },
+    "Auto · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动 · %@"
+          }
+        }
+      }
+    },
+    "Auto · Unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto · Unknown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动 · 未识别"
+          }
+        }
+      }
+    },
+    "Auto-detect": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-detect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动识别"
+          }
+        }
+      }
+    },
     "Back to Note": {
       "extractionState": "manual",
       "localizations": {
@@ -150,6 +286,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "返回纸片"
+          }
+        }
+      }
+    },
+    "Background opacity": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Background opacity"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "背景不透明度"
+          }
+        }
+      }
+    },
+    "Basic blocks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basic blocks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基本区块"
           }
         }
       }
@@ -188,6 +358,23 @@
         }
       }
     },
+    "Block actions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Block actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "区块操作"
+          }
+        }
+      }
+    },
     "Bold": {
       "extractionState": "manual",
       "localizations": {
@@ -222,6 +409,23 @@
         }
       }
     },
+    "Built-in": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置"
+          }
+        }
+      }
+    },
     "Bullet List": {
       "extractionState": "manual",
       "localizations": {
@@ -234,7 +438,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "项目列表"
+            "value": "项目符号列表"
           }
         }
       }
@@ -273,6 +477,23 @@
         }
       }
     },
+    "Click for actions; drag to reorder.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click for actions; drag to reorder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击打开菜单，拖动调整顺序。"
+          }
+        }
+      }
+    },
     "Close Note": {
       "extractionState": "manual",
       "localizations": {
@@ -303,6 +524,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "关闭窗口"
+          }
+        }
+      }
+    },
+    "Close menu": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close menu"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭菜单"
           }
         }
       }
@@ -358,6 +596,23 @@
         }
       }
     },
+    "Code style": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code style"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代码样式"
+          }
+        }
+      }
+    },
     "Collapse Note": {
       "extractionState": "manual",
       "localizations": {
@@ -409,6 +664,41 @@
         }
       }
     },
+    "Common syntax colors and font styles are supported; advanced semantic highlighting may differ.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common syntax colors and font styles are supported; advanced semantic highlighting may differ."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支持常见语法配色及字体样式；高级语义高亮的效果可能不同。"
+          }
+        }
+      }
+    },
+    "Content blocks": {},
+    "Copied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制"
+          }
+        }
+      }
+    },
     "Copy": {
       "extractionState": "manual",
       "localizations": {
@@ -422,6 +712,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "拷贝"
+          }
+        }
+      }
+    },
+    "Copy Block": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Block"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制区块内容"
           }
         }
       }
@@ -541,6 +848,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "暗色"
+          }
+        }
+      }
+    },
+    "Delete Block": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Block"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除区块"
+          }
+        }
+      }
+    },
+    "Detecting…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detecting…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "识别中…"
+          }
+        }
+      }
+    },
+    "Divider": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Divider"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分隔线"
           }
         }
       }
@@ -715,6 +1073,23 @@
         }
       }
     },
+    "GitHub · Follow app theme": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub · Follow app theme"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub · 跟随应用明暗"
+          }
+        }
+      }
+    },
     "Glass": {
       "extractionState": "manual",
       "localizations": {
@@ -778,7 +1153,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "一级标题"
+            "value": "标题 1"
           }
         }
       }
@@ -795,7 +1170,41 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "二级标题"
+            "value": "标题 2"
+          }
+        }
+      }
+    },
+    "Heading 3": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heading 3"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标题 3"
+          }
+        }
+      }
+    },
+    "Heading 4": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heading 4"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标题 4"
           }
         }
       }
@@ -851,6 +1260,23 @@
         }
       }
     },
+    "Highlighting is paused for long code blocks. You can still edit and copy all content.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highlighting is paused for long code blocks. You can still edit and copy all content."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "长代码块已暂停高亮，仍可编辑和复制全部内容。"
+          }
+        }
+      }
+    },
     "Image": {
       "extractionState": "manual",
       "localizations": {
@@ -864,6 +1290,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "图片"
+          }
+        }
+      }
+    },
+    "Import code theme": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import code theme"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入代码主题"
+          }
+        }
+      }
+    },
+    "Import theme…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import theme…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入主题…"
+          }
+        }
+      }
+    },
+    "Imported": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imported"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已导入"
           }
         }
       }
@@ -953,23 +1430,6 @@
         }
       }
     },
-    "Jot something down…": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jot something down…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "随手记点什么…"
-          }
-        }
-      }
-    },
     "Keep that thought": {
       "extractionState": "manual",
       "localizations": {
@@ -1021,6 +1481,23 @@
         }
       }
     },
+    "List item": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "List item"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "列表项"
+          }
+        }
+      }
+    },
     "Make yourself at home": {
       "extractionState": "manual",
       "localizations": {
@@ -1038,6 +1515,23 @@
         }
       }
     },
+    "Media": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "媒体"
+          }
+        }
+      }
+    },
     "Minimize": {
       "extractionState": "manual",
       "localizations": {
@@ -1051,6 +1545,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "最小化"
+          }
+        }
+      }
+    },
+    "Move Block": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Block"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动区块"
           }
         }
       }
@@ -1119,6 +1630,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "还没有写下内容"
+          }
+        }
+      }
+    },
+    "No supported code colors were found in this file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No supported code colors were found in this file."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此文件没有可用的代码配色。"
+          }
+        }
+      }
+    },
+    "Not enough context to identify the language. Choose a language manually.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough context to identify the language. Choose a language manually."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂时无法判断代码语言，可以手动选择。"
           }
         }
       }
@@ -1204,6 +1749,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "纸片标题：%@"
+          }
+        }
+      }
+    },
+    "Numbered List": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numbered List"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有序列表"
+          }
+        }
+      }
+    },
+    "OK": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
           }
         }
       }
@@ -1395,6 +1974,23 @@
         }
       }
     },
+    "Remove imported theme": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove imported theme"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除导入主题"
+          }
+        }
+      }
+    },
     "Restore the original size (⌘M)": {
       "extractionState": "manual",
       "localizations": {
@@ -1527,6 +2123,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "全选"
+          }
+        }
+      }
+    },
+    "Select this block and open its actions.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select this block and open its actions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选中此区块并打开操作菜单。"
           }
         }
       }
@@ -1718,6 +2331,91 @@
         }
       }
     },
+    "Tab next cell · ⌘↩ return to text": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab next cell · ⌘↩ return to text"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab 下一格 · ⌘↩ 返回正文"
+          }
+        }
+      }
+    },
+    "Tab: next cell. Shift-Tab: previous cell. Command-Return: leave table.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab: next cell. Shift-Tab: previous cell. Command-Return: leave table."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab 切换到下一个单元格；Shift-Tab 返回上一个；⌘Return 离开表格。"
+          }
+        }
+      }
+    },
+    "Table": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Table"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表格"
+          }
+        }
+      }
+    },
+    "Table cell": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Table cell"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表格单元格"
+          }
+        }
+      }
+    },
+    "Text": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本"
+          }
+        }
+      }
+    },
     "The insertion block changed. Please insert the image again.": {
       "extractionState": "manual",
       "localizations": {
@@ -1769,6 +2467,57 @@
         }
       }
     },
+    "The theme contains a circular or overly deep file reference.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The theme contains a circular or overly deep file reference."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主题存在循环引用，或引用层级过深。"
+          }
+        }
+      }
+    },
+    "The theme could not be saved or removed. Your current style is unchanged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The theme could not be saved or removed. Your current style is unchanged."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法保存或移除主题，当前样式保持不变。"
+          }
+        }
+      }
+    },
+    "The theme is too large. Use files under 2 MB and at most 16 companion files.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The theme is too large. Use files under 2 MB and at most 16 companion files."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主题过大。单个文件须小于 2 MB，依赖文件最多 16 个。"
+          }
+        }
+      }
+    },
     "Theme": {
       "extractionState": "manual",
       "localizations": {
@@ -1782,6 +2531,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "主题"
+          }
+        }
+      }
+    },
+    "This is not a supported VS Code or TextMate theme file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is not a supported VS Code or TextMate theme file."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这不是受支持的 VS Code 或 TextMate 主题文件。"
           }
         }
       }
@@ -1803,6 +2569,23 @@
         }
       }
     },
+    "This theme uses companion files. Select the folder containing the theme and its dependencies.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This theme uses companion files. Select the folder containing the theme and its dependencies."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此主题引用了其他文件，请选择同时包含主题及其依赖文件的文件夹。"
+          }
+        }
+      }
+    },
     "To-do": {
       "extractionState": "manual",
       "localizations": {
@@ -1815,7 +2598,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "待办"
+            "value": "待办事项"
           }
         }
       }
@@ -1833,6 +2616,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "切换完成状态"
+          }
+        }
+      }
+    },
+    "Turn into": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn into"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "转换为"
+          }
+        }
+      }
+    },
+    "Type or paste code": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type or paste code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入或粘贴代码"
+          }
+        }
+      }
+    },
+    "Type text or / to choose a block": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type text or / to choose a block"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入文字，或用 / 选择区块"
           }
         }
       }
@@ -1867,6 +2701,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "取消置顶"
+          }
+        }
+      }
+    },
+    "VS Code (.json / .jsonc) and TextMate (.tmTheme). Changes apply immediately to code blocks only.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VS Code (.json / .jsonc) and TextMate (.tmTheme). Changes apply immediately to code blocks only."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支持 VS Code（.json / .jsonc）和 TextMate（.tmTheme）。选择后立即生效，仅影响代码块。"
           }
         }
       }

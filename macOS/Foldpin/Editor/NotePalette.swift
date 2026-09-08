@@ -18,13 +18,13 @@ enum NotePalette {
 
 /// Native adaptation of GitHub's light/dark syntax palette; see
 /// ThirdPartyNotices.txt. These are display colors, never document metadata.
-enum GitHubCodeTheme {
-    static let background = NotePalette.adaptive(0xF6F8FA, 0x161B22)
-    static let border = NotePalette.adaptive(0xD0D7DE, 0x30363D)
-    static let foreground = NotePalette.adaptive(0x1F2328, 0xE6EDF3)
-    static let comment = NotePalette.adaptive(0x656D76, 0x8B949E)
-    static let keyword = NotePalette.adaptive(0xCF222E, 0xFF7B72)
-    static let string = NotePalette.adaptive(0x0A3069, 0xA5D6FF)
-    static let constant = NotePalette.adaptive(0x0550AE, 0x79C0FF)
-    static let function = NotePalette.adaptive(0x8250DF, 0xD2A8FF)
+@MainActor enum GitHubCodeTheme {
+    static var background: NSColor { NativeCodeTheme.github.background }
+    static var border: NSColor { NativeCodeTheme.github.border }
+    static var foreground: NSColor { NativeCodeTheme.github.foreground }
+    static var comment: NSColor { NativeCodeTheme.github.token(.comment, language: .javascript).foreground }
+    static var keyword: NSColor { NativeCodeTheme.github.token(.keyword, language: .javascript).foreground }
+    static var string: NSColor { NativeCodeTheme.github.token(.string, language: .javascript).foreground }
+    static var constant: NSColor { NativeCodeTheme.github.token(.constant, language: .javascript).foreground }
+    static var function: NSColor { NativeCodeTheme.github.token(.function, language: .javascript).foreground }
 }

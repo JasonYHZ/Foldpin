@@ -8,6 +8,7 @@ struct AppearanceSettingsView: View {
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 7) {
                 Text(String(localized: "Make yourself at home", bundle: languageSettings.bundle)).font(.system(size: 23, weight: .semibold))
@@ -70,10 +71,14 @@ struct AppearanceSettingsView: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.segmented)
-                Text(String(localized: "Applies immediately to notes, settings, and code blocks.", bundle: languageSettings.bundle))
+                Text(String(localized: "Applies immediately to notes and settings. Code blocks use the style selected below.", bundle: languageSettings.bundle))
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            Divider()
+
+            CodeThemeSettingsView()
 
             Divider()
 
@@ -104,7 +109,8 @@ struct AppearanceSettingsView: View {
             }
         }
         .padding(28)
-        .frame(width: 556)
+        }
+        .frame(width: 556, height: 720)
         .navigationTitle(String(localized: "Foldpin Settings", bundle: languageSettings.bundle))
         .environment(\.locale, languageSettings.locale)
         .onAppear { languageSettings.refresh() }

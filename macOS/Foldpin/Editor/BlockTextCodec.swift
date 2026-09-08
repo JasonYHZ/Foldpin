@@ -6,6 +6,7 @@ extension NSAttributedString.Key {
     static let blockChecked = Self("Foldpin.checked")
     static let blockLanguage = Self("Foldpin.language")
     static let blockImage = Self("Foldpin.image")
+    static let blockTable = Self("Foldpin.table")
     static let blockBoundary = Self("Foldpin.boundary")
     static let nextBlock = Self("Foldpin.nextBlock")
     static let blockMarker = Self("Foldpin.marker")
@@ -29,13 +30,15 @@ enum BlockTextCodec {
             .blockChecked: block.isChecked, .blockLanguage: block.language.rawValue
         ]
         if let image = block.image, let data = try? JSONEncoder().encode(image) { values[.blockImage] = data }
+        if let table = block.table, let data = try? JSONEncoder().encode(table) { values[.blockTable] = data }
         return values
     }
 
-    static func prefix(_ block: NoteBlock) -> String {
+    static func prefix(_ block: NoteBlock, ordinal: Int = 1) -> String {
         switch block.kind {
         case .task: block.isChecked ? "☑ " : "☐ "
         case .bullet: "• "
+        case .orderedList: "\(ordinal). "
         default: ""
         }
     }
@@ -65,13 +68,21 @@ enum BlockTextCodec {
             block.isChecked = attributes[.blockChecked] as? Bool ?? false
             block.language = (attributes[.blockLanguage] as? String).flatMap(CodeLanguage.init(rawValue:)) ?? .plain
             var textRange = range
-            if block.kind == .image, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
+            if block.kind == .divider, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil {
+                block.text = ""
+            } else if block.kind == .table, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
+                      let data = attributes[.blockTable] as? Data,
+                      let table = try? JSONDecoder().decode(NoteTable.self, from: data), table.isValid {
+                block.table = table
+            } else if block.kind == .image, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
                let data = attributes[.blockImage] as? Data,
                let image = try? JSONDecoder().decode(NoteImage.self, from: data) {
                 block.image = image
             } else {
-                if block.kind == .image { block.kind = .paragraph }
-                let marker = prefix(block)
+                if block.kind.isAttachment { block.kind = .paragraph }
+                let line = string.substring(with: range)
+                let numberRange = block.kind == .orderedList ? line.range(of: "^[0-9]+\\. ", options: .regularExpression) : nil
+                let marker = block.kind == .orderedList ? numberRange.map { String(line[$0]) } ?? "1. " : prefix(block)
                 if !marker.isEmpty {
                     if string.substring(with: range).hasPrefix(marker) {
                         let count = (marker as NSString).length
@@ -115,12 +126,17 @@ enum BlockTextCodec {
     }
 
     static func render(_ content: NoteContent, color: NSColor, width: CGFloat,
+                       theme: NativeCodeTheme? = nil, cachedSyntaxOnly: Bool = false, startingOrdinal: Int = 1,
                        image: (NoteImage) -> NSImage?) -> NSAttributedString {
+        let theme = theme ?? .github
         let result = NSMutableAttributedString(string: "")
+        var ordinal = startingOrdinal - 1
         for (index, block) in content.blocks.enumerated() {
-            let attributes = style(block, color: color)
-            let value = NSMutableAttributedString(string: prefix(block) + block.text, attributes: attributes)
-            let prefixLength = (prefix(block) as NSString).length
+            ordinal = block.kind == .orderedList ? ordinal + 1 : 0
+            let attributes = style(block, color: color, theme: theme, ordinal: ordinal)
+            let marker = prefix(block, ordinal: ordinal)
+            let value = NSMutableAttributedString(string: marker + block.text, attributes: attributes)
+            let prefixLength = (marker as NSString).length
             if prefixLength > 0 { value.addAttribute(.blockMarker, value: true, range: NSRange(location: 0, length: prefixLength)) }
             for mark in block.marks where mark.location + mark.length <= (block.text as NSString).length {
                 let range = NSRange(location: prefixLength + mark.location, length: mark.length)
@@ -139,9 +155,27 @@ enum BlockTextCodec {
                 value.setAttributedString(NSAttributedString(attachment: attachment))
                 value.addAttributes(attributes, range: NSRange(location: 0, length: value.length))
             }
+            if block.kind == .divider || block.kind == .table {
+                let attachment = NSTextAttachment()
+                if let table = block.table {
+                    let layout = TableBlockLayout(table: table, width: max(80, width - 2))
+                    attachment.image = layout.image(color: color)
+                    attachment.bounds = NSRect(origin: .zero, size: layout.size)
+                } else {
+                    let size = NSSize(width: max(80, width - 2), height: 20)
+                    attachment.image = NSImage(size: size, flipped: true) { bounds in
+                        NSColor.separatorColor.setFill()
+                        NSRect(x: 0, y: bounds.midY, width: bounds.width, height: 1).fill()
+                        return true
+                    }
+                    attachment.bounds = NSRect(origin: .zero, size: size)
+                }
+                value.setAttributedString(NSAttributedString(attachment: attachment))
+                value.addAttributes(attributes, range: NSRange(location: 0, length: value.length))
+            }
             if block.kind == .code {
-                styleCodeParagraphs(value, block: block, color: color)
-                highlight(value, language: block.language)
+                styleCodeParagraphs(value, block: block, color: color, theme: theme)
+                highlight(value, language: block.language, theme: theme, cachedOnly: cachedSyntaxOnly)
             }
             result.append(value)
             if index < content.blocks.count - 1 {
@@ -154,12 +188,13 @@ enum BlockTextCodec {
         return result
     }
 
-    static func style(_ block: NoteBlock, color: NSColor) -> [NSAttributedString.Key: Any] {
+    static func style(_ block: NoteBlock, color: NSColor, theme: NativeCodeTheme? = nil, ordinal: Int = 1) -> [NSAttributedString.Key: Any] {
+        let theme = theme ?? .github
         let paragraph = NSMutableParagraphStyle()
         paragraph.paragraphSpacing = block.kind == .code ? 0 : 9
         paragraph.lineSpacing = 3
         paragraph.lineBreakMode = .byWordWrapping
-        paragraph.headIndent = CGFloat((prefix(block) as NSString).length) * 9
+        paragraph.headIndent = CGFloat((prefix(block, ordinal: ordinal) as NSString).length) * 9
         if block.kind == .quote { paragraph.headIndent = 12; paragraph.firstLineHeadIndent = 12 }
         paragraph.tabStops = []
         paragraph.defaultTabInterval = 28
@@ -173,16 +208,22 @@ enum BlockTextCodec {
             }
         }
         var attrs = metadata(block)
+        // Native rich-text insertion fills missing keys from typingAttributes.
+        // Explicit neutral marks keep a moved block from inheriting the source
+        // caret's bold/italic/strike attributes outside its actual marked runs.
+        attrs[.noteBold] = false
+        attrs[.noteItalic] = false
+        attrs[.strikethroughStyle] = 0
         attrs[.font] = font(block)
         attrs[.foregroundColor] = block.kind == .quote || (block.kind == .task && block.isChecked) ? NSColor.secondaryLabelColor : color
         attrs[.paragraphStyle] = paragraph
-        if block.kind == .code { attrs[.foregroundColor] = GitHubCodeTheme.foreground }
+        if block.kind == .code { attrs[.foregroundColor] = theme.foreground }
         if block.kind == .task && block.isChecked { attrs[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
         return attrs
     }
 
-    private static func styleCodeParagraphs(_ text: NSMutableAttributedString, block: NoteBlock, color: NSColor) {
-        guard text.length > 0, let base = style(block, color: color)[.paragraphStyle] as? NSParagraphStyle else { return }
+    private static func styleCodeParagraphs(_ text: NSMutableAttributedString, block: NoteBlock, color: NSColor, theme: NativeCodeTheme) {
+        guard text.length > 0, let base = style(block, color: color, theme: theme)[.paragraphStyle] as? NSParagraphStyle else { return }
         let source = text.string as NSString
         var start = 0
         while start < source.length {
@@ -200,6 +241,8 @@ enum BlockTextCodec {
         switch block.kind {
         case .heading: base = .systemFont(ofSize: 23, weight: .semibold)
         case .subheading: base = .systemFont(ofSize: 18, weight: .semibold)
+        case .heading3: base = .systemFont(ofSize: 16, weight: .semibold)
+        case .heading4: base = .systemFont(ofSize: 15, weight: .semibold)
         case .code: base = .monospacedSystemFont(ofSize: 13, weight: .regular)
         default: base = .systemFont(ofSize: 15)
         }
@@ -209,45 +252,29 @@ enum BlockTextCodec {
         return traits.isEmpty ? base : NSFontManager.shared.convert(base, toHaveTrait: traits)
     }
 
-    // Bounded lexical highlighting for snippets, not a compiler or code runner.
-    // Long blocks stay editable without running regexes over the entire document.
-    static func highlight(_ text: NSMutableAttributedString, language: CodeLanguage) {
-        guard language != .plain, text.length < 24_000 else { return }
-        let keywords: String
-        switch language {
-        case .swift: keywords = "let|var|func|class|struct|enum|protocol|extension|import|return|if|else|guard|for|in|while|switch|case|break|true|false|nil|try|throw|throws|async|await|private|public|static|self"
-        case .javascript, .typescript: keywords = "const|let|var|function|return|if|else|for|of|in|while|class|new|import|export|from|default|async|await|true|false|null|undefined|interface|type|extends"
-        case .python: keywords = "def|class|return|if|elif|else|for|in|while|import|from|as|try|except|with|lambda|True|False|None|and|or|not|async|await"
-        case .sql: keywords = "(?i:select|from|where|join|on|as|and|or|insert|into|values|update|set|delete|create|table|order|by|group|limit|null|count|distinct|asc|desc)"
-        case .shell: keywords = "if|then|else|fi|for|in|do|done|while|case|esac|function|export|echo|exit"
-        case .json: keywords = "true|false|null"
-        case .plain: return
+    static func highlight(_ text: NSMutableAttributedString, language: CodeLanguage,
+                          theme: NativeCodeTheme? = nil, cachedOnly: Bool = false) {
+        let engine = CodeSyntaxEngine.shared
+        let analysis = cachedOnly ? engine.cached(text.string, language: language)
+            : engine.analyzeSynchronously(text.string, language: language)
+        guard let analysis else { return }
+        for span in analysis.spans {
+            guard let token = CodeToken(highlightScope: span.scope, language: span.language) else { continue }
+            applyToken(token, to: text, range: span.range, language: span.language, theme: theme ?? .github)
         }
-        let comment: String
-        switch language {
-        case .python, .shell: comment = "#[^\\n]*"
-        case .sql: comment = "--[^\\n]*|/\\*[\\s\\S]*?\\*/"
-        case .json: comment = "(?!)"
-        default: comment = "//[^\\n]*|/\\*[\\s\\S]*?\\*/"
-        }
-        let quoted = #""""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'"#
-        let strings = [.javascript, .typescript, .shell].contains(language) ? quoted + #"|`(?:\\.|[^`\\])*`"# : quoted
-        let rules: [(String, String, NSColor)] = [
-            ("comment", comment, GitHubCodeTheme.comment),
-            ("string", strings, GitHubCodeTheme.string),
-            ("keyword", "\\b(?:" + keywords + ")\\b", GitHubCodeTheme.keyword),
-            ("constant", "\\b(?:0[xX][0-9a-fA-F]+|[0-9]+(?:\\.[0-9]+)?)\\b", GitHubCodeTheme.constant),
-            ("function", #"\b[A-Za-z_$][\w$]*(?=\s*\()"#, GitHubCodeTheme.function)
-        ]
-        // One ordered scan keeps comment markers inside strings literal and
-        // prevents later rules from recoloring keywords inside comments.
-        let pattern = rules.map { "(?<" + $0.0 + ">" + $0.1 + ")" }.joined(separator: "|")
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return }
-        for match in regex.matches(in: text.string, range: NSRange(location: 0, length: text.length)) {
-            for (name, _, color) in rules where match.range(withName: name).location != NSNotFound {
-                text.addAttribute(.foregroundColor, value: color, range: match.range)
-                break
-            }
-        }
+    }
+
+    static func applyToken(_ token: CodeToken, to text: NSMutableAttributedString, range: NSRange,
+                           language: CodeLanguage, theme: NativeCodeTheme) {
+        guard range.length > 0 else { return }
+        let style = theme.token(token, language: language)
+        let traits = style.fontStyle.split(separator: " ")
+        var font = NSFont.monospacedSystemFont(ofSize: 13, weight: traits.contains("bold") ? .bold : .regular)
+        if traits.contains("italic") { font = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask) }
+        text.addAttributes([
+            .foregroundColor: style.foreground, .font: font,
+            .underlineStyle: traits.contains("underline") ? NSUnderlineStyle.single.rawValue : 0,
+            .strikethroughStyle: traits.contains("strikethrough") ? NSUnderlineStyle.single.rawValue : 0
+        ], range: range)
     }
 }

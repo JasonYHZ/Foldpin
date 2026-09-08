@@ -95,16 +95,8 @@ struct ContentView: View {
                 .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.red.opacity(0.12))
             }
-            ZStack(alignment: .topLeading) {
-                if store.document.text.isEmpty && store.document.content.blocks.count == 1 &&
-                    store.document.content.blocks.first?.kind == .paragraph && store.loadError == nil {
-                    Text(String(localized: "Jot something down…", bundle: languageSettings.bundle))
-                        .font(.system(size: 15)).foregroundStyle(.tertiary)
-                        .padding(.horizontal, 20).padding(.top, 16)
-                        .allowsHitTesting(false)
-                }
-                NoteEditor(store: store, appearance: appearance, onEscape: onShelve)
-            }
+            // The native block editor owns all empty-block hints.
+            NoteEditor(store: store, appearance: appearance, onEscape: onShelve)
             HStack(spacing: 8) {
                 Text(store.hotKeyWarning == nil ? store.shortcutLabel : String(localized: "Shortcut unavailable", bundle: languageSettings.bundle))
                     .help(store.hotKeyWarning ?? String(localized: "Show or shelve your note. Change the shortcut in the menu bar.", bundle: languageSettings.bundle))
