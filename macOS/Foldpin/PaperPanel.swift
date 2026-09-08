@@ -35,8 +35,8 @@ final class PaperPanel: NSPanel {
             if event.type == .leftMouseUp { finishResize() }
             return
         }
-        // Explicit interaction should make this the front application's focused
-        // window; passive display still uses the nonactivating panel behavior.
+        // Explicit interaction activates this document. Passive restoration
+        // only orders it front without requesting key/main focus.
         if event.type == .leftMouseDown || event.type == .rightMouseDown {
             onActivate?()
         }

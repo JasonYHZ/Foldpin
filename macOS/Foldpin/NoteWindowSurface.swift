@@ -118,7 +118,14 @@ final class NoteWindowSurface: NSView {
         // WindowServer's transparent-window hit region must include the paper
         // itself, not only AppKit text/dividers. A SwiftUI-only background can
         // look filled while clicks pass through its composited surface.
-        if usesGlass != true {
+        if usesGlass == true {
+            // The compositor's glass is not sufficient to define a native
+            // WindowServer hit region. A nearly transparent backing makes the
+            // whole sheet (including resize edges) receive clicks reliably.
+            // It sits behind the glass and preserves its blur/translucency.
+            NSColor.windowBackgroundColor.withAlphaComponent(0.02).setFill()
+            bounds.fill()
+        } else {
             (material == .paper ? NotePalette.paperBackground(for: color)
                 : NotePalette.solidGlassBackground(for: color)).setFill()
             bounds.fill()
@@ -157,7 +164,11 @@ final class NoteWindowSurface: NSView {
     }
 
     func resizeEdges(at windowPoint: NSPoint) -> NoteResizeEdges {
-        resizeHandles.edges(at: resizeHandles.convert(windowPoint, from: nil))
+        guard let window, window.styleMask.contains(.resizable) else { return [] }
+        // Event routing uses the actual surface bounds, even before an overlay
+        // layout pass catches up after a material switch or a window resize.
+        return NoteResizeEdges.hit(at: convert(windowPoint, from: nil), in: bounds,
+                                   allowsVertical: window.maxSize.height > window.minSize.height)
     }
 
     func titlebarDragRegion(at windowPoint: NSPoint) -> NoteWindowDragView? {

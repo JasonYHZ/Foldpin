@@ -45,7 +45,12 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         let frame = initial.fitted(to: NSScreen.screens.map(\.visibleFrame), fallback: screen)
         // Hiding a titled window's title bar keeps its system frame. Use an
         // undecorated panel so only the note's own rounded surface is visible.
-        paper = PaperPanel(contentRect: frame, styleMask: [.borderless, .closable, .resizable, .nonactivatingPanel], backing: .buffered, defer: false)
+        // A paper is an editable document. Nonactivating panels can borrow key
+        // focus while the other application remains active, which conflicts
+        // with click activation and can cancel the first resize gesture.
+        // Passive restoration is controlled by showPaper(focus: false), not
+        // by preventing activation at the WindowServer level.
+        paper = PaperPanel(contentRect: frame, styleMask: [.borderless, .closable, .resizable], backing: .buffered, defer: false)
         paper.title = String(localized: "Foldpin Note", bundle: languageSettings.bundle)
         // This panel is the document window, not an auxiliary dialog. Window
         // managers discover it through the standard accessibility window role.
@@ -60,7 +65,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         // Only the explicit header drag region initiates a native window drag.
         paper.isMovableByWindowBackground = false
         paper.hidesOnDeactivate = false
-        paper.becomesKeyOnlyIfNeeded = true
+        paper.becomesKeyOnlyIfNeeded = false
         paper.isFloatingPanel = true
         paper.isOpaque = false
         paper.backgroundColor = .clear
@@ -148,8 +153,8 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
 
     private func activatePaper() {
         onActivate?(id)
-        NSApp.activate()
-        paper.makeKey()
+        if !NSApp.isActive { NSApp.activate() }
+        paper.makeKeyAndOrderFront(nil)
         paper.makeMain()
     }
 
