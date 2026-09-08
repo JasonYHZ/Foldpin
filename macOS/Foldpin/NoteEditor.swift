@@ -54,6 +54,10 @@ final class NativeEditorHost: NSView {
     private let blockButton = NSButton()
     private let statusLabel = NSTextField(labelWithString: "")
     private var status: NoteEditorStatus?
+    private var displayedLanguage: URL?
+    private var displayedKind: NoteBlockKind?
+    private var displayedStatus: NoteEditorStatus?
+    private var displayedEditable: Bool?
 
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -124,8 +128,18 @@ final class NativeEditorHost: NSView {
     }
 
     func updateLanguage(bundle: Bundle) {
-        editor.scheduleCodeToolbarUpdate()
-        editor.needsDisplay = true
+        let languageChanged = displayedLanguage != bundle.bundleURL
+        let editableChanged = displayedEditable != editor.isEditable
+        let kind = editor.currentBlockKind
+        guard languageChanged || displayedKind != kind || displayedStatus != status || editableChanged else { return }
+        displayedLanguage = bundle.bundleURL
+        displayedKind = kind
+        displayedStatus = status
+        displayedEditable = editor.isEditable
+        if languageChanged || editableChanged {
+            editor.scheduleCodeToolbarUpdate()
+            editor.needsDisplay = true // Localized placeholders live in the editor.
+        }
         editor.setAccessibilityLabel(String(localized: "Note text", bundle: bundle))
         blockButton.title = editor.currentBlockTitle
         blockButton.toolTip = String(localized: "Insert or change a block. Type / in an empty paragraph.", bundle: bundle)

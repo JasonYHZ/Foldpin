@@ -5,47 +5,60 @@ import AppKit
 @MainActor
 struct TableBlockLayout {
     static let font = NSFont.systemFont(ofSize: 14)
+    static let headerFont = NSFont.systemFont(ofSize: 14, weight: .semibold)
+    static let controlsHeight: CGFloat = 24
     static let padding: CGFloat = 7
     let table: NoteTable
     let width: CGFloat
     let rowHeights: [CGFloat]
+    let rowOffsets: [CGFloat]
 
-    init(table: NoteTable, width: CGFloat) {
+    init(table: NoteTable, width: CGFloat, reusing previous: TableBlockLayout? = nil) {
         self.table = table
-        self.width = max(80, width)
-        let cellWidth = max(12, self.width / CGFloat(max(1, table.columnCount)) - Self.padding * 2)
-        rowHeights = table.rows.map { row in
-            max(34, row.map { text in
+        let layoutWidth = max(80, width)
+        self.width = layoutWidth
+        let cellWidth = max(12, layoutWidth / CGFloat(max(1, table.columnCount)) - Self.padding * 2)
+        let reusable = previous.flatMap { $0.width == layoutWidth && $0.table.columnCount == table.columnCount ? $0 : nil }
+        rowHeights = table.rows.enumerated().map { index, row in
+            if let reusable, reusable.table.rows.indices.contains(index), reusable.table.rows[index] == row,
+               reusable.table.headerColumn == table.headerColumn, (index != 0 || reusable.table.headerRow == table.headerRow) {
+                return reusable.rowHeights[index]
+            }
+            return max(34, row.enumerated().map { column, text in
                 let measured = text.isEmpty || text.hasSuffix("\n") || text.hasSuffix("\u{2028}") ? text + " " : text
-                return ceil(NSAttributedString(string: measured, attributes: [.font: Self.font])
+                return ceil(NSAttributedString(string: measured, attributes: [.font: table.isHeader(row: index, column: column) ? Self.headerFont : Self.font])
                     .boundingRect(with: NSSize(width: cellWidth, height: .greatestFiniteMagnitude),
                                   options: [.usesLineFragmentOrigin, .usesFontLeading]).height) + Self.padding * 2
             }.max() ?? 34)
         }
+        var offsets: [CGFloat] = [0]
+        for height in rowHeights { offsets.append(offsets.last! + height) }
+        rowOffsets = offsets
     }
 
-    var size: NSSize { NSSize(width: width, height: rowHeights.reduce(0, +)) }
+    var size: NSSize { NSSize(width: width, height: rowOffsets.last ?? 0) }
+    var attachmentSize: NSSize { NSSize(width: width, height: size.height + Self.controlsHeight) }
 
     func rect(row: Int, column: Int) -> NSRect {
         let w = width / CGFloat(max(1, table.columnCount))
-        return NSRect(x: CGFloat(column) * w, y: rowHeights.prefix(row).reduce(0, +), width: w, height: rowHeights[row])
+        return NSRect(x: CGFloat(column) * w, y: rowOffsets[row], width: w, height: rowHeights[row])
     }
 
     func cell(at point: NSPoint) -> (row: Int, column: Int)? {
         guard NSRect(origin: .zero, size: size).contains(point) else { return nil }
-        for row in table.rows.indices {
-            for column in table.rows[row].indices where rect(row: row, column: column).contains(point) { return (row, column) }
-        }
-        return nil
+        guard let row = table.rows.indices.first(where: { point.y < rowOffsets[$0 + 1] }) else { return nil }
+        return (row, min(table.columnCount - 1, Int(point.x / (width / CGFloat(table.columnCount)))))
     }
 
     func image(color: NSColor) -> NSImage {
-        NSImage(size: size, flipped: true) { bounds in
+        NSImage(size: attachmentSize, flipped: true) { bounds in
             NSColor.textBackgroundColor.withAlphaComponent(0.18).setFill()
-            bounds.fill()
+            NSRect(origin: .zero, size: size).fill()
             for row in table.rows.indices {
                 for column in table.rows[row].indices {
                     let cell = rect(row: row, column: column)
+                    let header = table.isHeader(row: row, column: column)
+                    if header { NSColor.labelColor.withAlphaComponent(0.06).setFill(); cell.fill() }
                     NSColor.separatorColor.setStroke()
                     let border = NSBezierPath(rect: cell.insetBy(dx: 0.5, dy: 0.5))
                     border.lineWidth = 1
@@ -53,7 +66,7 @@ struct TableBlockLayout {
                     (table.rows[row][column] as NSString).draw(
                         with: cell.insetBy(dx: Self.padding, dy: Self.padding),
                         options: [.usesLineFragmentOrigin, .usesFontLeading],
-                        attributes: [.font: Self.font, .foregroundColor: color])
+                        attributes: [.font: header ? Self.headerFont : Self.font, .foregroundColor: color])
                 }
             }
             return true

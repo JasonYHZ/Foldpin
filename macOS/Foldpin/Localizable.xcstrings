@@ -784,6 +784,23 @@
         }
       }
     },
+    "Could not open the note library. Existing files have been kept.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not open the note library. Existing files have been kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开纸片库，现有文件已保留。"
+          }
+        }
+      }
+    },
     "Could not read the existing note. The original file is unchanged.\n%@": {
       "extractionState": "manual",
       "localizations": {
@@ -1137,6 +1154,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "已跟随系统增强清晰度：通透外观使用实色背景。"
+          }
+        }
+      }
+    },
+    "Header Column": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Header Column"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标题列"
+          }
+        }
+      }
+    },
+    "Header Row": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Header Row"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标题行"
           }
         }
       }
@@ -1617,6 +1668,23 @@
         }
       }
     },
+    "New Note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Note"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建纸片"
+          }
+        }
+      }
+    },
     "No content yet": {
       "extractionState": "manual",
       "localizations": {
@@ -1787,6 +1855,40 @@
         }
       }
     },
+    "On Desktop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On Desktop"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "桌面上"
+          }
+        }
+      }
+    },
+    "On Shelf": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On Shelf"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已收纳"
+          }
+        }
+      }
+    },
     "Open Note": {
       "extractionState": "manual",
       "localizations": {
@@ -1800,6 +1902,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "打开纸片"
+          }
+        }
+      }
+    },
+    "Open Shelf": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Shelf"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开收纳架"
           }
         }
       }
@@ -2225,6 +2344,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "收纳"
+          }
+        }
+      }
+    },
+    "Shelve All Notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shelve All Notes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起所有纸片"
           }
         }
       }

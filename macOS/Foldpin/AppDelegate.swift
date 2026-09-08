@@ -1,110 +1,98 @@
 import AppKit
 import SwiftUI
-import Foundation
-import CoreGraphics
-import Dispatch
 import Combine
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate {
     private let languageSettings = LanguageSettings.shared
-    let store = NoteStore(localizationBundle: LanguageSettings.shared.bundle)
+    let library = NoteLibrary()
+    private var windows: [UUID: PaperWindowController] = [:]
+    private var lastActiveID: UUID?
+    private var previousApplication: NSRunningApplication?
     private var languageSubscription: AnyCancellable?
-    private var localeObserver: NSObjectProtocol?
-    private var menuObserver: NSObjectProtocol?
-    private var paper: PaperPanel!
-    private var paperShadow: NoteShadowWindow?
+    private var observers: [NSObjectProtocol] = []
     private var edge: EdgePanel!
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
     private let shortcut = GlobalShortcut()
-    private var restoringFrame = false
-    private var paperIsCollapsed = false
-    private var expandedMaximumSize = NSSize.zero
-    private var pendingGeometryUpdate: Task<Void, Never>?
-    private var previousApplication: NSRunningApplication?
-    private var screenObserver: NSObjectProtocol?
+    private var shortcutStatus: Int32 = 0
     private(set) var shortcutChoice = UserDefaults.standard.integer(forKey: "captureShortcut")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ThemeSettings.shared.apply()
-        createPaper()
         createEdge()
         createMenu()
+        applyLanguage()
         languageSubscription = languageSettings.$configuration.dropFirst().sink { [weak self] _ in
-            // Published emits before the new value is stored. Update AppKit on
-            // the next main-loop turn; SwiftUI observes the same configuration.
             DispatchQueue.main.async { self?.applyLanguage() }
         }
-        localeObserver = NotificationCenter.default.addObserver(forName: NSLocale.currentLocaleDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.languageSettings.refresh() }
+        observe(NSLocale.currentLocaleDidChangeNotification) { [weak self] in self?.languageSettings.refresh() }
+        observe(NSMenu.didBeginTrackingNotification) { [weak self] in self?.refreshApplicationMenu() }
+        observe(NSApplication.didChangeScreenParametersNotification) { [weak self] in
+            guard let self else { return }
+            for window in windows.values { window.screensChanged() }
+            updateEdge()
         }
-        menuObserver = NotificationCenter.default.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshApplicationMenu() }
-        }
-        DispatchQueue.main.async { [weak self] in self?.refreshApplicationMenu() }
         shortcut.onPress = { [weak self] in self?.togglePaper() }
         configureShortcut(shortcutChoice)
-        screenObserver = NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.screensChanged() }
+        for entry in library.entries where !entry.store.document.isShelved || entry.store.loadError != nil {
+            controller(for: entry).showPaper(focus: false)
+            lastActiveID = entry.id
         }
-        if store.document.isShelved && store.loadError == nil {
-            showEdge()
-        } else {
-            showPaper(focus: true)
-        }
+        updateEdge()
+        if library.failure != nil { DispatchQueue.main.async { [weak self] in self?.showShelf() } }
+    }
+
+    private func observe(_ name: Notification.Name, action: @escaping @MainActor () -> Void) {
+        observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { action() }
+        })
     }
 
     private var workingScreen: NSScreen {
         NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main ?? NSScreen.screens[0]
     }
 
-    private func createPaper() {
+    private var currentPaper: PaperWindowController? {
+        windows.values.first { $0.isKey } ?? lastActiveID.flatMap { windows[$0] }
+    }
+
+    private func controller(for entry: NoteLibrary.Entry, initialFrame: NSRect? = nil) -> PaperWindowController {
+        if let existing = windows[entry.id] { return existing }
+        entry.store.shortcutLabel = GlobalShortcut.label(for: shortcutChoice)
+        entry.store.hotKeyStatus = shortcutStatus
+        let window = PaperWindowController(entry: entry, initialFrame: initialFrame)
+        window.onActivate = { [weak self] id in
+            guard let self else { return }
+            if let frontmost = NSWorkspace.shared.frontmostApplication,
+               frontmost.processIdentifier != ProcessInfo.processInfo.processIdentifier { previousApplication = frontmost }
+            lastActiveID = id
+            rebuildMenu()
+        }
+        window.onStateChange = { [weak self] in self?.updateEdge(); self?.rebuildMenu() }
+        window.onShelved = { [weak self] id, hadFocus in
+            guard let self, hadFocus else { return }
+            if let next = library.entries.reversed().compactMap({ self.windows[$0.id] }).first(where: { $0.id != id && $0.isVisible }) {
+                next.showPaper(focus: true)
+            } else { previousApplication?.activate() }
+        }
+        windows[entry.id] = window
+        return window
+    }
+
+    @objc func newPaper() {
+        guard let entry = library.createNote() else { showShelf(); rebuildMenu(); return }
         let screen = workingScreen.visibleFrame
-        let initial = store.document.frame ?? NoteFrame(CGRect(x: screen.maxX - 452, y: screen.midY - 170, width: 360, height: 340))
-        let frame = initial.fitted(to: NSScreen.screens.map(\.visibleFrame), fallback: screen)
-        // Hiding a titled window's title bar keeps its system frame. Use an
-        // undecorated panel so only the note's own rounded surface is visible.
-        paper = PaperPanel(contentRect: frame, styleMask: [.borderless, .closable, .resizable, .nonactivatingPanel], backing: .buffered, defer: false)
-        paper.title = String(localized: "Foldpin Note", bundle: languageSettings.bundle)
-        // This panel is the document window, not an auxiliary dialog. Window
-        // managers discover it through the standard accessibility window role.
-        paper.setAccessibilitySubrole(.standardWindow)
-        paper.onActivate = { [weak self] in self?.activatePaper() }
-        paper.onToggleCollapsed = { [weak self] in self?.toggleCollapsed() }
-        paper.onRequestClose = { [weak self] in self?.shelvePaper() }
-        paper.onEndResize = { [weak self] in self?.recordGeometry() }
-        paper.isReleasedWhenClosed = false
-        paper.isMovable = true
-        // Only the explicit header drag region initiates a native window drag.
-        paper.isMovableByWindowBackground = false
-        paper.hidesOnDeactivate = false
-        paper.becomesKeyOnlyIfNeeded = true
-        paper.isFloatingPanel = true
-        paper.isOpaque = false
-        paper.backgroundColor = .clear
-        // The system shadow also outlines this borderless panel's rectangular
-        // frame when it becomes key, outside the glass's rounded corners.
-        paper.hasShadow = false
-        expandedMaximumSize = paper.contentMaxSize
-        paper.contentMinSize = NSSize(width: NoteLayout.minimumWidth, height: NoteLayout.minimumExpandedHeight)
-        paper.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .fullScreenAuxiliary]
-        paper.delegate = self
-        let hosting = TransparentNoteHostingView(rootView: ContentView(store: store,
-            onPin: { [weak self] in self?.togglePin() },
-            onCollapse: { [weak self] in self?.toggleCollapsed() },
-            onShelve: { [weak self] in self?.shelvePaper() },
-            onRetryLoad: { [weak self] in self?.retryLoad() },
-            onRevealError: { [weak self] in self?.revealError() }))
-        hosting.sizingOptions = []
-        hosting.safeAreaRegions = []
-        paper.contentView = NoteWindowSurface(content: hosting)
-        setFrame(frame)
-        // A first-launch note has no stored frame yet.
-        if store.document.frame == nil { store.setFrame(frame) }
-        paper.level = store.document.isPinned ? .floating : .normal
-        paperShadow = NoteShadowWindow()
-        applyPaperPresentation()
+        let offset = CGFloat(windows.values.filter(\.isVisible).count % 8) * 24
+        let frame = NSRect(x: screen.maxX - 452 - offset, y: screen.midY - 170 - offset, width: 360, height: 340)
+        popover.close()
+        controller(for: entry, initialFrame: frame).showPaper(focus: true)
+    }
+
+    private func openPaper(_ id: UUID) {
+        guard let entry = library.entry(id) else { return }
+        popover.close()
+        controller(for: entry).showPaper(focus: true)
     }
 
     private func createEdge() {
@@ -117,17 +105,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         edge.backgroundColor = .clear
         edge.hasShadow = true
         edge.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .fullScreenAuxiliary]
-        edge.contentView = NSHostingView(rootView: EdgeView { [weak self] in self?.toggleShelf() })
+        edge.contentView = NSHostingView(rootView: EdgeView(library: library) { [weak self] in self?.toggleShelf() })
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: ShelfView(store: store, onOpen: { [weak self] in self?.showPaper(focus: true) }))
+        popover.contentViewController = NSHostingController(rootView: ShelfView(library: library,
+            onOpen: { [weak self] in self?.openPaper($0) }, onNew: { [weak self] in self?.newPaper() },
+            onRetry: { [weak self] in self?.retryLibrary() }))
+    }
+
+    private func updateEdge() {
+        guard edge != nil else { return }
+        let visible = workingScreen.visibleFrame
+        edge.setFrameOrigin(NSPoint(x: visible.maxX - 34, y: visible.midY - 42))
+        if library.failure != nil || library.entries.contains(where: { $0.store.document.isShelved }) || windows.values.allSatisfy({ !$0.isVisible }) {
+            edge.orderFrontRegardless()
+        } else { edge.orderOut(nil) }
+    }
+
+    private func toggleShelf() {
+        if popover.isShown { popover.close(); return }
+        guard let view = edge.contentView else { return }
+        popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minX)
+    }
+
+    @objc func showShelf() {
+        guard let button = statusItem?.button else { return }
+        popover.close()
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+    }
+
+    private func retryLibrary() {
+        library.reload()
+        applyLanguage()
+        for entry in library.entries where windows[entry.id] == nil && !entry.store.document.isShelved {
+            controller(for: entry).showPaper(focus: false)
+        }
+        updateEdge()
     }
 
     private func createMenu() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(systemSymbolName: "square.stack.3d.up", accessibilityDescription: "Foldpin")
         statusItem.button?.image?.isTemplate = true
-        statusItem.button?.setAccessibilityLabel(String(localized: "Foldpin menu bar", bundle: languageSettings.bundle))
-        statusItem.button?.toolTip = String(localized: "Foldpin · Notes and Settings", bundle: languageSettings.bundle)
         rebuildMenu()
     }
 
@@ -135,17 +153,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guard statusItem != nil else { return }
         let menu = NSMenu()
         func item(_ title: String, _ action: Selector, key: String = "") -> NSMenuItem {
-            let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
-            item.target = self; menu.addItem(item); return item
+            let value = NSMenuItem(title: title, action: action, keyEquivalent: key)
+            value.target = self; menu.addItem(value); return value
         }
-        _ = item(String(localized: "Open Note", bundle: languageSettings.bundle), #selector(openPaper))
-        let collapse = item(store.isCollapsed ? String(localized: "Expand Note", bundle: languageSettings.bundle) : String(localized: "Collapse to One Line", bundle: languageSettings.bundle), #selector(toggleCollapsed))
-        collapse.isEnabled = !store.document.isShelved && store.loadError == nil
-        let shelve = item(String(localized: "Shelve Note", bundle: languageSettings.bundle), #selector(shelvePaper))
-        shelve.isEnabled = !store.document.isShelved && store.loadError == nil
+        item(String(localized: "New Note", bundle: languageSettings.bundle), #selector(newPaper), key: "n").isEnabled = library.canCreate
+        _ = item(String(localized: "Open Shelf", bundle: languageSettings.bundle), #selector(showShelf))
+        menu.addItem(.separator())
+        let current = currentPaper
+        let enabled = current?.isVisible == true && current?.store.loadError == nil
+        item(current?.store.isCollapsed == true ? String(localized: "Expand Note", bundle: languageSettings.bundle) : String(localized: "Collapse to One Line", bundle: languageSettings.bundle), #selector(toggleCollapsed)).isEnabled = enabled
+        item(String(localized: "Shelve Note", bundle: languageSettings.bundle), #selector(shelvePaper)).isEnabled = enabled
         let pin = item(String(localized: "Pin Note", bundle: languageSettings.bundle), #selector(togglePin))
-        pin.state = store.document.isPinned ? .on : .off
-        pin.isEnabled = store.loadError == nil
+        pin.state = current?.store.document.isPinned == true ? .on : .off
+        pin.isEnabled = enabled
+        item(String(localized: "Shelve All Notes", bundle: languageSettings.bundle), #selector(shelveAll)).isEnabled = windows.values.contains { $0.isVisible }
         menu.addItem(.separator())
         _ = item(String(localized: "Settings…", bundle: languageSettings.bundle), #selector(showSettings), key: ",")
         let parent = NSMenuItem(title: String(localized: "Show / Shelve Shortcut", bundle: languageSettings.bundle), action: nil, keyEquivalent: "")
@@ -156,7 +177,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             choices.addItem(child)
         }
         parent.submenu = choices; menu.addItem(parent)
-        if store.hotKeyWarning != nil {
+        if shortcutStatus != 0 {
             let warning = NSMenuItem(title: String(localized: "Shortcut unavailable. Choose another combination.", bundle: languageSettings.bundle), action: nil, keyEquivalent: "")
             warning.isEnabled = false; menu.addItem(warning)
         }
@@ -167,23 +188,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func applyLanguage() {
-        store.localizationBundle = languageSettings.bundle
-        paper.title = String(localized: "Foldpin Note", bundle: languageSettings.bundle)
-        statusItem.button?.setAccessibilityLabel(String(localized: "Foldpin menu bar", bundle: languageSettings.bundle))
-        statusItem.button?.toolTip = String(localized: "Foldpin · Notes and Settings", bundle: languageSettings.bundle)
+        for entry in library.entries { entry.store.localizationBundle = languageSettings.bundle }
+        for window in windows.values { window.applyLanguage() }
+        statusItem?.button?.setAccessibilityLabel(String(localized: "Foldpin menu bar", bundle: languageSettings.bundle))
+        statusItem?.button?.toolTip = String(localized: "Foldpin · Notes and Settings", bundle: languageSettings.bundle)
         rebuildMenu()
         refreshApplicationMenu()
     }
 
     private func refreshApplicationMenu() {
-        if let menu = NSApp.mainMenu {
-            ApplicationMenuLocalization.update(menu, bundle: languageSettings.bundle)
-        }
-    }
-
-    @objc func openPaper() {
-        if store.isCollapsed { toggleCollapsed() }
-        showPaper(focus: true)
+        if let menu = NSApp.mainMenu { ApplicationMenuLocalization.update(menu, bundle: languageSettings.bundle) }
     }
 
     @objc func showSettings() {
@@ -198,350 +212,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    func showPaper(focus: Bool) {
-        // A menu or shortcut can arrive before the last move has been recorded.
-        if pendingGeometryUpdate != nil { recordGeometry() }
-        if focus, let frontmost = NSWorkspace.shared.frontmostApplication,
-           frontmost.processIdentifier != ProcessInfo.processInfo.processIdentifier {
-            previousApplication = frontmost
-        }
-        popover.close()
-        edge.orderOut(nil)
-        store.setShelved(false)
-        paper.level = store.document.isPinned ? .floating : .normal
-        applyPaperPresentation()
-        if focus {
-            activatePaper()
-            paper.makeKeyAndOrderFront(nil)
-            if !paperIsCollapsed { store.focusRequest += 1 }
-            else { paper.makeFirstResponder(nil) }
-        } else { paper.orderFrontRegardless() }
-        paperShadow?.show(below: paper)
-        rebuildMenu()
-    }
-
-    private func activatePaper() {
-        if let frontmost = NSWorkspace.shared.frontmostApplication,
-           frontmost.processIdentifier != ProcessInfo.processInfo.processIdentifier {
-            previousApplication = frontmost
-        }
-        NSApp.activate()
-        paper.makeKey()
-        paper.makeMain()
-    }
-
-    private func commitMarkedText() {
-        if let editor = paper.firstResponder as? NSTextView, editor.hasMarkedText() {
-            editor.unmarkText()
-            (editor as? PaperTextView)?.commitContent()
-        }
-    }
-
-    @objc func toggleCollapsed() {
-        guard store.loadError == nil else { return }
-        commitMarkedText()
-        recordGeometry()
-        let collapsing = !store.isCollapsed
-        store.setCollapsed(collapsing)
-        // Never hide unsaved content or its error behind a title-bar strip.
-        if collapsing && !store.flush() {
-            store.setCollapsed(false)
-            return
-        }
-        paper.makeFirstResponder(nil)
-        applyPaperPresentation()
-        if paper.isVisible {
-            paper.makeKeyAndOrderFront(nil)
-            paperShadow?.show(below: paper)
-            if !collapsing { store.focusRequest += 1 }
-        }
-        rebuildMenu()
-    }
-
-    private func revealError() {
-        guard paperIsCollapsed else { return }
-        recordGeometry()
-        store.setCollapsed(false)
-        applyPaperPresentation()
-        if paper.isVisible { paperShadow?.show(below: paper) }
-        rebuildMenu()
-    }
-
-    @objc func shelvePaper() {
-        guard store.loadError == nil else { return }
-        commitMarkedText()
-        recordGeometry()
-        store.setShelved(true)
-        guard store.flush() else {
-            store.setShelved(false)
-            revealError()
-            return
-        }
-        let hadFocus = paper.isKeyWindow
-        paperShadow?.orderOut(nil)
-        paper.orderOut(nil)
-        showEdge()
-        if hadFocus { previousApplication?.activate() }
-        rebuildMenu()
-    }
-
-    private func showEdge() {
-        let rect = paper.frame
-        let screen = NSScreen.screens.max { intersectionArea(rect, $0.visibleFrame) < intersectionArea(rect, $1.visibleFrame) } ?? workingScreen
-        let visible = screen.visibleFrame
-        edge.setFrameOrigin(NSPoint(x: visible.maxX - 34, y: visible.midY - 42))
-        edge.orderFrontRegardless()
-    }
-
-    private func intersectionArea(_ a: CGRect, _ b: CGRect) -> Double {
-        let intersection = a.intersection(b)
-        return intersection.isNull ? 0 : intersection.width * intersection.height
-    }
-
-    private func toggleShelf() {
-        if popover.isShown { popover.close(); return }
-        guard let view = edge.contentView else { return }
-        popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minX)
-    }
-
     private func togglePaper() {
-        if store.isCollapsed { openPaper() }
-        else if paper.isVisible && paper.isKeyWindow { shelvePaper() }
-        else { showPaper(focus: true) }
+        if let current = currentPaper {
+            if current.isKey && !current.store.isCollapsed { current.shelvePaper() }
+            else { current.openExpanded() }
+        } else if let entry = library.entries.last { controller(for: entry).openExpanded() }
+        else { newPaper() }
     }
 
-    @objc func togglePin() {
-        store.setPinned(!store.document.isPinned)
-        paper.level = store.document.isPinned ? .floating : .normal
-        if paper.isVisible { paperShadow?.show(below: paper) }
-        rebuildMenu()
+    @objc private func toggleCollapsed() { currentPaper?.toggleCollapsed() }
+    @objc private func togglePin() { currentPaper?.togglePin() }
+    @objc private func shelvePaper() { _ = currentPaper?.shelvePaper() }
+    @objc private func shelveAll() {
+        var failed: PaperWindowController?
+        for window in windows.values where window.isVisible {
+            if !window.shelvePaper(restoringFocus: false) { failed = window }
+        }
+        if let failed { failed.showPaper(focus: true) }
+        else { previousApplication?.activate() }
     }
 
     @objc private func changeShortcut(_ sender: NSMenuItem) { configureShortcut(sender.tag) }
-
     func configureShortcut(_ choice: Int) {
         shortcutChoice = choice == 1 ? 1 : 0
         UserDefaults.standard.set(shortcutChoice, forKey: "captureShortcut")
-        let status = shortcut.register(choice: shortcutChoice)
-        store.shortcutLabel = GlobalShortcut.label(for: shortcutChoice)
-        store.hotKeyStatus = status
-        rebuildMenu()
-    }
-
-    private func retryLoad() {
-        // Keep presentation and remembered geometry in sync with the reloaded file.
-        store.reload()
-        if store.loadError == nil {
-            applyPaperPresentation()
-            if store.document.isShelved {
-                paperShadow?.orderOut(nil)
-                paper.orderOut(nil)
-                showEdge()
-            } else { showPaper(focus: true) }
+        shortcutStatus = shortcut.register(choice: shortcutChoice)
+        for entry in library.entries {
+            entry.store.shortcutLabel = GlobalShortcut.label(for: shortcutChoice)
+            entry.store.hotKeyStatus = shortcutStatus
         }
         rebuildMenu()
-    }
-
-    private func setFrame(_ frame: CGRect) {
-        pendingGeometryUpdate?.cancel()
-        pendingGeometryUpdate = nil
-        restoringFrame = true
-        paper.setFrame(frame, display: true)
-        paperShadow?.updateFrame(for: paper)
-        restoringFrame = false
-    }
-
-    private var minimumPaperSize: NSSize {
-        NSSize(width: NoteLayout.minimumWidth,
-               height: paperIsCollapsed ? NoteLayout.headerHeight : NoteLayout.minimumExpandedHeight)
-    }
-
-    private func applyPaperPresentation() {
-        let expanded = store.document.frame?.rect ?? paper.frame
-        paperIsCollapsed = store.isCollapsed
-        let visible = NoteLayout.visibleFrame(expanded: expanded, collapsed: paperIsCollapsed)
-        let fitted = NoteFrame(visible).fitted(to: NSScreen.screens.map(\.visibleFrame),
-                                             fallback: workingScreen.visibleFrame,
-                                             minimumSize: minimumPaperSize)
-        restoringFrame = true
-        paper.contentMaxSize = expandedMaximumSize
-        paper.contentMinSize = minimumPaperSize
-        if paperIsCollapsed {
-            paper.contentMaxSize = NSSize(width: expandedMaximumSize.width, height: NoteLayout.headerHeight)
-        }
-        setFrame(fitted)
-        recordGeometry()
-    }
-
-    private func screensChanged() {
-        let frame = NoteFrame(paper.frame).fitted(to: NSScreen.screens.map(\.visibleFrame), fallback: workingScreen.visibleFrame,
-                                                minimumSize: minimumPaperSize)
-        setFrame(frame); recordGeometry()
-        if store.document.isShelved { popover.close(); showEdge() }
-    }
-
-    func windowDidMove(_ notification: Notification) { scheduleGeometryRecording() }
-    func windowDidResize(_ notification: Notification) {
-        paperShadow?.updateFrame(for: paper)
-        scheduleGeometryRecording()
-    }
-    func windowDidEndLiveResize(_ notification: Notification) { recordGeometry() }
-
-    private func scheduleGeometryRecording() {
-        guard paper != nil, !restoringFrame else { return }
-        pendingGeometryUpdate?.cancel()
-        // Geometry is not displayed by SwiftUI. Avoid publishing the entire
-        // document on every pixel of a drag or live resize.
-        pendingGeometryUpdate = Task { [weak self] in
-            do { try await Task.sleep(for: .milliseconds(150)) }
-            catch { return }
-            self?.recordGeometry()
-        }
-    }
-
-    private func recordGeometry() {
-        pendingGeometryUpdate?.cancel()
-        pendingGeometryUpdate = nil
-        guard paper != nil, !restoringFrame else { return }
-        store.recordWindowFrame(paper.frame, collapsed: paperIsCollapsed)
-    }
-    func windowShouldClose(_ sender: NSWindow) -> Bool {
-        guard sender === paper else { return true }
-        shelvePaper()
-        return false
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        openPaper(); return false
+        if let current = currentPaper { current.showPaper(focus: true) } else { showShelf() }
+        return false
     }
-
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
-
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard store.loadError == nil else { return .terminateNow }
-        recordGeometry()
-        guard store.flush() else {
-            showPaper(focus: true)
-            let alert = NSAlert()
-            alert.messageText = String(localized: "Your note could not be saved", bundle: languageSettings.bundle)
-            alert.informativeText = String(localized: "Your text is still in the window. Retry saving before quitting Foldpin.", bundle: languageSettings.bundle)
-            alert.addButton(withTitle: String(localized: "Back to Note", bundle: languageSettings.bundle))
-            alert.runModal()
-            return .terminateCancel
+        for entry in library.entries {
+            let saved = windows[entry.id]?.prepareToTerminate() ?? (entry.store.loadError != nil || entry.store.flush())
+            if !saved {
+                controller(for: entry).showPaper(focus: true)
+                let alert = NSAlert()
+                alert.messageText = String(localized: "Your note could not be saved", bundle: languageSettings.bundle)
+                alert.informativeText = String(localized: "Your text is still in the window. Retry saving before quitting Foldpin.", bundle: languageSettings.bundle)
+                alert.addButton(withTitle: String(localized: "Back to Note", bundle: languageSettings.bundle))
+                alert.runModal()
+                return .terminateCancel
+            }
         }
         return .terminateNow
     }
-
     func applicationWillTerminate(_ notification: Notification) {
-        pendingGeometryUpdate?.cancel()
         shortcut.stop()
-        if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
-        if let localeObserver { NotificationCenter.default.removeObserver(localeObserver) }
-        if let menuObserver { NotificationCenter.default.removeObserver(menuObserver) }
+        for observer in observers { NotificationCenter.default.removeObserver(observer) }
         languageSubscription?.cancel()
+        for window in windows.values { window.dispose() }
     }
-
     @objc private func quit() { NSApp.terminate(nil) }
-}
-
-final class PaperPanel: NSPanel {
-    var onActivate: (() -> Void)?
-    var onToggleCollapsed: (() -> Void)?
-    var onRequestClose: (() -> Void)?
-    var onEndResize: (() -> Void)?
-    private var resizeSession: ResizeSession?
-
-    private struct ResizeSession {
-        let edges: NoteResizeEdges
-        let initialFrame: NSRect
-        let initialPointer: NSPoint
-    }
-
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
-
-    override func sendEvent(_ event: NSEvent) {
-        if let session = resizeSession,
-           event.type == .leftMouseDragged || event.type == .leftMouseUp {
-            let pointer = convertPoint(toScreen: event.locationInWindow)
-            let delta = NSSize(width: pointer.x - session.initialPointer.x,
-                               height: pointer.y - session.initialPointer.y)
-            let nextFrame = session.edges.resizing(session.initialFrame, by: delta,
-                                                    minimum: minSize, maximum: maxSize)
-            if nextFrame != frame { setFrame(nextFrame, display: true) }
-            if event.type == .leftMouseUp { finishResize() }
-            return
-        }
-        // Explicit interaction should make this the front application's focused
-        // window; passive display still uses the nonactivating panel behavior.
-        if event.type == .leftMouseDown || event.type == .rightMouseDown {
-            onActivate?()
-        }
-        if event.type == .leftMouseDown, let surface = contentView as? NoteWindowSurface {
-            let edges = surface.resizeEdges(at: event.locationInWindow)
-            if !edges.isEmpty {
-                resizeSession = ResizeSession(edges: edges, initialFrame: frame,
-                                              initialPointer: convertPoint(toScreen: event.locationInWindow))
-                return
-            }
-        }
-        // Handle the titlebar before SwiftUI / glass dispatch can consume the
-        // empty representable's mouse-down. Keep the original system drag event.
-        if event.type == .leftMouseDown,
-           let surface = contentView as? NoteWindowSurface,
-           let dragRegion = surface.titlebarDragRegion(at: event.locationInWindow) {
-            dragRegion.mouseDown(with: event)
-            return
-        }
-        super.sendEvent(event)
-    }
-
-    private func finishResize() {
-        guard resizeSession != nil else { return }
-        resizeSession = nil
-        onEndResize?()
-    }
-
-    override func resignKey() {
-        finishResize()
-        super.resignKey()
-    }
-
-    override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
-        guard isKeyWindow, event.type == .keyDown, modifiers == .command else {
-            return super.performKeyEquivalent(with: event)
-        }
-        // Route shortcuts only in this focused paper, including its collapsed
-        // strip. Settings and other apps keep their native window commands.
-        switch event.charactersIgnoringModifiers?.lowercased() {
-        case "m" where onToggleCollapsed != nil:
-            if !event.isARepeat { onToggleCollapsed?() }
-            return true
-        case "w" where onRequestClose != nil:
-            if !event.isARepeat { performClose(nil) }
-            return true
-        default:
-            return super.performKeyEquivalent(with: event)
-        }
-    }
-
-    override func performClose(_ sender: Any?) {
-        // A borderless paper has no native close button. Use the same guarded
-        // save-and-shelve path as its custom close button and never delete data.
-        if let onRequestClose { onRequestClose() }
-        else { super.performClose(sender) }
-    }
-
-    override func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
-        if menuItem.action == #selector(NSWindow.performClose(_:)), onRequestClose != nil {
-            return isVisible
-        }
-        return super.validateMenuItem(menuItem)
-    }
-}
-
-final class EdgePanel: NSPanel {
-    override var canBecomeKey: Bool { false }
-    override var canBecomeMain: Bool { false }
 }

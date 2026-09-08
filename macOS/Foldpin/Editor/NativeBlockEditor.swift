@@ -1,7 +1,7 @@
 import AppKit
 import UniformTypeIdentifiers
 
-enum NoteEditorStatus {
+enum NoteEditorStatus: Equatable {
     case importingImage, insertionChanged, imageFailed
 
     func description(bundle: Bundle) -> String {
@@ -34,9 +34,15 @@ final class PaperTextView: NSTextView {
     var codeThemes = CodeThemeSettings.shared
     var noteColor: NSColor = .labelColor
     var content = NoteContent()
-    private var spans: [NoteBlockSpan] = []
+    private var spans: [NoteBlockSpan] = [] { didSet { invalidateBlockGeometry() } }
+    private var tableLayouts: [UUID: TableBlockLayout] = [:]
+    private var geometryCache: (bounds: NSRect, visible: NSRect, size: NSSize, origin: NSPoint,
+                                padding: CGFloat, viewport: NSTextRange?, surfaces: [BlockSurface])?
+    private var geometryExpiryScheduled = false
     private var editingTableCell: (id: UUID, row: Int, column: Int)?
     private(set) var tableCellEditor: TableCellTextView?
+    private(set) var tableControls: TableAddControls?
+    private var tableControlsUpdateScheduled = false
     private var updatingTableCell = false
     private(set) var selectedBlockID: UUID?
     private(set) var blockHandle: BlockHandleButton?
@@ -81,9 +87,11 @@ final class PaperTextView: NSTextView {
         blockHandle?.isHidden = true
         dismissSlashMenu()
         codeToolbar?.isHidden = true
+        tableControls?.isHidden = true
         historyEmptyBlock = nil
         if !observingChanges {
             NotificationCenter.default.addObserver(self, selector: #selector(textChanged(_:)), name: NSText.didChangeNotification, object: self)
+            NotificationCenter.default.addObserver(self, selector: #selector(textStorageProcessed(_:)), name: NSTextStorage.didProcessEditingNotification, object: textStorage)
             NotificationCenter.default.addObserver(self, selector: #selector(historyChanged(_:)), name: .NSUndoManagerDidUndoChange, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(historyChanged(_:)), name: .NSUndoManagerDidRedoChange, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(codeThemeChanged(_:)), name: CodeThemeSettings.didChange, object: codeThemes)
@@ -97,6 +105,7 @@ final class PaperTextView: NSTextView {
         applying = true
         defer { applying = false }
         images.totalCostLimit = 16 * 1_024 * 1_024
+        tableLayouts.removeAll()
         self.content = content
         drawsBackground = false
         // The app supplies both palettes; AppKit must not invert their colors
@@ -245,32 +254,33 @@ final class PaperTextView: NSTextView {
     }
 
     func codeBlockSurfaces() -> [CodeBlockSurface] {
-        guard let manager = textLayoutManager, let source = manager.textContentManager else { return [] }
         let origin = textContainerOrigin
         let width = max(0, (textContainer?.size.width ?? bounds.width) - 2 * (textContainer?.lineFragmentPadding ?? 0))
         guard width > 0 else { return [] }
-        return spans.compactMap { span in
-            guard span.block.kind == .code,
-                  let start = source.location(source.documentRange.location, offsetBy: span.textRange.location),
-                  let end = source.location(start, offsetBy: span.textRange.length),
-                  let range = NSTextRange(location: start, end: end) else { return nil }
-            // Skip off-screen blocks when TextKit has a viewport. Keep the
-            // range intact so wrapping and blank code lines share one surface.
-            if let viewport = manager.textViewportLayoutController.viewportRange,
-               !viewport.intersects(range), !viewport.contains(start),
-               !(range.isEmpty && start.compare(viewport.endLocation) == .orderedSame) { return nil }
-            var top = CGFloat.infinity
-            var bottom = -CGFloat.infinity
-            manager.enumerateTextSegments(in: range, type: .standard, options: .rangeNotRequired) { _, rect, _, _ in
-                top = min(top, rect.minY)
-                bottom = max(bottom, rect.maxY)
-                return true
-            }
-            guard top.isFinite, bottom.isFinite else { return nil }
-            return CodeBlockSurface(blockID: span.block.id,
-                                    rect: NSRect(x: origin.x + (textContainer?.lineFragmentPadding ?? 0), y: origin.y + top - 7,
-                                                 width: width, height: max(20, bottom - top) + 14))
+        let codeIDs = Set(spans.lazy.filter { $0.block.kind == .code }.map { $0.block.id })
+        guard !codeIDs.isEmpty else { return [] }
+        return blockSurfaces().compactMap { surface in
+            guard codeIDs.contains(surface.blockID) else { return nil }
+            return CodeBlockSurface(blockID: surface.blockID,
+                                    rect: NSRect(x: origin.x + (textContainer?.lineFragmentPadding ?? 0), y: surface.rect.minY - 7,
+                                                 width: width, height: max(20, surface.rect.height) + 14))
         }
+    }
+
+    private func invalidateBlockGeometry() { geometryCache = nil }
+
+    @objc private func textStorageProcessed(_ notification: Notification) {
+        // Includes attribute-only edits, undo and marked text, even while the
+        // document model deliberately waits for an editing transaction to end.
+        invalidateBlockGeometry()
+    }
+
+    override func layout() {
+        invalidateBlockGeometry()
+        super.layout()
+        // TextKit may finalize attachment positions after the edit callback.
+        // Reposition the active cell and its controls once that layout settles.
+        scheduleTableControlsUpdate()
     }
 
     override func updateTrackingAreas() {
@@ -288,12 +298,14 @@ final class PaperTextView: NSTextView {
         super.mouseEntered(with: event)
         updateCodeToolbar(at: convert(event.locationInWindow, from: nil))
         updateBlockHandle(at: convert(event.locationInWindow, from: nil))
+        updateTableControls(at: convert(event.locationInWindow, from: nil))
     }
 
     override func mouseMoved(with event: NSEvent) {
         super.mouseMoved(with: event)
         updateCodeToolbar(at: convert(event.locationInWindow, from: nil))
         updateBlockHandle(at: convert(event.locationInWindow, from: nil))
+        updateTableControls(at: convert(event.locationInWindow, from: nil))
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -301,6 +313,7 @@ final class PaperTextView: NSTextView {
         // Moving from text into the overlay is still inside the same code block.
         updateCodeToolbar(at: convert(event.locationInWindow, from: nil))
         updateBlockHandle(at: convert(event.locationInWindow, from: nil))
+        updateTableControls(at: convert(event.locationInWindow, from: nil))
     }
 
     func updateCodeToolbar(at point: NSPoint?) {
@@ -350,6 +363,7 @@ final class PaperTextView: NSTextView {
 
     func scheduleCodeToolbarUpdate() {
         scheduleBlockHandleUpdate()
+        scheduleTableControlsUpdate()
         guard !codeToolbarUpdateScheduled, codeToolbar != nil else { return }
         codeToolbarUpdateScheduled = true
         DispatchQueue.main.async { [weak self] in
@@ -365,6 +379,8 @@ final class PaperTextView: NSTextView {
         cancelBlockDrag()
         codeToolbar?.removeFromSuperview()
         blockHandle?.removeFromSuperview()
+        tableControls?.removeFromSuperview()
+        tableControls?.isHidden = true
         if let observedCodeClipView {
             NotificationCenter.default.removeObserver(self, name: NSView.boundsDidChangeNotification, object: observedCodeClipView)
         }
@@ -385,6 +401,7 @@ final class PaperTextView: NSTextView {
     }
 
     override func setFrameSize(_ newSize: NSSize) {
+        if frame.size != newSize { invalidateBlockGeometry() }
         super.setFrameSize(newSize)
         if abs(newSize.width - lastImageWidth) > 8 {
             lastImageWidth = newSize.width
@@ -398,7 +415,8 @@ final class PaperTextView: NSTextView {
             scheduleSyntaxHighlighting()
         }
         return BlockTextCodec.render(value, color: noteColor, width: max(80, bounds.width - textContainerInset.width * 2),
-                                     theme: codeThemes.theme, cachedSyntaxOnly: true, startingOrdinal: startingOrdinal) { [weak self] asset in
+                                     theme: codeThemes.theme, cachedSyntaxOnly: true, startingOrdinal: startingOrdinal,
+                                     tableLayout: { [unowned self] block, width in self.tableLayout(for: block, width: width) }) { [weak self] asset in
             guard let self else { return nil }
             if let cached = images.object(forKey: asset.id as NSUUID) { return cached }
             guard let url = file?.imageURL(asset.id), let image = NSImage(contentsOf: url) else { return nil }
@@ -554,9 +572,16 @@ final class PaperTextView: NSTextView {
             }
             guard NSMaxRange(span.range) <= storage.length,
                   styled.string == (storage.string as NSString).substring(with: span.range) else { continue }
+            // Compare against a stable snapshot of the existing runs. Avoid
+            // reassigning identical fonts/paragraph metadata during recoloring.
+            var updates: [(NSRange, [NSAttributedString.Key: Any])] = []
             styled.enumerateAttributes(in: NSRange(location: 0, length: styled.length)) { attrs, range, _ in
-                storage.setAttributes(attrs, range: NSRange(location: span.range.location + range.location, length: range.length))
+                let target = NSRange(location: span.range.location + range.location, length: range.length)
+                storage.enumerateAttributes(in: target) { existing, subrange, _ in
+                    if !(existing as NSDictionary).isEqual(to: attrs) { updates.append((subrange, attrs)) }
+                }
             }
+            for (range, attributes) in updates { storage.setAttributes(attributes, range: range) }
         }
         storage.endEditing()
         synchronizeTableCellEditor()
@@ -1500,7 +1525,14 @@ extension PaperTextView {
     func blockSurfaces() -> [BlockSurface] {
         guard let manager = textLayoutManager, let source = manager.textContentManager else { return [] }
         let origin = textContainerOrigin
-        return spans.compactMap { span in
+        let size = textContainer?.size ?? bounds.size
+        let padding = textContainer?.lineFragmentPadding ?? 0
+        let viewport = manager.textViewportLayoutController.viewportRange
+        if let cache = geometryCache, cache.bounds == bounds, cache.visible == visibleRect,
+           cache.size == size, cache.origin == origin, cache.padding == padding, cache.viewport == viewport {
+            return cache.surfaces
+        }
+        let surfaces: [BlockSurface] = spans.compactMap { span in
             guard let start = source.location(source.documentRange.location, offsetBy: span.textRange.location),
                   let end = source.location(start, offsetBy: span.textRange.length),
                   let range = NSTextRange(location: start, end: end) else { return nil }
@@ -1519,6 +1551,17 @@ extension PaperTextView {
                              height: max(20, bottom - top)),
                 firstLine: first.offsetBy(dx: origin.x, dy: origin.y))
         }
+        geometryCache = (bounds, visibleRect, size, origin, padding, manager.textViewportLayoutController.viewportRange, surfaces)
+        // Share one event's geometry between drawing and both hover controls.
+        // Never retain it across arbitrary asynchronous TextKit layout passes.
+        if !geometryExpiryScheduled {
+            geometryExpiryScheduled = true
+            DispatchQueue.main.async { [weak self] in
+                self?.geometryExpiryScheduled = false
+                self?.invalidateBlockGeometry()
+            }
+        }
+        return surfaces
     }
 
     func updateBlockHandle(at point: NSPoint?) {
@@ -1664,8 +1707,15 @@ extension PaperTextView {
         convert.isEnabled = !block.kind.isAttachment
         menu.addItem(convert)
         if block.kind == .table {
+            menu.addItem(.separator())
             menu.addItem(item(String(localized: "Add Row", bundle: bundle), .addTableRow, symbol: "plus"))
             menu.addItem(item(String(localized: "Add Column", bundle: bundle), .addTableColumn, symbol: "plus"))
+            let headerRow = item(String(localized: "Header Row", bundle: bundle), .toggleHeaderRow, symbol: "rectangle.split.1x2")
+            headerRow.state = block.table?.headerRow == true ? .on : .off
+            menu.addItem(headerRow)
+            let headerColumn = item(String(localized: "Header Column", bundle: bundle), .toggleHeaderColumn, symbol: "rectangle.split.2x1")
+            headerColumn.state = block.table?.headerColumn == true ? .on : .off
+            menu.addItem(headerColumn)
         }
         menu.addItem(.separator())
         menu.addItem(item(String(localized: "Copy Block", bundle: bundle), .copy, symbol: "doc.on.clipboard", key: "c"))
@@ -1680,7 +1730,9 @@ extension PaperTextView {
 
     @objc private func performBlockMenuAction(_ sender: NSMenuItem) {
         guard let command = sender.representedObject as? BlockMenuCommand else { return }
-        performBlockAction(command.action, blockID: command.blockID)
+        if command.action == .addTableRow || command.action == .addTableColumn {
+            addTableDimension(blockID: command.blockID, addingRow: command.action == .addTableRow)
+        } else { performBlockAction(command.action, blockID: command.blockID) }
     }
 
     @discardableResult
@@ -1710,6 +1762,11 @@ extension PaperTextView {
             } else {
                 for row in table.rows.indices { table.rows[row].append("") }
             }
+            next.blocks[index].table = table
+        case .toggleHeaderRow, .toggleHeaderColumn:
+            guard var table = next.blocks[index].table else { return false }
+            if action == .toggleHeaderRow { table.headerRow.toggle() }
+            else { table.headerColumn.toggle() }
             next.blocks[index].table = table
         case .moveUp, .moveDown:
             destination += action == .moveUp ? -1 : 1
@@ -1874,6 +1931,17 @@ extension PaperTextView {
 
 // MARK: - Numbered lists and native table cells
 extension PaperTextView {
+    private func tableLayout(for block: NoteBlock, width: CGFloat) -> TableBlockLayout {
+        let table = block.table ?? NoteTable()
+        let previous = tableLayouts[block.id]
+        if let previous, previous.table == table, previous.width == max(80, width) { return previous }
+        let layout = TableBlockLayout(table: table, width: width, reusing: previous)
+        // At most one current snapshot per table, with a bounded editor cache.
+        if tableLayouts.count >= 16, previous == nil { tableLayouts.removeAll() }
+        tableLayouts[block.id] = layout
+        return layout
+    }
+
     private func renumberListsIfNeeded() -> Bool {
         let source = string as NSString
         let mismatch = spans.enumerated().contains { index, span in
@@ -1902,16 +1970,88 @@ extension PaperTextView {
     }
 
     func tableFrame(blockID: UUID) -> NSRect? {
-        guard let block = content.blocks.first(where: { $0.id == blockID }), let table = block.table,
-              let surface = blockSurfaces().first(where: { $0.blockID == blockID }) else { return nil }
-        let layout = TableBlockLayout(table: table, width: max(80, bounds.width - textContainerInset.width * 2 - 2))
-        return NSRect(origin: surface.firstLine.origin, size: layout.size)
+        guard let span = spans.first(where: { $0.block.id == blockID }), span.block.table != nil,
+              blockSurfaces().contains(where: { $0.blockID == blockID }),
+              let manager = textLayoutManager, let source = manager.textContentManager,
+              let location = source.location(source.documentRange.location, offsetBy: span.textRange.location),
+              let fragment = manager.textLayoutFragment(for: location) else { return nil }
+        // Standard text segments include baseline / paragraph leading, so their
+        // top edge is not the attachment's top. Use TextKit's actual image frame.
+        let attachment = fragment.frameForTextAttachment(at: location)
+        guard attachment.width > 0, attachment.height > 0 else { return nil }
+        let layout = tableLayout(for: span.block, width: attachment.width)
+        let origin = NSPoint(x: textContainerOrigin.x + fragment.layoutFragmentFrame.minX + attachment.minX,
+                             y: textContainerOrigin.y + fragment.layoutFragmentFrame.minY + attachment.minY)
+        return NSRect(origin: origin, size: layout.size)
+    }
+
+    func updateTableControls(at point: NSPoint?) {
+        guard !isHiddenOrHasHiddenAncestor, blockDragState == nil, enclosingScrollView != nil else {
+            tableControls?.isHidden = true; return
+        }
+        let hovered = point.flatMap { point in
+            content.blocks.first { block in
+                guard block.table != nil, let grid = tableFrame(blockID: block.id) else { return false }
+                return visibleRect.contains(point) && NSRect(x: grid.minX, y: grid.minY,
+                    width: grid.width + 24, height: grid.height + TableBlockLayout.controlsHeight).contains(point)
+            }?.id
+        }
+        let controlID: UUID? = tableControls.flatMap { controls in
+            guard let point, controls.containsControl(at: controls.convert(point, from: self)) else { return nil }
+            return controls.blockID
+        }
+        guard let id = hovered ?? controlID ?? editingTableCell?.id ?? selectedBlockID,
+              let grid = tableFrame(blockID: id), grid.intersects(visibleRect) else {
+            tableControls?.isHidden = true; return
+        }
+        let controls: TableAddControls
+        if let existing = tableControls { controls = existing }
+        else {
+            controls = TableAddControls()
+            controls.onAdd = { [weak self] id, row in self?.addTableDimension(blockID: id, addingRow: row) }
+            controls.onPointerChange = { [weak self] point in
+                guard let self else { return }
+                updateTableControls(at: convert(point, from: nil))
+            }
+            tableControls = controls
+        }
+        let container = enclosingScrollView!
+        if controls.superview !== container {
+            controls.removeFromSuperview()
+            controls.frame = container.bounds
+            container.addSubview(controls, positioned: .above, relativeTo: nil)
+        }
+        controls.blockID = id
+        controls.update(grid: grid, viewport: visibleRect, editor: self, bundle: bundle,
+                        enabled: isEditable && !hasMarkedText() && tableCellEditor?.hasMarkedText() != true)
+    }
+
+    private func scheduleTableControlsUpdate() {
+        guard !tableControlsUpdateScheduled, tableControls != nil || editingTableCell != nil else { return }
+        tableControlsUpdateScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            tableControlsUpdateScheduled = false
+            synchronizeTableCellEditor()
+            updateTableControls(at: window.map { self.convert($0.mouseLocationOutsideOfEventStream, from: nil) })
+        }
+    }
+
+    @discardableResult
+    func addTableDimension(blockID: UUID, addingRow: Bool) -> Bool {
+        guard performBlockAction(addingRow ? .addTableRow : .addTableColumn, blockID: blockID),
+              let table = content.blocks.first(where: { $0.id == blockID })?.table else { return false }
+        beginTableCellEditing(blockID: blockID, row: addingRow ? table.rows.count - 1 : 0,
+                              column: addingRow ? 0 : table.columnCount - 1)
+        if let cell = tableCellEditor { scrollToVisible(cell.frame) }
+        scheduleTableControlsUpdate()
+        return true
     }
 
     private func beginTableCellEditing(at point: NSPoint) -> Bool {
         for block in content.blocks where block.kind == .table {
-            guard let table = block.table, let frame = tableFrame(blockID: block.id), frame.contains(point) else { continue }
-            let layout = TableBlockLayout(table: table, width: frame.width)
+            guard block.table != nil, let frame = tableFrame(blockID: block.id), frame.contains(point) else { continue }
+            let layout = tableLayout(for: block, width: frame.width)
             if let cell = layout.cell(at: NSPoint(x: point.x - frame.minX, y: point.y - frame.minY)) {
                 beginTableCellEditing(blockID: block.id, row: cell.row, column: cell.column)
                 if let editor = tableCellEditor {
@@ -1933,13 +2073,16 @@ extension PaperTextView {
         dismissSlashMenu()
         setSelectedRange(NSRange(location: span.range.location, length: 0))
         scrollRangeToVisible(span.textRange)
-        if let manager = textLayoutManager { manager.ensureLayout(for: manager.documentRange) }
+        if let manager = textLayoutManager, let source = manager.textContentManager,
+           let start = source.location(source.documentRange.location, offsetBy: span.textRange.location),
+           let end = source.location(start, offsetBy: span.textRange.length),
+           let range = NSTextRange(location: start, end: end) { manager.ensureLayout(for: range) }
         editingTableCell = (blockID, row, column)
         let cell = TableCellTextView(usingTextLayoutManager: true)
         cell.isRichText = false
         cell.allowsUndo = false
         cell.hostUndoManager = undoManager
-        cell.font = TableBlockLayout.font
+        cell.font = table.isHeader(row: row, column: column) ? TableBlockLayout.headerFont : TableBlockLayout.font
         cell.textColor = noteColor
         cell.drawsBackground = true
         cell.backgroundColor = .textBackgroundColor
@@ -1967,6 +2110,7 @@ extension PaperTextView {
         synchronizeTableCellEditor()
         cell.setSelectedRange(NSRange(location: (cell.string as NSString).length, length: 0))
         window?.makeFirstResponder(cell)
+        scheduleTableControlsUpdate()
     }
 
     func updateTableCell(blockID: UUID, row: Int, column: Int, text: String) {
@@ -1981,9 +2125,21 @@ extension PaperTextView {
         // undo stack. The active cell stays alive, including its IME selection.
         applying = true
         super.insertText(render(NoteContent(blocks: [block])), replacementRange: spans[index].textRange)
+        // An attachment remains exactly one UTF-16 unit. All other ranges and
+        // their native attributes are unchanged, so no whole-note read/restyle.
+        spans[index].block = block
+        content.blocks[index] = block
+        if index > 0 {
+            let separator = NSRange(location: spans[index].range.location - 1, length: 1)
+            textStorage?.addAttribute(.nextBlock, value: BlockTextCodec.metadata(block), range: separator)
+        }
         applying = false
         selectedRanges = previousSelection
-        commitContent()
+        synchronizeTableCellEditor()
+        updateTypingStyle()
+        needsDisplay = true
+        scheduleCodeToolbarUpdate()
+        onContentChange?(content)
     }
 
     private func synchronizeTableCellEditor(restoringText: Bool = false) {
@@ -1999,12 +2155,15 @@ extension PaperTextView {
             cell.string = table.rows[editing.row][editing.column]
             cell.setSelectedRange(NSRange(location: min(caret, (cell.string as NSString).length), length: 0))
         }
-        cell.textColor = noteColor
+        if cell.textColor != noteColor { cell.textColor = noteColor }
+        let font = table.isHeader(row: editing.row, column: editing.column) ? TableBlockLayout.headerFont : TableBlockLayout.font
+        if cell.font != font { cell.font = font }
         if let frame = tableFrame(blockID: editing.id) {
-            let layout = TableBlockLayout(table: table, width: frame.width)
+            let layout = tableLayout(for: block, width: frame.width)
             let rect = layout.rect(row: editing.row, column: editing.column).offsetBy(dx: frame.minX, dy: frame.minY)
             if cell.frame != rect { cell.frame = rect }
-            cell.textContainer?.containerSize = NSSize(width: max(12, rect.width - TableBlockLayout.padding * 2), height: .greatestFiniteMagnitude)
+            let size = NSSize(width: max(12, rect.width - TableBlockLayout.padding * 2), height: .greatestFiniteMagnitude)
+            if cell.textContainer?.containerSize != size { cell.textContainer?.containerSize = size }
         }
     }
 
@@ -2041,5 +2200,6 @@ extension PaperTextView {
         tableCellEditor?.removeFromSuperview()
         tableCellEditor = nil
         editingTableCell = nil
+        scheduleTableControlsUpdate()
     }
 }

@@ -80,6 +80,7 @@ final class NativeCodeTheme {
     private let light: CodeThemeDefinition
     private let dark: CodeThemeDefinition
     private var tokens: [String: TokenStyle] = [:]
+    private var tokenAttributes: [String: [NSAttributedString.Key: Any]] = [:]
 
     init(light: CodeThemeDefinition, dark: CodeThemeDefinition? = nil) {
         self.light = light
@@ -111,6 +112,23 @@ final class NativeCodeTheme {
                                fontStyle: first.fontStyle ?? "")
         tokens[key] = style
         return style
+    }
+
+    func attributes(for token: CodeToken, language: CodeLanguage) -> [NSAttributedString.Key: Any] {
+        let key = token.rawValue + ":" + language.rawValue
+        if let cached = tokenAttributes[key] { return cached }
+        let style = self.token(token, language: language)
+        let traits = style.fontStyle.split(separator: " ")
+        var font = NSFont.monospacedSystemFont(ofSize: 13, weight: traits.contains("bold") ? .bold : .regular)
+        if traits.contains("italic") { font = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask) }
+        // Keep the adaptive NSColor, not a color resolved for today's appearance.
+        let attributes: [NSAttributedString.Key: Any] = [
+            .foregroundColor: style.foreground, .font: font,
+            .underlineStyle: traits.contains("underline") ? NSUnderlineStyle.single.rawValue : 0,
+            .strikethroughStyle: traits.contains("strikethrough") ? NSUnderlineStyle.single.rawValue : 0
+        ]
+        tokenAttributes[key] = attributes
+        return attributes
     }
 
     private func resolve(_ token: CodeToken, language: CodeLanguage, theme: CodeThemeDefinition) -> ThemeTokenSettings {

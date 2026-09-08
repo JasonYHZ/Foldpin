@@ -22,8 +22,10 @@ enum NoteFileError: LocalizedError {
 
 struct NoteFile {
     let url: URL
+    var assetDirectory: URL? = nil
+    var expectedID: UUID? = nil
 
-    var assetsURL: URL { url.deletingLastPathComponent().appendingPathComponent("assets", isDirectory: true) }
+    var assetsURL: URL { assetDirectory ?? url.deletingLastPathComponent().appendingPathComponent("assets", isDirectory: true) }
     var backupsURL: URL { url.deletingLastPathComponent().appendingPathComponent("backups", isDirectory: true) }
 
     func imageURL(_ id: UUID, original: Bool = false) -> URL {
@@ -31,14 +33,19 @@ struct NoteFile {
     }
 
     func load() throws -> NoteDocument {
-        guard FileManager.default.fileExists(atPath: url.path) else { return NoteDocument() }
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            if expectedID != nil { throw CocoaError(.fileReadNoSuchFile) }
+            return NoteDocument()
+        }
         let document = try JSONDecoder().decode(NoteDocument.self, from: Data(contentsOf: url))
         try document.validate()
+        if let expectedID, document.id != expectedID { throw NoteFileError.invalidContent }
         return document
     }
 
     func save(_ document: NoteDocument) throws {
         try document.validate()
+        if let expectedID, document.id != expectedID { throw NoteFileError.invalidContent }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(document)

@@ -133,6 +133,7 @@ enum BlockTextCodec {
 
     static func render(_ content: NoteContent, color: NSColor, width: CGFloat,
                        theme: NativeCodeTheme? = nil, cachedSyntaxOnly: Bool = false, startingOrdinal: Int = 1,
+                       tableLayout: ((NoteBlock, CGFloat) -> TableBlockLayout)? = nil,
                        image: (NoteImage) -> NSImage?) -> NSAttributedString {
         let theme = theme ?? .github
         let result = NSMutableAttributedString(string: "")
@@ -163,9 +164,9 @@ enum BlockTextCodec {
             if block.kind == .divider || block.kind == .table {
                 let attachment = NSTextAttachment()
                 if let table = block.table {
-                    let layout = TableBlockLayout(table: table, width: max(80, width - 2))
+                    let layout = tableLayout?(block, max(80, width - 2)) ?? TableBlockLayout(table: table, width: max(80, width - 2))
                     attachment.image = layout.image(color: color)
-                    attachment.bounds = NSRect(origin: .zero, size: layout.size)
+                    attachment.bounds = NSRect(origin: .zero, size: layout.attachmentSize)
                 } else {
                     let size = NSSize(width: max(80, width - 2), height: 20)
                     attachment.image = NSImage(size: size, flipped: true) { bounds in
@@ -279,23 +280,24 @@ enum BlockTextCodec {
         let analysis = cachedOnly ? engine.cached(text.string, language: language)
             : engine.analyzeSynchronously(text.string, language: language)
         guard let analysis else { return }
+        let theme = theme ?? .github
+        var pending: (token: CodeToken, language: CodeLanguage, range: NSRange)?
         for span in analysis.spans {
             guard let token = CodeToken(highlightScope: span.scope, language: span.language) else { continue }
-            applyToken(token, to: text, range: span.range, language: span.language, theme: theme ?? .github)
+            if let last = pending, last.token == token, last.language == span.language,
+               NSMaxRange(last.range) == span.range.location {
+                pending?.range.length += span.range.length
+            } else {
+                if let last = pending { applyToken(last.token, to: text, range: last.range, language: last.language, theme: theme) }
+                pending = (token, span.language, span.range)
+            }
         }
+        if let last = pending { applyToken(last.token, to: text, range: last.range, language: last.language, theme: theme) }
     }
 
     static func applyToken(_ token: CodeToken, to text: NSMutableAttributedString, range: NSRange,
                            language: CodeLanguage, theme: NativeCodeTheme) {
         guard range.length > 0 else { return }
-        let style = theme.token(token, language: language)
-        let traits = style.fontStyle.split(separator: " ")
-        var font = NSFont.monospacedSystemFont(ofSize: 13, weight: traits.contains("bold") ? .bold : .regular)
-        if traits.contains("italic") { font = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask) }
-        text.addAttributes([
-            .foregroundColor: style.foreground, .font: font,
-            .underlineStyle: traits.contains("underline") ? NSUnderlineStyle.single.rawValue : 0,
-            .strikethroughStyle: traits.contains("strikethrough") ? NSUnderlineStyle.single.rawValue : 0
-        ], range: range)
+        text.addAttributes(theme.attributes(for: token, language: language), range: range)
     }
 }

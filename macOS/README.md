@@ -1,4 +1,8 @@
-# Foldpin macOS · M1 单纸片原型
+# Foldpin macOS · 原生多纸片原型
+
+激活 Foldpin 后按 **⌘N** 新建纸片；菜单栏「新建纸片」与收纳架「＋」也可创建。⌘W 保存并收纳当前纸片，⌘M 独立折叠；菜单栏「打开收纳架」找回任意纸片。「收起所有纸片」只操作当前可见集合。表格底部与右侧加号分别增行 / 列，六点菜单增加标题行 / 标题列。架构、迁移与验证见[多窗口说明](../docs/engineering/multi-note-windows.md)。
+
+2026-09-08 性能整理已完成代码属性缓存、差异更新、事件内几何复用、表格局部刷新与界面状态去重。125 项检查和 Debug 构建通过；1 / 10 / 30 张合成原生窗口的内存与主线程操作已做前后对照。见[优化与性能报告](../docs/engineering/editor-performance.md)。下文“多纸片未测”是此前阶段记录；该报告为多窗口接入前的组件负载记录，GPU 完整帧率仍未验证。
 
 普通 ⌘V 支持 Markdown 自动转换；⌘⇧⌥V 或「编辑 → 粘贴为纯文本」保留源字符。代码块和表格单元格内按字面文本粘贴。范围、原生插入和保存行为见 [Markdown 粘贴](../docs/engineering/markdown-paste.md)。
 
@@ -80,7 +84,7 @@ Git 仓库根目录是产品目录 `../`，统一管理本文、工程、PRD 与
 
 转换去掉输入前缀，保留后续文字和可用格式，光标继续留在当前块，可用 **⌘Z / ⇧⌘Z** 撤销 / 重做。正文仍存为结构化 JSON；这些是输入快捷方式，不会自动把粘贴内容或旧笔记当 Markdown 解析，也不在句中、代码块内、选区替换或输入法组合期间触发。当前支持四级标题，尚无嵌套列表、行内 Markdown 自动转换或完整 Markdown 导入 / 导出。
 
-第一阶段使用 **NSTextView + TextKit 2**，没有 WebView 或第三方编辑器依赖。六点手柄现可直接拖动调整区块顺序，蓝线表示插入位置，靠近上下边缘自动滚动；Esc 取消，⌘Z 撤销移动。仍是单纸片原型；语音、多块 / 跨纸片拖动、嵌套列表、图片图注 / 原图预览和多纸片休眠尚未实现。实际 UI 的已测 / 未测边界见 [原生编辑器验证](../docs/engineering/native-editor-validation.md)。
+第一阶段使用 **NSTextView + TextKit 2**，没有 WebView 或第三方编辑器依赖。六点手柄现可直接拖动调整区块顺序，蓝线表示插入位置，靠近上下边缘自动滚动；Esc 取消，⌘Z 撤销移动。现支持多纸片；语音、多块 / 跨纸片拖动、嵌套列表、图片图注 / 原图预览和多纸片休眠尚未实现。实际 UI 的已测 / 未测边界见 [原生编辑器验证](../docs/engineering/native-editor-validation.md)。
 
 代码采用 [GitHub 主题](https://github.com/primer/github-vscode-theme)风格配色：关键字、字符串、注释、数字与函数名分别着色，整个块使用圆角底色、细边线和留白，颜色跟随当前主题。语言为纯文本时保留等宽和块背景；在代码块菜单选择 Swift、JavaScript / TypeScript、Python、JSON、SQL 或 Shell 后显示相应高亮。所有渲染在本机完成，留白不改变原始代码；并非 GitHub 语法引擎的完整移植。许可随应用打包，见 [ThirdPartyNotices.txt](Foldpin/ThirdPartyNotices.txt)。
 
@@ -158,7 +162,10 @@ swift test --disable-sandbox --package-path . --scratch-path /private/tmp/Foldpi
 | [BlockTextCodec.swift](Foldpin/Editor/BlockTextCodec.swift) | 结构化内容与 NSTextStorage 互转、样式和代码高亮 |
 | [NoteContent.swift](Foldpin/Core/NoteContent.swift) | 块文档、行内格式、附件引用与 schema 校验 |
 | [MarkdownBlockShortcut.swift](Foldpin/Core/MarkdownBlockShortcut.swift) | 常用 Markdown 前缀与现有结构化块的输入规则 |
-| [ShelfView.swift](Foldpin/ShelfView.swift) | 收纳入口与单纸片摘要 |
+| [ShelfView.swift](Foldpin/ShelfView.swift) | 多纸片收纳列表、状态与新建入口 |
+| [NoteLibrary.swift](Foldpin/Core/NoteLibrary.swift) | 独立纸片文件与安全迁移 |
+| [PaperWindowController.swift](Foldpin/PaperWindowController.swift) | 单张纸片窗口、保存、折叠与撤销生命周期 |
+| [PaperPanel.swift](Foldpin/PaperPanel.swift) | 原生窗口事件、拖动、缩放与快捷键 |
 | [GlobalShortcut.swift](Foldpin/GlobalShortcut.swift) | 系统注册快捷键与释放，不做全量键盘监听 |
 | [Core](Foldpin/Core) | 可测试的数据模型、保存流程和窗口几何算法 |
 | [Tests](Tests) | 自动测试 |
@@ -180,12 +187,14 @@ swift test --disable-sandbox --package-path . --scratch-path /private/tmp/Foldpi
 数据在应用沙盒的 Application Support 中，当前 Bundle ID 对应：
 
 ```text
-~/Library/Containers/dev.jasonyu.Foldpin/Data/Library/Application Support/Foldpin/note.json
+~/Library/Containers/dev.jasonyu.Foldpin/Data/Library/Application Support/Foldpin/notes/<UUID>.json
 ```
+
+旧根目录 `note.json` 首次启动时先备份到 `backups/legacy-note-<UUID>.json`，迁移到独立 UUID 文件，原文件保留；`library-migration.json` 记录完成状态。所有纸片共用根目录 `assets/`，保留既有图片引用。
 
 当前文件为 v2，保存稳定 ID、结构化 content、修改时间及原有窗口状态；正文纯文本、标题和摘要均从 content 派生。读取旧 v1 时在内存转为普通段落，首次写入 v2 前把原始字节备份到同目录 `backups/note-v1-<UUID>.json`，备份失败不会覆盖旧文件。旧文件缺少 `isCollapsed` 时仍按 false 读取。
 
-图片放在同目录 `assets/<UUID>.original` 和 `assets/<UUID>.png`，分别为原始文件与预览。文档保存前确认附件文件存在。删除图片块不立即清理附件，以保留撤销 / 重做和备份的恢复能力。
+图片放在纸片库根目录 `assets/<UUID>.original` 和 `assets/<UUID>.png`，分别为原始文件与预览。文档保存前确认附件文件存在。删除图片块不立即清理附件，以保留撤销 / 重做和备份的恢复能力。
 
 折叠条的实际顶边和宽度用于更新展开坐标，34 点的显示高度不会覆盖记住的展开高度。正文编辑后约 450 ms 合并保存；窗口移动/缩放通知先合并 150 ms，再进入保存队列。折叠、收起和退出前立即记录实际窗口位置并写入，唤出时也先采纳尚未记录的位置，避免短时间内操作导致位置回跳。原子替换减少写入中断造成半个 JSON 的风险，但不等于完整备份系统。
 
@@ -197,7 +206,7 @@ swift test --disable-sandbox --package-path . --scratch-path /private/tmp/Foldpi
 
 ## 当前范围与后续验证
 
-已具备单纸片编辑、手动置顶、单行折叠、边缘收纳/恢复、菜单栏设置、全局快捷键注册与切换、自动保存和错误反馈。已增加原生块编辑第一阶段与清单、图片、基础代码高亮和 Markdown 输入快捷方式；完整的多纸片、搜索、Markdown 导入 / 导出、归档/废纸篓、语音和 AI 尚未实现。
+已具备多纸片新建、独立编辑与保存、手动置顶、单行折叠、边缘收纳/恢复、菜单栏设置、全局快捷键注册与切换、自动保存和错误反馈。已增加原生块编辑第一阶段与清单、图片、基础代码高亮和 Markdown 输入快捷方式；搜索、Markdown 文件导入 / 导出、归档/废纸篓、语音和 AI 尚未实现；剪贴板 Markdown 解析已支持。
 
 验证证据与未测项见 [M1 验证记录](../docs/engineering/m1-validation.md)。真实中文输入法的候选词组合、全屏/Spaces、Stage Manager、不同显示器缩放与拔插仍应以实际设备测试为准；数据层测试不能代替这些场景。
 

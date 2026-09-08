@@ -11,7 +11,8 @@ import Testing
         ("js-minified", .javascript, "const a={name:'Foldpin',count:42};function f(x){return x+1;}"),
         ("json-minified", .json, "{\"name\":\"Foldpin\",\"enabled\":true,\"count\":42},")
     ]
-    let sizes = [10_000, 24_000, 50_000, 100_000, 200_000]
+    let sizes = ProcessInfo.processInfo.environment["FOLDPIN_SYNTAX_BENCHMARK_SIZES"]?
+        .split(separator: ",").compactMap { Int($0) } ?? [10_000, 24_000, 50_000, 100_000, 200_000]
     let clock = ContinuousClock()
     func ms(_ start: ContinuousClock.Instant) -> Double {
         let duration = start.duration(to: clock.now).components

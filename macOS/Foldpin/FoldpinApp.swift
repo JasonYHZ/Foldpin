@@ -24,7 +24,8 @@ struct FoldpinApp: App {
                 }.keyboardShortcut(",")
             }
             CommandGroup(replacing: .newItem) {
-                Button(String(localized: "Open Note", bundle: languageSettings.bundle)) { delegate.openPaper() }.keyboardShortcut("n")
+                Button(String(localized: "New Note", bundle: languageSettings.bundle)) { delegate.newPaper() }.keyboardShortcut("n")
+                Button(String(localized: "Open Shelf", bundle: languageSettings.bundle)) { delegate.showShelf() }
             }
             CommandGroup(after: .pasteboard) {
                 Button(String(localized: "Paste as Plain Text", bundle: languageSettings.bundle)) {

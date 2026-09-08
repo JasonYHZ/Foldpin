@@ -158,6 +158,24 @@ struct NoteImage: Codable, Equatable, Sendable {
 /// Rows and cells are document data; grid geometry and colors are only display.
 struct NoteTable: Codable, Equatable, Sendable {
     var rows: [[String]] = Array(repeating: Array(repeating: "", count: 2), count: 3)
+    var headerRow = false
+    var headerColumn = false
+
+    init(rows: [[String]] = Array(repeating: Array(repeating: "", count: 2), count: 3), headerRow: Bool = false, headerColumn: Bool = false) {
+        self.rows = rows
+        self.headerRow = headerRow
+        self.headerColumn = headerColumn
+    }
+
+    private enum CodingKeys: String, CodingKey { case rows, headerRow, headerColumn }
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        rows = try values.decode([[String]].self, forKey: .rows)
+        headerRow = try values.decodeIfPresent(Bool.self, forKey: .headerRow) ?? false
+        headerColumn = try values.decodeIfPresent(Bool.self, forKey: .headerColumn) ?? false
+    }
+
+    func isHeader(row: Int, column: Int) -> Bool { (headerRow && row == 0) || (headerColumn && column == 0) }
 
     var columnCount: Int { rows.first?.count ?? 0 }
     var plainText: String { rows.map { $0.joined(separator: "\t") }.joined(separator: "\n") }

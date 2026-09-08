@@ -1,7 +1,7 @@
 import AppKit
 
 enum BlockAction: Equatable {
-    case convert(NoteBlockKind), copy, duplicate, moveUp, moveDown, delete, addTableRow, addTableColumn
+    case convert(NoteBlockKind), copy, duplicate, moveUp, moveDown, delete, addTableRow, addTableColumn, toggleHeaderRow, toggleHeaderColumn
 }
 
 struct BlockMenuCommand {
