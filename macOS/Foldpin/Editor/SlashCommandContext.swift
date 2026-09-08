@@ -56,11 +56,6 @@ struct SlashCommandContext: Equatable {
     }
 
     private func marks(in range: NSRange) -> [NoteTextMark] {
-        source.marks.compactMap {
-            let intersection = NSIntersectionRange(NSRange(location: $0.location, length: $0.length), range)
-            guard intersection.length > 0 else { return nil }
-            return NoteTextMark(location: intersection.location - range.location, length: intersection.length,
-                                bold: $0.bold, italic: $0.italic)
-        }
+        source.marks.compactMap { $0.clipped(to: range) }
     }
 }

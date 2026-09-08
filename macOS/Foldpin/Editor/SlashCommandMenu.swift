@@ -50,19 +50,27 @@ final class SlashCommandMenu {
     var onDismiss: (() -> Void)?
     private var panel: SlashSuggestionPanel?
     private let bundle: Bundle
+    private let pointerLocation: () -> NSPoint
+    private var lastPointerLocation: NSPoint
     private var usesKeyboardSelection = true
     private(set) var contentView: SlashMenuContentView?
 
-    init(blockID: UUID, entries: [Entry], bundle: Bundle = .main) {
+    init(blockID: UUID, entries: [Entry], bundle: Bundle = .main,
+         pointerLocation: @escaping () -> NSPoint = { NSEvent.mouseLocation }) {
         self.blockID = blockID
         self.entries = entries
         self.bundle = bundle
+        self.pointerLocation = pointerLocation
+        lastPointerLocation = pointerLocation()
     }
 
     func moveSelection(_ delta: Int) {
         guard !entries.isEmpty else { return }
         selectedIndex = (selectedIndex + delta % entries.count + entries.count) % entries.count
         usesKeyboardSelection = true
+        // Scrolling rows under a stationary pointer must not take selection
+        // away from the keyboard, even if tracking events arrive afterward.
+        lastPointerLocation = pointerLocation()
         updateSelection(scroll: true)
     }
 
@@ -75,7 +83,10 @@ final class SlashCommandMenu {
     func makeContentView(maximumHeight: CGFloat) -> SlashMenuContentView {
         let view = SlashMenuContentView(entries: entries, bundle: bundle, maximumHeight: maximumHeight)
         view.onHover = { [weak self] index in
-            guard let self else { return }
+            guard let self, entries.indices.contains(index) else { return }
+            let point = pointerLocation()
+            guard point != lastPointerLocation else { return }
+            lastPointerLocation = point
             selectedIndex = index
             usesKeyboardSelection = false
             updateSelection()
@@ -110,6 +121,7 @@ final class SlashCommandMenu {
         popup.hasShadow = true
         popup.level = parent.level
         popup.animationBehavior = .none
+        popup.acceptsMouseMovedEvents = true
         popup.collectionBehavior = [.transient, .fullScreenAuxiliary]
         popup.appearance = appearance
         popup.contentView = view
@@ -290,12 +302,15 @@ final class SlashSuggestionButton: NSButton {
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         guard hoverArea == nil else { return }
-        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self)
+        let area = NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self)
         addTrackingArea(area)
         hoverArea = area
     }
 
-    override func mouseEntered(with event: NSEvent) { isHovered = true; needsDisplay = true; onHover?() }
+    // Entry/exit events can be caused by scrolling or by the popup appearing.
+    // Only pointer movement is an intent to change the selected menu item.
+    override func mouseEntered(with event: NSEvent) { isHovered = true; needsDisplay = true }
+    override func mouseMoved(with event: NSEvent) { onHover?() }
     override func mouseExited(with event: NSEvent) { isHovered = false; needsDisplay = true }
 
     override func draw(_ dirtyRect: NSRect) {

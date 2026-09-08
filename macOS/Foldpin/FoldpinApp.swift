@@ -26,6 +26,11 @@ struct FoldpinApp: App {
             CommandGroup(replacing: .newItem) {
                 Button(String(localized: "Open Note", bundle: languageSettings.bundle)) { delegate.openPaper() }.keyboardShortcut("n")
             }
+            CommandGroup(after: .pasteboard) {
+                Button(String(localized: "Paste as Plain Text", bundle: languageSettings.bundle)) {
+                    NSApp.sendAction(#selector(NSTextView.pasteAsPlainText(_:)), to: nil, from: nil)
+                }.keyboardShortcut("v", modifiers: [.command, .option, .shift])
+            }
         }
     }
 }

@@ -1872,6 +1872,23 @@
         }
       }
     },
+    "Paste as Plain Text": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste as Plain Text"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "粘贴为纯文本"
+          }
+        }
+      }
+    },
     "Pin Note": {
       "extractionState": "manual",
       "localizations": {

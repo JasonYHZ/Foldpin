@@ -578,10 +578,11 @@ final class PaperTextView: NSTextView {
             if position < storage.length { inline = storage.attributes(at: position, effectiveRange: nil) }
         }
         if span.block.kind != .code {
-            attrs[.noteBold] = inline[.noteBold]
-            attrs[.noteItalic] = inline[.noteItalic]
-            attrs[.font] = BlockTextCodec.font(span.block, bold: inline[.noteBold] as? Bool ?? false,
-                                              italic: inline[.noteItalic] as? Bool ?? false)
+            let link = inline[.noteLink] as? String
+            let mark = NoteTextMark(location: 0, length: 0, bold: inline[.noteBold] as? Bool ?? false,
+                italic: inline[.noteItalic] as? Bool ?? false, code: inline[.noteInlineCode] as? Bool ?? false,
+                strikethrough: inline[.noteStrikethrough] as? Bool ?? false, link: link?.isEmpty == false ? link : nil)
+            attrs.merge(BlockTextCodec.inlineAttributes(mark, block: span.block)) { _, new in new }
         }
         // Rebuild from this block, rather than inheriting a previous code
         // line's background, language or separator metadata at its boundary.
@@ -660,6 +661,9 @@ final class PaperTextView: NSTextView {
         let previousScrollOrigin = enclosingScrollView?.contentView.bounds.origin
         let previousEmptyBlock = string.isEmpty ? content.blocks.first : nil
         applying = true
+        // Missing optional link/background keys in a rendered run must not
+        // inherit the caret's old inline-code or hyperlink attributes.
+        typingAttributes = BlockTextCodec.style(NoteBlock(), color: noteColor, theme: codeThemes.theme)
         super.insertText(rendered, replacementRange: NSRange(location: 0, length: (string as NSString).length))
         applying = false
         registerEmptyBlockHistory(before: previousEmptyBlock, after: rendered.length == 0 ? next.blocks.first : nil)
@@ -754,11 +758,7 @@ final class PaperTextView: NSTextView {
     }
 
     private func clippedMarks(_ marks: [NoteTextMark], range: NSRange) -> [NoteTextMark] {
-        marks.compactMap {
-            let intersection = NSIntersectionRange(NSRange(location: $0.location, length: $0.length), range)
-            guard intersection.length > 0 else { return nil }
-            return NoteTextMark(location: intersection.location - range.location, length: intersection.length, bold: $0.bold, italic: $0.italic)
-        }
+        marks.compactMap { $0.clipped(to: range) }
     }
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {
@@ -1093,6 +1093,12 @@ final class PaperTextView: NSTextView {
         dismissSlashMenu()
         if let selectedBlockID { return makeBlockActionMenu(blockID: selectedBlockID) }
         let menu = super.menu(for: event) ?? NSMenu()
+        if !menu.items.contains(where: { $0.action == #selector(pasteAsPlainText(_:)) }) {
+            let plain = NSMenuItem(title: String(localized: "Paste as Plain Text", bundle: bundle),
+                                   action: #selector(pasteAsPlainText(_:)), keyEquivalent: "")
+            plain.target = self
+            menu.addItem(plain)
+        }
         menu.insertItem(.separator(), at: 0)
         let item = NSMenuItem(title: String(localized: "Block", bundle: bundle), action: nil, keyEquivalent: "")
         item.submenu = makeBlockMenu()
@@ -1250,7 +1256,8 @@ final class PaperTextView: NSTextView {
         if selection.length == 0 {
             typingAttributes[key] = !(typingAttributes[key] as? Bool ?? false)
             typingAttributes[.font] = BlockTextCodec.font(activeSpan?.block ?? NoteBlock(), bold: typingAttributes[.noteBold] as? Bool ?? false,
-                                                          italic: typingAttributes[.noteItalic] as? Bool ?? false)
+                                                          italic: typingAttributes[.noteItalic] as? Bool ?? false,
+                                                          code: typingAttributes[.noteInlineCode] as? Bool ?? false)
             return
         }
         let value = NSMutableAttributedString(attributedString: attributedString().attributedSubstring(from: selection))
@@ -1299,12 +1306,12 @@ final class PaperTextView: NSTextView {
         suppressMarkdownShortcuts = true
         defer { suppressMarkdownShortcuts = previous }
         let board = NSPasteboard.general
+        if activeSpan?.block.kind == .code, let text = board.string(forType: .string) {
+            insertPastedText(text, interpretingMarkdown: false); return
+        }
         if let data = board.data(forType: Self.pasteboardType),
-           var value = try? JSONDecoder().decode(NoteContent.self, from: data), (try? value.validate()) != nil {
-            for index in value.blocks.indices { value.blocks[index].id = UUID() }
-            if value.blocks.contains(where: { $0.kind.isAttachment }) {
-                insertBlocks(value.blocks)
-            } else { super.insertText(render(value), replacementRange: selectedRange()) }
+           let value = try? JSONDecoder().decode(NoteContent.self, from: data), (try? value.validate()) != nil {
+            if !insertPastedBlocks(value) { insertPastedText(value.plainText, interpretingMarkdown: false) }
             return
         }
         if importImages(from: board) { return }
@@ -1313,7 +1320,7 @@ final class PaperTextView: NSTextView {
         }
     }
 
-    func insertPastedText(_ text: String) {
+    func insertPastedText(_ text: String, interpretingMarkdown: Bool = true) {
         guard isEditable else { return }
         if selectedBlockID != nil { editSelectedBlock(atEnd: true) }
         if let cell = tableCellEditor {
@@ -1322,16 +1329,38 @@ final class PaperTextView: NSTextView {
         let previous = suppressMarkdownShortcuts
         suppressMarkdownShortcuts = true
         defer { suppressMarkdownShortcuts = previous }
+        if interpretingMarkdown, !hasMarkedText(), activeSpan?.block.kind != .code,
+           let parsed = MarkdownPasteParser.parse(text), insertPastedBlocks(parsed) { return }
         if !hasMarkedText() { updateTypingStyle(preservingInlineFormat: true) }
-        // Foreign rich text is inserted as literal text; never load remote images.
+        // Ordinary text and the explicit plain-text command remain literal.
         insertText(NSAttributedString(string: text, attributes: typingAttributes), replacementRange: selectedRange())
     }
 
+    @discardableResult
+    func insertPastedBlocks(_ value: NoteContent) -> Bool {
+        guard isEditable, !hasMarkedText(), tableCellEditor == nil, (try? value.validate()) != nil else { return false }
+        let range = selectedRange()
+        guard range.location != NSNotFound, NSMaxRange(range) <= (string as NSString).length,
+              let startIndex = spans.lastIndex(where: { $0.range.location <= range.location }),
+              let endIndex = spans.lastIndex(where: { $0.range.location <= NSMaxRange(range) }) else { return false }
+        let start = spans[startIndex], end = spans[endIndex]
+        // A paste inside code is literal, including a selection that ends in
+        // only part of another code block. Whole selected blocks may be replaced.
+        guard !(start.block.kind == .code && range.location > start.textRange.location),
+              !(end.block.kind == .code && NSMaxRange(range) < NSMaxRange(end.textRange)) else { return false }
+        var startOffset = min(start.textRange.length, max(0, range.location - start.textRange.location))
+        var endOffset = min(end.textRange.length, max(0, NSMaxRange(range) - end.textRange.location))
+        if range.length == 0 && start.block.kind.isAttachment { startOffset = 1; endOffset = 1 }
+        guard let insertion = BlockPasteInsertion.inserting(value, into: content,
+            from: .init(index: startIndex, offset: startOffset), to: .init(index: endIndex, offset: endOffset)) else { return false }
+        replaceDocument(insertion.content, block: insertion.index, offset: insertion.offset)
+        undoManager?.setActionName(String(localized: "Paste", bundle: bundle))
+        return true
+    }
+
     override func pasteAsPlainText(_ sender: Any?) {
-        let previous = suppressMarkdownShortcuts
-        suppressMarkdownShortcuts = true
-        defer { suppressMarkdownShortcuts = previous }
-        super.pasteAsPlainText(sender)
+        guard let text = NSPasteboard.general.string(forType: .string) else { return }
+        insertPastedText(text, interpretingMarkdown: false)
     }
 
     override func readSelection(from pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool {

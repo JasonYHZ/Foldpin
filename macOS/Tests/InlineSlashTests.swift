@@ -169,3 +169,17 @@ import Testing
     editor.insertText("继续写", replacementRange: editor.selectedRange())
     #expect(editor.content.blocks[2].text == "继续写")
 }
+
+@Test @MainActor func inlineSlashRepeatedArrowsChooseTheSameItemAsEmptyBlockMenu() {
+    for prefix in ["", "已有文字 ", "中文 🌿　"] {
+        let editor = inlineSlashEditor(NoteContent(plainText: prefix))
+        editor.insertText("/", replacementRange: editor.selectedRange())
+        let codeIndex = NoteBlockKind.allCases.firstIndex(of: .code)!
+        for _ in 0..<(NoteBlockKind.allCases.count + codeIndex) { editor.moveDown(nil) }
+        #expect(editor.hasSlashSuggestions)
+        editor.insertNewline(nil)
+        #expect(!editor.hasSlashSuggestions && editor.currentBlockKind == .code)
+        #expect(editor.content.blocks.last?.text.isEmpty == true)
+        if !prefix.isEmpty { #expect(editor.content.blocks[0].text == prefix) }
+    }
+}

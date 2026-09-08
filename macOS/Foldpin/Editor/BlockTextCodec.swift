@@ -12,6 +12,9 @@ extension NSAttributedString.Key {
     static let blockMarker = Self("Foldpin.marker")
     static let noteBold = Self("Foldpin.bold")
     static let noteItalic = Self("Foldpin.italic")
+    static let noteInlineCode = Self("Foldpin.inlineCode")
+    static let noteStrikethrough = Self("Foldpin.strikethrough")
+    static let noteLink = Self("Foldpin.link")
 }
 
 struct NoteBlockSpan {
@@ -95,11 +98,14 @@ enum BlockTextCodec {
                 storage.enumerateAttributes(in: textRange) { attrs, markRange, _ in
                     let bold = attrs[.noteBold] as? Bool ?? false
                     let italic = attrs[.noteItalic] as? Bool ?? false
-                    guard bold || italic else { return }
+                    let link = attrs[.noteLink] as? String
                     let mark = NoteTextMark(location: markRange.location - textRange.location, length: markRange.length,
-                                            bold: bold, italic: italic)
+                        bold: bold, italic: italic, code: attrs[.noteInlineCode] as? Bool ?? false,
+                        strikethrough: attrs[.noteStrikethrough] as? Bool ?? false,
+                        link: link?.isEmpty == false ? link : nil)
+                    guard mark.hasStyle else { return }
                     if let last = block.marks.last, last.location + last.length == mark.location,
-                       last.bold == bold, last.italic == italic {
+                       last.hasSameStyle(as: mark) {
                         block.marks[block.marks.count - 1].length += mark.length
                     } else { block.marks.append(mark) }
                 }
@@ -140,8 +146,7 @@ enum BlockTextCodec {
             if prefixLength > 0 { value.addAttribute(.blockMarker, value: true, range: NSRange(location: 0, length: prefixLength)) }
             for mark in block.marks where mark.location + mark.length <= (block.text as NSString).length {
                 let range = NSRange(location: prefixLength + mark.location, length: mark.length)
-                value.addAttributes([.noteBold: mark.bold, .noteItalic: mark.italic,
-                                     .font: font(block, bold: mark.bold, italic: mark.italic)], range: range)
+                value.addAttributes(inlineAttributes(mark, block: block), range: range)
             }
             if let asset = block.image {
                 let attachment = NSTextAttachment()
@@ -213,6 +218,9 @@ enum BlockTextCodec {
         // caret's bold/italic/strike attributes outside its actual marked runs.
         attrs[.noteBold] = false
         attrs[.noteItalic] = false
+        attrs[.noteInlineCode] = false
+        attrs[.noteStrikethrough] = false
+        attrs[.noteLink] = ""
         attrs[.strikethroughStyle] = 0
         attrs[.font] = font(block)
         attrs[.foregroundColor] = block.kind == .quote || (block.kind == .task && block.isChecked) ? NSColor.secondaryLabelColor : color
@@ -220,6 +228,18 @@ enum BlockTextCodec {
         if block.kind == .code { attrs[.foregroundColor] = theme.foreground }
         if block.kind == .task && block.isChecked { attrs[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
         return attrs
+    }
+
+    static func inlineAttributes(_ mark: NoteTextMark, block: NoteBlock) -> [NSAttributedString.Key: Any] {
+        var values: [NSAttributedString.Key: Any] = [
+            .noteBold: mark.bold, .noteItalic: mark.italic, .noteInlineCode: mark.code,
+            .noteStrikethrough: mark.strikethrough, .noteLink: mark.link ?? "",
+            .font: font(block, bold: mark.bold, italic: mark.italic, code: mark.code),
+            .strikethroughStyle: mark.strikethrough || (block.kind == .task && block.isChecked) ? NSUnderlineStyle.single.rawValue : 0
+        ]
+        if mark.code { values[.backgroundColor] = NSColor.quaternaryLabelColor.withAlphaComponent(0.1) }
+        if let url = mark.clickableURL { values[.link] = url }
+        return values
     }
 
     private static func styleCodeParagraphs(_ text: NSMutableAttributedString, block: NoteBlock, color: NSColor, theme: NativeCodeTheme) {
@@ -236,7 +256,7 @@ enum BlockTextCodec {
         }
     }
 
-    static func font(_ block: NoteBlock, bold: Bool = false, italic: Bool = false) -> NSFont {
+    static func font(_ block: NoteBlock, bold: Bool = false, italic: Bool = false, code: Bool = false) -> NSFont {
         let base: NSFont
         switch block.kind {
         case .heading: base = .systemFont(ofSize: 23, weight: .semibold)
@@ -249,7 +269,8 @@ enum BlockTextCodec {
         var traits: NSFontTraitMask = []
         if bold { traits.insert(.boldFontMask) }
         if italic { traits.insert(.italicFontMask) }
-        return traits.isEmpty ? base : NSFontManager.shared.convert(base, toHaveTrait: traits)
+        let face = code ? NSFont.monospacedSystemFont(ofSize: base.pointSize, weight: .regular) : base
+        return traits.isEmpty ? face : NSFontManager.shared.convert(face, toHaveTrait: traits)
     }
 
     static func highlight(_ text: NSMutableAttributedString, language: CodeLanguage,

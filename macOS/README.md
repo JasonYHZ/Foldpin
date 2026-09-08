@@ -1,5 +1,7 @@
 # Foldpin macOS · M1 单纸片原型
 
+普通 ⌘V 支持 Markdown 自动转换；⌘⇧⌥V 或「编辑 → 粘贴为纯文本」保留源字符。代码块和表格单元格内按字面文本粘贴。范围、原生插入和保存行为见 [Markdown 粘贴](../docs/engineering/markdown-paste.md)。
+
 区块书写现支持类型占位提示、空标题回车返回正文与 Shift+Enter 块内换行；占位文字不会保存。菜单提示去掉「+ 空格」，代码围栏也接受 `···` / `｀｀｀` 加空格或回车。换行规则、原生存储方式及块手柄 / 排序建议见[区块书写说明](../docs/engineering/block-writing-behavior.md)。
 
 `/` 建议菜单已按 Notion 参考优化分组、图标、输入提示与选中样式，支持中英文、明暗和短视口滚动。保持原生非激活浮层及 Backspace / 回车 / Esc 行为，只展示已支持区块；引用新增 `"` + 空格并兼容 `>`。截图和范围见[原生菜单记录](../docs/design/native-block-menu/README.md)。

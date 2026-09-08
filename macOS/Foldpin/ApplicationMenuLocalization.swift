@@ -26,6 +26,7 @@ enum ApplicationMenuLocalization {
             case "cut:": title = String(localized: "Cut", bundle: bundle)
             case "copy:": title = String(localized: "Copy", bundle: bundle)
             case "paste:": title = String(localized: "Paste", bundle: bundle)
+            case "pasteAsPlainText:": title = String(localized: "Paste as Plain Text", bundle: bundle)
             case "selectAll:": title = String(localized: "Select All", bundle: bundle)
             case "performMiniaturize:": title = String(localized: "Minimize", bundle: bundle)
             case "performZoom:": title = String(localized: "Zoom", bundle: bundle)

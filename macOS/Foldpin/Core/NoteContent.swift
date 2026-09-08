@@ -103,6 +103,49 @@ struct NoteTextMark: Codable, Equatable, Sendable {
     var length: Int
     var bold = false
     var italic = false
+    var code = false
+    var strikethrough = false
+    var link: String?
+
+    enum CodingKeys: String, CodingKey { case location, length, bold, italic, code, strikethrough, link }
+
+    init(location: Int, length: Int, bold: Bool = false, italic: Bool = false,
+         code: Bool = false, strikethrough: Bool = false, link: String? = nil) {
+        self.location = location; self.length = length; self.bold = bold; self.italic = italic
+        self.code = code; self.strikethrough = strikethrough; self.link = link
+    }
+
+    init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        location = try values.decode(Int.self, forKey: .location)
+        length = try values.decode(Int.self, forKey: .length)
+        bold = try values.decodeIfPresent(Bool.self, forKey: .bold) ?? false
+        italic = try values.decodeIfPresent(Bool.self, forKey: .italic) ?? false
+        code = try values.decodeIfPresent(Bool.self, forKey: .code) ?? false
+        strikethrough = try values.decodeIfPresent(Bool.self, forKey: .strikethrough) ?? false
+        link = try values.decodeIfPresent(String.self, forKey: .link)
+    }
+
+    var hasStyle: Bool { bold || italic || code || strikethrough || link != nil }
+
+    func hasSameStyle(as other: Self) -> Bool {
+        bold == other.bold && italic == other.italic && code == other.code &&
+        strikethrough == other.strikethrough && link == other.link
+    }
+
+    func clipped(to range: NSRange) -> Self? {
+        let intersection = NSIntersectionRange(NSRange(location: location, length: length), range)
+        guard intersection.length > 0 else { return nil }
+        var mark = self
+        mark.location = intersection.location - range.location; mark.length = intersection.length
+        return mark
+    }
+
+    var clickableURL: URL? {
+        guard let link, let url = URL(string: link), let scheme = url.scheme?.lowercased(),
+              ["https", "http", "mailto"].contains(scheme) else { return nil }
+        return url
+    }
 }
 
 struct NoteImage: Codable, Equatable, Sendable {

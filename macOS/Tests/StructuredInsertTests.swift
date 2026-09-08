@@ -72,7 +72,7 @@ import Testing
     editor.changeKind(.divider)
     #expect(editor.content.blocks.map(\.kind) == [.paragraph, .divider, .paragraph])
     #expect(editor.content.blocks[0].text == "keep this")
-    editor.insertPastedText("---\n1. literal")
+    editor.insertPastedText("---\n1. literal", interpretingMarkdown: false)
     #expect(editor.content.blocks.suffix(2).allSatisfy { $0.kind == .paragraph })
 }
 
