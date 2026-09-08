@@ -73,6 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         paper.onActivate = { [weak self] in self?.activatePaper() }
         paper.onToggleCollapsed = { [weak self] in self?.toggleCollapsed() }
         paper.onRequestClose = { [weak self] in self?.shelvePaper() }
+        paper.onEndResize = { [weak self] in self?.recordGeometry() }
         paper.isReleasedWhenClosed = false
         paper.isMovable = true
         // Only the explicit header drag region initiates a native window drag.
@@ -447,17 +448,63 @@ final class PaperPanel: NSPanel {
     var onActivate: (() -> Void)?
     var onToggleCollapsed: (() -> Void)?
     var onRequestClose: (() -> Void)?
+    var onEndResize: (() -> Void)?
+    private var resizeSession: ResizeSession?
+
+    private struct ResizeSession {
+        let edges: NoteResizeEdges
+        let initialFrame: NSRect
+        let initialPointer: NSPoint
+    }
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
     override func sendEvent(_ event: NSEvent) {
+        if let session = resizeSession,
+           event.type == .leftMouseDragged || event.type == .leftMouseUp {
+            let pointer = convertPoint(toScreen: event.locationInWindow)
+            let delta = NSSize(width: pointer.x - session.initialPointer.x,
+                               height: pointer.y - session.initialPointer.y)
+            let nextFrame = session.edges.resizing(session.initialFrame, by: delta,
+                                                    minimum: minSize, maximum: maxSize)
+            if nextFrame != frame { setFrame(nextFrame, display: true) }
+            if event.type == .leftMouseUp { finishResize() }
+            return
+        }
         // Explicit interaction should make this the front application's focused
         // window; passive display still uses the nonactivating panel behavior.
         if event.type == .leftMouseDown || event.type == .rightMouseDown {
             onActivate?()
         }
+        if event.type == .leftMouseDown, let surface = contentView as? NoteWindowSurface {
+            let edges = surface.resizeEdges(at: event.locationInWindow)
+            if !edges.isEmpty {
+                resizeSession = ResizeSession(edges: edges, initialFrame: frame,
+                                              initialPointer: convertPoint(toScreen: event.locationInWindow))
+                return
+            }
+        }
+        // Handle the titlebar before SwiftUI / glass dispatch can consume the
+        // empty representable's mouse-down. Keep the original system drag event.
+        if event.type == .leftMouseDown,
+           let surface = contentView as? NoteWindowSurface,
+           let dragRegion = surface.titlebarDragRegion(at: event.locationInWindow) {
+            dragRegion.mouseDown(with: event)
+            return
+        }
         super.sendEvent(event)
+    }
+
+    private func finishResize() {
+        guard resizeSession != nil else { return }
+        resizeSession = nil
+        onEndResize?()
+    }
+
+    override func resignKey() {
+        finishResize()
+        super.resignKey()
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {

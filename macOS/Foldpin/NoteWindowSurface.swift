@@ -8,7 +8,9 @@ final class NoteWindowSurface: NSView {
     private let hosting: NSView
     private let glass = NSGlassEffectView()
     private let edge = NoteEdgeView()
+    private let resizeHandles = NoteResizeHandleView()
     private var usesGlass: Bool?
+    private weak var dragRegion: NoteWindowDragView?
     private var preferenceObserver: NSObjectProtocol?
     private var accessibilityObserver: NSObjectProtocol?
 
@@ -25,6 +27,8 @@ final class NoteWindowSurface: NSView {
         addSubview(glass)
         edge.setAccessibilityElement(false)
         addSubview(edge)
+        resizeHandles.setAccessibilityElement(false)
+        addSubview(resizeHandles)
         refreshAppearance()
         preferenceObserver = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification, object: UserDefaults.standard, queue: .main
@@ -41,6 +45,49 @@ final class NoteWindowSurface: NSView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override var isOpaque: Bool { false }
 
+    override func draw(_ dirtyRect: NSRect) {
+        // WindowServer's transparent-window hit region must include the paper
+        // itself, not only AppKit text/dividers. A SwiftUI-only background can
+        // look filled while clicks pass through its composited surface.
+        if usesGlass != true {
+            NotePalette.paperBackground.setFill()
+            bounds.fill()
+        }
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsDisplay = true
+    }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        needsDisplay = true
+    }
+
+    func resizeEdges(at windowPoint: NSPoint) -> NoteResizeEdges {
+        resizeHandles.edges(at: resizeHandles.convert(windowPoint, from: nil))
+    }
+
+    func titlebarDragRegion(at windowPoint: NSPoint) -> NoteWindowDragView? {
+        if dragRegion?.isDescendant(of: hosting) != true {
+            dragRegion = findDragRegion(in: hosting)
+        }
+        guard let dragRegion, !dragRegion.isHiddenOrHasHiddenAncestor else { return nil }
+        let point = dragRegion.convert(windowPoint, from: nil)
+        // SwiftUI can allow drawing outside the representable, so visibleRect
+        // may exceed its bounds. Never treat that overflow as draggable space.
+        return dragRegion.bounds.intersection(dragRegion.visibleRect).contains(point) ? dragRegion : nil
+    }
+
+    private func findDragRegion(in view: NSView) -> NoteWindowDragView? {
+        for child in view.subviews {
+            if let region = child as? NoteWindowDragView { return region }
+            if let region = findDragRegion(in: child) { return region }
+        }
+        return nil
+    }
+
     override func layout() {
         super.layout()
         // Fill the borderless panel: an inset leaves a second outline around
@@ -50,6 +97,8 @@ final class NoteWindowSurface: NSView {
         if glass.frame != surface { glass.frame = surface }
         if usesGlass != true, hosting.frame != surface { hosting.frame = surface }
         if edge.frame != surface { edge.frame = surface }
+        if resizeHandles.frame != surface { resizeHandles.frame = surface }
+        window?.invalidateCursorRects(for: resizeHandles)
     }
 
     private func refreshAppearance() {
@@ -72,6 +121,7 @@ final class NoteWindowSurface: NSView {
             addSubview(hosting, positioned: .below, relativeTo: edge)
         }
         usesGlass = enabled
+        needsDisplay = true
         needsLayout = true
         if restoreResponder, let responder { window?.makeFirstResponder(responder) }
     }

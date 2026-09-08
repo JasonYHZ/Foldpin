@@ -24,6 +24,7 @@ final class PaperTextView: NSTextView {
     private var spans: [NoteBlockSpan] = []
     private var applying = false
     private var observingChanges = false
+    private var insertionPointRefreshScheduled = false
     private var slashMenuScheduled = false
     private var slashMenu: SlashCommandMenu?
     var hasSlashSuggestions: Bool { slashMenu != nil }
@@ -49,6 +50,8 @@ final class PaperTextView: NSTextView {
             NotificationCenter.default.addObserver(self, selector: #selector(historyChanged(_:)), name: .NSUndoManagerDidRedoChange, object: nil)
             observingChanges = true
             NotificationCenter.default.addObserver(self, selector: #selector(selectionChanged(_:)), name: NSTextView.didChangeSelectionNotification, object: self)
+            NotificationCenter.default.addObserver(self, selector: #selector(editorWindowBecameKey(_:)), name: NSWindow.didBecomeKeyNotification, object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(editorApplicationBecameActive(_:)), name: NSApplication.didBecomeActiveNotification, object: nil)
         }
         applying = true
         defer { applying = false }
@@ -453,6 +456,44 @@ final class PaperTextView: NSTextView {
     override func moveDown(_ sender: Any?) {
         if !hasMarkedText(), let slashMenu { slashMenu.moveSelection(1) }
         else { super.moveDown(sender) }
+    }
+
+    override func becomeFirstResponder() -> Bool {
+        let accepted = super.becomeFirstResponder()
+        if accepted { scheduleInsertionPointRefresh() }
+        return accepted
+    }
+
+    @objc private func editorWindowBecameKey(_ notification: Notification) {
+        guard let activatedWindow = notification.object as? NSWindow, activatedWindow === window else { return }
+        scheduleInsertionPointRefresh()
+    }
+
+    @objc private func editorApplicationBecameActive(_ notification: Notification) {
+        scheduleInsertionPointRefresh()
+    }
+
+    func scheduleInsertionPointRefresh() {
+        guard !insertionPointRefreshScheduled else { return }
+        insertionPointRefreshScheduled = true
+        // A nonactivating panel can retain its first responder while the app
+        // activates. Wait until that transition (and expansion layout) settles;
+        // makeFirstResponder alone does not restart an existing responder's caret.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.insertionPointRefreshScheduled = false
+            guard let window = self.window, window.isKeyWindow, window.isVisible,
+                  window.firstResponder === self, self.isEditable,
+                  !self.isHiddenOrHasHiddenAncestor, !self.hasMarkedText() else { return }
+            self.layoutSubtreeIfNeeded()
+            self.needsDisplay = true
+            self.updateInsertionPointStateAndRestartTimer(true)
+        }
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        scheduleInsertionPointRefresh()
     }
 
     override func resignFirstResponder() -> Bool {

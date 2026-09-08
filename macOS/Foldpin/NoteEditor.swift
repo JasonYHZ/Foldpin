@@ -33,7 +33,9 @@ struct NoteEditor: NSViewRepresentable {
             DispatchQueue.main.async { [weak editor, weak store] in
                 guard let editor, let store, !store.isCollapsed, !store.document.isShelved,
                       let window = editor.window else { return }
-                window.makeFirstResponder(editor)
+                if window.makeFirstResponder(editor) {
+                    editor.scheduleInsertionPointRefresh()
+                }
             }
         }
     }
@@ -124,25 +126,26 @@ final class NativeEditorHost: NSView {
 struct WindowDragRegion: NSViewRepresentable {
     var onDoubleClick: () -> Void
     func makeNSView(context: Context) -> NSView {
-        let view = DragView()
+        let view = NoteWindowDragView()
         view.onDoubleClick = onDoubleClick
         return view
     }
     func updateNSView(_ nsView: NSView, context: Context) {
-        (nsView as? DragView)?.onDoubleClick = onDoubleClick
+        (nsView as? NoteWindowDragView)?.onDoubleClick = onDoubleClick
     }
-    private final class DragView: NSView {
-        var onDoubleClick: (() -> Void)?
-        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-        override func mouseDown(with event: NSEvent) {
-            if event.clickCount == 2 {
-                onDoubleClick?()
-                return
-            }
-            // Let WindowServer track the original event instead of repeatedly
-            // repositioning the window from asynchronously sampled pointer coordinates.
-            window?.performDrag(with: event)
+}
+
+final class NoteWindowDragView: NSView {
+    var onDoubleClick: (() -> Void)?
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func mouseDown(with event: NSEvent) {
+        if event.clickCount == 2 {
+            onDoubleClick?()
+            return
         }
-        override var mouseDownCanMoveWindow: Bool { false }
+        // Let WindowServer track the original event instead of repeatedly
+        // repositioning the window from asynchronously sampled pointer coordinates.
+        window?.performDrag(with: event)
     }
+    override var mouseDownCanMoveWindow: Bool { false }
 }

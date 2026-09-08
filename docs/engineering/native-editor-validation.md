@@ -1,5 +1,11 @@
 # 原生块编辑器第一阶段验证
 
+## 2026-09-08 激活时插入光标刷新
+
+用户反馈窗口偶尔已可输入但看不到插入光标。代码检查发现：非激活面板可能在应用切换时保留同一个 first responder，已有恢复路径只调用 `makeFirstResponder`，没有显式重启原生插入光标状态。新增窗口成为 key、应用激活、编辑器取得焦点与挂载后的合并刷新；显式展开 / 找回也接入同一路径。下一次主队列处理时重新检查窗口可见、key、first responder 与可编辑状态，组合输入期间不介入。调用公开的 `updateInsertionPointStateAndRestartTimer(true)`，不改正文、选区或撤销栈，也不额外请求焦点。
+
+一次 Xcode Debug 构建通过，`git diff --check` 通过。构建日志：`/private/tmp/Foldpin-caret-build.log`；只有此前已有的模拟器服务与 App Intents 环境提示。遵循用户减少测试的要求，本轮未启动、重启或操作用户窗口，未重复数据层测试。尚未实机复现或确认间歇问题消失；跨应用切回、折叠 / 展开、正文与代码块的光标闪烁，以及真实中文输入法仍需在新版使用中确认。
+
 日期：2026-09-08。环境：Xcode 26.6 (17F113)、macOS 26.6.2、Apple Silicon；部署基线 macOS 26.5。
 
 ## 已完成

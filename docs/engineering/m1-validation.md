@@ -234,4 +234,27 @@ Debug 构建通过；Xcode 实例中点击折叠后显示「第一张 Foldpin �
 
 ## 2026-09-08 原生块编辑升级
 
+### 同日纸感拖动反馈
+
+**最新反馈与实现：**用户进一步明确：纸感仅标题栏分隔线附近能拖，其余标题栏点击会失焦；通透可拖动，但两者都不能鼠标缩放。因此前面的离屏路由检查未覆盖完整 WindowServer 点击接收链路，不能当作实际拖动已修复。纸感现增加 AppKit 原生实色绘制底层，针对透明合成区域的点击穿透疑点；随材质 / 明暗 / 尺寸更新，不重建编辑器。玻璃仍走 NSGlassEffectView。另为 borderless 窗口提供 6 点边缘、14 点四角缩放入口和系统缩放光标；PaperPanel 先处理边缘，再处理标题栏，移动仍用 performDrag。缩放根据起始 frame 和屏幕坐标差计算，遵守最小 / 最大尺寸，对边固定，松手或失去 key 时结束并记录几何。折叠只允许宽度变化。
+
+本轮验证（Xcode 26.6 / macOS 26.6.2 / Apple Silicon）：
+
+- 最终 Debug 构建通过；首次构建补齐显式 CoreGraphics import 后重建成功。日志 `/private/tmp/Foldpin-window-interaction-build.log`，只有既有模拟器服务和 App Intents 提示。
+- 仅运行新增的 3 项 `NoteResizeTests`，全部通过：边缘 / 四角与正文 / 按钮区分、对角缩放保持锚点、尺寸上下限及负屏幕坐标、折叠条保留高度。过滤条件 `resizePerimeter|resizeKeeps|resizeCollapsed`，日志 `/private/tmp/Foldpin-resize-tests.log`。
+- 不可见窗口探针使用实际 ContentView / PaperPanel、临时 NoteFile 与进程内 volatile 偏好。纸感 → 通透 → 纸感均通过：标题栏上中下三个点进入移动区域，按钮不进入移动 / 缩放；发送鼠标按下 → 拖动 → 松开事件后左下角缩放得到预期尺寸和位置，结束回调执行，编辑器 first responder、正文和选区保持。折叠条的水平缩放保持 34 点高与原 y 坐标。纸感离屏图的标题栏及正文背景 alpha 均大于 0.99，确认原生底层确实绘制。日志 `/private/tmp/Foldpin-window-probe.log`。
+- 没有显示探针窗口、启动 / 重启 Foldpin、操作用户窗口或真实笔记。没有模拟系统级鼠标点击，故不能宣称 WindowServer 点击穿透、真实拖动 / 缩放光标 / 流畅度和跨屏已通过；这些仍待新版实际使用确认。没有重跑无关编辑器或数据测试。
+
+公开 API 核对本机 SDK 的 NSWindow / NSCursor 声明；窗口接收与分发边界参考 [Apple 鼠标事件说明](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/HandlingMouseEvents/HandlingMouseEvents.html)。下文保留之前补丁的历史验证边界。
+
+**后续修正：**用户确认首次 hosting hitTest 补丁仍无法拖动，该补丁已撤回。对实际 ContentView 创建不可见窗口检查后，发现拖动视图 bounds 为 228 × 34，但 visibleRect 扩展为 360 × 340；只判断 visibleRect 会把按钮甚至正文误认为拖动区域。现在按 bounds 与 visibleRect 的交集判断，并将标题栏事件路由提升到 `PaperPanel.sendEvent`，在 SwiftUI / 玻璃层分发前交给原生拖动视图。仍使用原始 mouse-down 事件和 `performDrag(with:)`，不模拟坐标移动。
+
+本次一次 Debug 构建通过（`/private/tmp/Foldpin-titlebar-routing-build.log`）。独立离屏探针使用实际应用视图、临时 NoteFile、进程内 volatile 偏好，纸感 → 玻璃 → 纸感及折叠纸感四种状态均验证：顶部空白点进入拖动区域、两侧按钮点不进入、展开正文点不进入，窗口事件入口的双击可到达原折叠回调，窗口 isMovable 保持 true。探针最初把折叠条底部也当成正文断言，修正该探针条件后检查通过；未改应用代码规避检查。日志 `/private/tmp/Foldpin-drag-probe.log`。没有显示探针窗口，也未操作用户窗口、真实笔记或持久化偏好；不以离屏分发检查代替真实指针拖动 / 跨屏 / 流畅度验证。运行中的应用路径未能在受限环境中可靠确认。
+
+以下为首次补丁的历史记录，现已由上述方案取代：
+
+用户反馈切换纸感后不能拖动。纸感模式将同一个 hosting view 从玻璃内容层移回普通容器，现有拖拽依赖 SwiftUI 向空 representable 分发命中；该分发路径是本次修复针对的疑点，尚未通过实机事件跟踪确认根因。现由 hosting view 按原生顶部空白拖动区域的实际可见范围显式路由鼠标命中，按钮与正文区域沿用系统结果；缓存的拖动视图若离开视图树则重新查找。仍使用系统 `performDrag(with:)`，不手动更新窗口坐标。
+
+一次 Debug 构建通过（`/private/tmp/Foldpin-paper-drag-build.log`），只有已有模拟器服务与 App Intents 环境提示。未启动或操作用户窗口，未重复数据层测试。纸感 / 通透来回切换后的拖动、折叠标题拖动、双击折叠及按钮 / 正文交互尚待新版实际使用确认。
+
 编辑器已进入 TextKit 2 第一阶段，新增检查与未测范围单独记录在 [原生编辑器验证](native-editor-validation.md)。本轮构建成功，26 项隔离测试通过；此前窗口体验记录不自动等同于新编辑器已完成 UI 回归。

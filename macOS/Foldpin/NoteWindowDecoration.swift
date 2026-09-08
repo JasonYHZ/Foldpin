@@ -6,6 +6,48 @@ enum NoteWindowStyle {
     static let shadowPadding: CGFloat = 36
 }
 
+/// Only the perimeter participates in resizing; the center passes through to
+/// the existing titlebar buttons and editor. The panel owns the drag session.
+final class NoteResizeHandleView: NSView {
+    override var isOpaque: Bool { false }
+
+    func edges(at point: NSPoint) -> NoteResizeEdges {
+        guard let window, window.styleMask.contains(.resizable) else { return [] }
+        return NoteResizeEdges.hit(at: point, in: bounds,
+                                   allowsVertical: window.maxSize.height > window.minSize.height)
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        edges(at: convert(point, from: superview)).isEmpty ? nil : self
+    }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        guard let window, window.styleMask.contains(.resizable) else { return }
+        let e = NoteResizeEdges.edgeWidth
+        let c = NoteResizeEdges.cornerWidth
+        let w = bounds.width, h = bounds.height
+        func cursor(_ rect: NSRect, _ position: NSCursor.FrameResizePosition) {
+            addCursorRect(rect, cursor: .frameResize(position: position, directions: .all))
+        }
+        guard window.maxSize.height > window.minSize.height else {
+            cursor(NSRect(x: 0, y: 0, width: e, height: h), .left)
+            cursor(NSRect(x: w - e, y: 0, width: e, height: h), .right)
+            return
+        }
+        cursor(NSRect(x: 0, y: c, width: e, height: max(0, h - 2 * c)), .left)
+        cursor(NSRect(x: w - e, y: c, width: e, height: max(0, h - 2 * c)), .right)
+        cursor(NSRect(x: c, y: 0, width: max(0, w - 2 * c), height: e), .bottom)
+        cursor(NSRect(x: c, y: h - e, width: max(0, w - 2 * c), height: e), .top)
+        cursor(NSRect(x: 0, y: 0, width: c, height: c), .bottomLeft)
+        cursor(NSRect(x: w - c, y: 0, width: c, height: c), .bottomRight)
+        cursor(NSRect(x: 0, y: h - c, width: c, height: c), .topLeft)
+        cursor(NSRect(x: w - c, y: h - c, width: c, height: c), .topRight)
+    }
+}
+
 /// A non-interactive child follows the paper through WindowServer, without
 /// enlarging its resize hit area or changing its persisted geometry.
 @MainActor
