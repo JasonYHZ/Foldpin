@@ -52,14 +52,15 @@ struct TableBlockLayout {
 
     func image(color: NSColor) -> NSImage {
         NSImage(size: attachmentSize, flipped: true) { bounds in
-            NSColor.textBackgroundColor.withAlphaComponent(0.18).setFill()
+            (color == NotePalette.paperText ? NSColor.white.withAlphaComponent(0.06)
+                : NSColor.textBackgroundColor.withAlphaComponent(0.18)).setFill()
             NSRect(origin: .zero, size: size).fill()
             for row in table.rows.indices {
                 for column in table.rows[row].indices {
                     let cell = rect(row: row, column: column)
                     let header = table.isHeader(row: row, column: column)
-                    if header { NSColor.labelColor.withAlphaComponent(0.06).setFill(); cell.fill() }
-                    NSColor.separatorColor.setStroke()
+                    if header { color.withAlphaComponent(0.06).setFill(); cell.fill() }
+                    NotePalette.rule(for: color).setStroke()
                     let border = NSBezierPath(rect: cell.insetBy(dx: 0.5, dy: 0.5))
                     border.lineWidth = 1
                     border.stroke()

@@ -34,13 +34,14 @@ import Testing
 }
 
 @Test func resizeCollapsedNoteChangesOnlyWidth() {
-    let bounds = CGRect(x: 0, y: 0, width: 360, height: 34)
-    #expect(NoteResizeEdges.hit(at: CGPoint(x: 180, y: 32), in: bounds, allowsVertical: false).isEmpty)
-    let edges = NoteResizeEdges.hit(at: CGPoint(x: 2, y: 32), in: bounds, allowsVertical: false)
+    let height = NoteLayout.headerHeight
+    let bounds = CGRect(x: 0, y: 0, width: 360, height: height)
+    #expect(NoteResizeEdges.hit(at: CGPoint(x: 180, y: height - 2), in: bounds, allowsVertical: false).isEmpty)
+    let edges = NoteResizeEdges.hit(at: CGPoint(x: 2, y: height - 2), in: bounds, allowsVertical: false)
     #expect(edges == .left)
-    let start = CGRect(x: 100, y: 500, width: 360, height: 34)
+    let start = CGRect(x: 100, y: 500, width: 360, height: height)
     let result = edges.resizing(start, by: CGSize(width: -40, height: 100),
-                                minimum: CGSize(width: 280, height: 34), maximum: CGSize(width: 800, height: 34))
-    #expect(result == CGRect(x: 60, y: 500, width: 400, height: 34))
+                                minimum: CGSize(width: 280, height: height), maximum: CGSize(width: 800, height: height))
+    #expect(result == CGRect(x: 60, y: 500, width: 400, height: height))
     #expect(NoteLayout.expandedFrame(window: result, collapsed: true, rememberedHeight: 340).height == 340)
 }

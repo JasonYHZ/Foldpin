@@ -14,6 +14,8 @@ struct NoteEditor: NSViewRepresentable {
         let editor = host.editor
         editor.file = store.file
         editor.noteColor = textColor
+        editor.updatePaperBackground(NotePalette.paperBackground(for: store.document.color))
+        host.updateColors(textColor)
         editor.onContentChange = { [weak store] in store?.edit($0) }
         editor.onEscape = onEscape
         editor.configure(content: store.document.content)
@@ -22,8 +24,9 @@ struct NoteEditor: NSViewRepresentable {
 
     func updateNSView(_ host: NativeEditorHost, context: Context) {
         let editor = host.editor
-        editor.updateColors(textColor)
+        host.updateColors(textColor)
         editor.isEditable = store.loadError == nil
+        editor.updatePaperBackground(NotePalette.paperBackground(for: store.document.color))
         editor.tableCellEditor?.isEditable = editor.isEditable
         editor.loadExternalContent(store.document.content)
         editor.onEscape = onEscape
@@ -42,7 +45,7 @@ struct NoteEditor: NSViewRepresentable {
     }
 
     private var textColor: NSColor {
-        appearance == .paper ? NotePalette.paperText : .labelColor
+        appearance.textColor
     }
 
     final class Coordinator { var lastFocusRequest = 0 }
@@ -74,7 +77,7 @@ final class NativeEditorHost: NSView {
         editor.isAutomaticSpellingCorrectionEnabled = false
         editor.usesFontPanel = false
         editor.drawsBackground = false
-        editor.textContainerInset = NSSize(width: 32, height: 16)
+        editor.textContainerInset = NSSize(width: NoteLayout.editorHorizontalInset, height: 8)
         editor.isVerticallyResizable = true
         editor.isHorizontallyResizable = false
         editor.autoresizingMask = [.width]
@@ -116,6 +119,16 @@ final class NativeEditorHost: NSView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    func updateColors(_ ink: NSColor) {
+        editor.updateColors(ink)
+        let secondary = NotePalette.secondaryText(for: ink)
+        if blockButton.contentTintColor != secondary { blockButton.contentTintColor = secondary }
+        if statusLabel.textColor != secondary { statusLabel.textColor = secondary }
+        // A light paper surface still needs a dark scrollbar in Dark Aqua.
+        let knob: NSScroller.KnobStyle = ink == NotePalette.paperText ? .dark : .default
+        if scroll.scrollerKnobStyle != knob { scroll.scrollerKnobStyle = knob }
+    }
+
     override func layout() {
         super.layout()
         // Keep the blank area below short notes inside the editable view so a
@@ -155,18 +168,27 @@ final class NativeEditorHost: NSView {
 
 struct WindowDragRegion: NSViewRepresentable {
     var onDoubleClick: () -> Void
+    var onContextMenu: (() -> NSMenu?)? = nil
     func makeNSView(context: Context) -> NSView {
         let view = NoteWindowDragView()
         view.onDoubleClick = onDoubleClick
+        view.onContextMenu = onContextMenu
         return view
     }
     func updateNSView(_ nsView: NSView, context: Context) {
         (nsView as? NoteWindowDragView)?.onDoubleClick = onDoubleClick
+        (nsView as? NoteWindowDragView)?.onContextMenu = onContextMenu
     }
 }
 
 final class NoteWindowDragView: NSView {
     var onDoubleClick: (() -> Void)?
+    var onContextMenu: (() -> NSMenu?)?
+    override func menu(for event: NSEvent) -> NSMenu? { onContextMenu?() }
+    func showColorMenu(with event: NSEvent) {
+        guard let menu = onContextMenu?() else { return }
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
+    }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func mouseDown(with event: NSEvent) {
         if event.clickCount == 2 {

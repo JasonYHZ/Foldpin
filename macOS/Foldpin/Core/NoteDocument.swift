@@ -13,13 +13,14 @@ struct NoteDocument: Codable, Equatable, Sendable {
     var isPinned = false
     var isShelved = false
     var isCollapsed = false
+    var color: NoteColor = .original
     var frame: NoteFrame?
     var modifiedAt = Date()
 
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case version, id, text, content, isPinned, isShelved, isCollapsed, frame, modifiedAt
+        case version, id, text, content, isPinned, isShelved, isCollapsed, color, frame, modifiedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -37,6 +38,9 @@ struct NoteDocument: Codable, Equatable, Sendable {
         isShelved = try values.decode(Bool.self, forKey: .isShelved)
         // Existing v1 notes predate the title-bar collapse option.
         isCollapsed = try values.decodeIfPresent(Bool.self, forKey: .isCollapsed) ?? false
+        // Optional v2 metadata: older notes and unknown future presets use the
+        // original surface without changing the note's content on load.
+        color = NoteColor(rawValue: try values.decodeIfPresent(String.self, forKey: .color) ?? "") ?? .original
         frame = try values.decodeIfPresent(NoteFrame.self, forKey: .frame)
         modifiedAt = try values.decode(Date.self, forKey: .modifiedAt)
     }
@@ -49,6 +53,7 @@ struct NoteDocument: Codable, Equatable, Sendable {
         try values.encode(isPinned, forKey: .isPinned)
         try values.encode(isShelved, forKey: .isShelved)
         try values.encode(isCollapsed, forKey: .isCollapsed)
+        try values.encode(color, forKey: .color)
         try values.encodeIfPresent(frame, forKey: .frame)
         try values.encode(modifiedAt, forKey: .modifiedAt)
     }
@@ -97,7 +102,8 @@ struct NoteFrame: Codable, Equatable, Sendable {
 
 /// Stored geometry always describes the expanded sheet; a strip keeps its top edge.
 enum NoteLayout {
-    static let headerHeight: CGFloat = 34
+    static let headerHeight: CGFloat = 52
+    static let editorHorizontalInset: CGFloat = 32
     static let minimumWidth: CGFloat = 280
     static let minimumExpandedHeight: CGFloat = 220
 

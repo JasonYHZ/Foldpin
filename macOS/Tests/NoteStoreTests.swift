@@ -41,7 +41,7 @@ import Testing
     store.edit("不应覆盖原文件")
     store.setShelved(true)
     store.setCollapsed(true)
-    store.recordWindowFrame(CGRect(x: 40, y: 200, width: 360, height: 34), collapsed: true)
+    store.recordWindowFrame(CGRect(x: 40, y: 200, width: 360, height: NoteLayout.headerHeight), collapsed: true)
     #expect(!store.isCollapsed)
     #expect(!store.flush())
     #expect(try Data(contentsOf: url) == original)
@@ -57,7 +57,7 @@ import Testing
     let original = store.document
     store.setCollapsed(true)
     // Move and horizontally resize the visible strip on a second display.
-    store.recordWindowFrame(CGRect(x: -720, y: 666, width: 420, height: 34), collapsed: true)
+    store.recordWindowFrame(CGRect(x: -720, y: 700 - NoteLayout.headerHeight, width: 420, height: NoteLayout.headerHeight), collapsed: true)
     #expect(store.flush())
     let restarted = NoteStore(file: file)
     #expect(restarted.isCollapsed)

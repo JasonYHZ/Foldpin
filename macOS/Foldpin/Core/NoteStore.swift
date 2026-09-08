@@ -52,6 +52,12 @@ final class NoteStore: ObservableObject {
         scheduleSave()
     }
 
+    func setColor(_ value: NoteColor) {
+        guard loadError == nil, document.color != value else { return }
+        document.color = value
+        scheduleSave()
+    }
+
     func setShelved(_ value: Bool) {
         guard loadError == nil, document.isShelved != value else { return }
         document.isShelved = value

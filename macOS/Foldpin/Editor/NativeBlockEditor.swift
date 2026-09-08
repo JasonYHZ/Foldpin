@@ -33,6 +33,7 @@ final class PaperTextView: NSTextView {
     var file: NoteFile?
     var codeThemes = CodeThemeSettings.shared
     var noteColor: NSColor = .labelColor
+    private var paperBackground = NotePalette.paperBackground
     var content = NoteContent()
     private var spans: [NoteBlockSpan] = [] { didSet { invalidateBlockGeometry() } }
     private var tableLayouts: [UUID: TableBlockLayout] = [:]
@@ -131,7 +132,18 @@ final class PaperTextView: NSTextView {
     func updateColors(_ color: NSColor) {
         guard noteColor != color else { return }
         noteColor = color
+        blockHandle?.ink = color
+        tableControls?.updateColors(color)
         refreshStyles(force: true)
+        updateCodeCaretColors()
+    }
+
+    func updatePaperBackground(_ color: NSColor) {
+        guard paperBackground != color else { return }
+        paperBackground = color
+        // Only the active cell paints an opaque surface. The rest of the
+        // editor is transparent, so recoloring needs no syntax or layout work.
+        if noteColor == NotePalette.paperText { tableCellEditor?.backgroundColor = color }
     }
 
     override func viewDidChangeEffectiveAppearance() {
@@ -155,7 +167,13 @@ final class PaperTextView: NSTextView {
     private func updateCodeCaretColors() {
         guard !hasMarkedText() else { return }
         let code = currentBlockKind == .code
-        insertionPointColor = code ? codeThemes.theme.caret : .labelColor
+        insertionPointColor = code ? codeThemes.theme.caret : noteColor
+        let linkColor = NotePalette.linkText(for: noteColor)
+        if linkTextAttributes?[.foregroundColor] as? NSColor != linkColor {
+            var attributes = linkTextAttributes ?? [:]
+            attributes[.foregroundColor] = linkColor
+            linkTextAttributes = attributes
+        }
         selectedTextAttributes = [.backgroundColor: code ? codeThemes.theme.selection : NSColor.selectedTextBackgroundColor,
                                   .foregroundColor: code ? codeThemes.theme.selectionForeground : NSColor.selectedTextColor]
     }
@@ -224,7 +242,7 @@ final class PaperTextView: NSTextView {
             let paragraph = NSMutableParagraphStyle()
             paragraph.lineBreakMode = .byTruncatingTail
             let color = span.block.kind == .code
-                ? codeThemes.theme.token(.comment, language: span.block.language).foreground : NSColor.placeholderTextColor
+                ? codeThemes.theme.token(.comment, language: span.block.language).foreground : NotePalette.placeholderText(for: noteColor)
             let text = NSAttributedString(string: label, attributes: [
                 .font: BlockTextCodec.font(span.block), .foregroundColor: color,
                 .paragraphStyle: paragraph
@@ -607,7 +625,7 @@ final class PaperTextView: NSTextView {
             let mark = NoteTextMark(location: 0, length: 0, bold: inline[.noteBold] as? Bool ?? false,
                 italic: inline[.noteItalic] as? Bool ?? false, code: inline[.noteInlineCode] as? Bool ?? false,
                 strikethrough: inline[.noteStrikethrough] as? Bool ?? false, link: link?.isEmpty == false ? link : nil)
-            attrs.merge(BlockTextCodec.inlineAttributes(mark, block: span.block)) { _, new in new }
+            attrs.merge(BlockTextCodec.inlineAttributes(mark, block: span.block, color: noteColor)) { _, new in new }
         }
         // Rebuild from this block, rather than inheriting a previous code
         // line's background, language or separator metadata at its boundary.
@@ -1596,6 +1614,7 @@ extension PaperTextView {
         let container: NSView = enclosingScrollView ?? self
         if handle.superview !== container { handle.removeFromSuperview(); container.addSubview(handle, positioned: .above, relativeTo: nil) }
         handle.blockID = surface.blockID
+        handle.ink = noteColor
         handle.updateLanguage(bundle: bundle)
         let y = min(max(surface.firstLine.midY - handle.frame.height / 2, visibleRect.minY + 1), visibleRect.maxY - handle.frame.height - 1)
         let rect = NSRect(x: max(1, textContainerOrigin.x - handle.frame.width - 4), y: y, width: handle.frame.width, height: handle.frame.height)
@@ -2022,6 +2041,7 @@ extension PaperTextView {
             container.addSubview(controls, positioned: .above, relativeTo: nil)
         }
         controls.blockID = id
+        controls.updateColors(noteColor)
         controls.update(grid: grid, viewport: visibleRect, editor: self, bundle: bundle,
                         enabled: isEditable && !hasMarkedText() && tableCellEditor?.hasMarkedText() != true)
     }
@@ -2085,8 +2105,8 @@ extension PaperTextView {
         cell.font = table.isHeader(row: row, column: column) ? TableBlockLayout.headerFont : TableBlockLayout.font
         cell.textColor = noteColor
         cell.drawsBackground = true
-        cell.backgroundColor = .textBackgroundColor
-        cell.insertionPointColor = .labelColor
+        cell.backgroundColor = noteColor == NotePalette.paperText ? paperBackground : .textBackgroundColor
+        cell.insertionPointColor = noteColor
         cell.usesAdaptiveColorMappingForDarkAppearance = false
         cell.isAutomaticQuoteSubstitutionEnabled = false
         cell.isAutomaticDashSubstitutionEnabled = false
@@ -2156,6 +2176,9 @@ extension PaperTextView {
             cell.setSelectedRange(NSRange(location: min(caret, (cell.string as NSString).length), length: 0))
         }
         if cell.textColor != noteColor { cell.textColor = noteColor }
+        if cell.insertionPointColor != noteColor { cell.insertionPointColor = noteColor }
+        let background = noteColor == NotePalette.paperText ? paperBackground : NSColor.textBackgroundColor
+        if cell.backgroundColor != background { cell.backgroundColor = background }
         let font = table.isHeader(row: editing.row, column: editing.column) ? TableBlockLayout.headerFont : TableBlockLayout.font
         if cell.font != font { cell.font = font }
         if let frame = tableFrame(blockID: editing.id) {

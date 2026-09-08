@@ -99,16 +99,16 @@ import Testing
     for _ in 0..<20 {
         let strip = NoteLayout.visibleFrame(expanded: frame, collapsed: true)
         #expect(strip.maxY == expanded.maxY)
-        #expect(strip.height == 34)
+        #expect(strip.height == 52)
         frame = NoteLayout.expandedFrame(window: strip, collapsed: true, rememberedHeight: frame.height)
     }
     #expect(frame == expanded)
     let main = CGRect(x: 0, y: 25, width: 1440, height: 850)
     let strip = NoteLayout.visibleFrame(expanded: expanded, collapsed: true)
     let fitted = NoteFrame(strip).fitted(to: [main], fallback: main,
-                                        minimumSize: CGSize(width: 280, height: 34))
+                                        minimumSize: CGSize(width: 280, height: NoteLayout.headerHeight))
     #expect(main.contains(fitted))
-    #expect(fitted.height == 34)
+    #expect(fitted.height == 52)
     let restored = NoteLayout.expandedFrame(window: fitted, collapsed: true, rememberedHeight: 480)
     #expect(restored.height == 480)
     #expect(restored.maxY == fitted.maxY)

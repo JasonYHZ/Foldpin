@@ -147,7 +147,7 @@ enum BlockTextCodec {
             if prefixLength > 0 { value.addAttribute(.blockMarker, value: true, range: NSRange(location: 0, length: prefixLength)) }
             for mark in block.marks where mark.location + mark.length <= (block.text as NSString).length {
                 let range = NSRange(location: prefixLength + mark.location, length: mark.length)
-                value.addAttributes(inlineAttributes(mark, block: block), range: range)
+                value.addAttributes(inlineAttributes(mark, block: block, color: color), range: range)
             }
             if let asset = block.image {
                 let attachment = NSTextAttachment()
@@ -170,7 +170,7 @@ enum BlockTextCodec {
                 } else {
                     let size = NSSize(width: max(80, width - 2), height: 20)
                     attachment.image = NSImage(size: size, flipped: true) { bounds in
-                        NSColor.separatorColor.setFill()
+                        NotePalette.rule(for: color).setFill()
                         NSRect(x: 0, y: bounds.midY, width: bounds.width, height: 1).fill()
                         return true
                     }
@@ -224,21 +224,21 @@ enum BlockTextCodec {
         attrs[.noteLink] = ""
         attrs[.strikethroughStyle] = 0
         attrs[.font] = font(block)
-        attrs[.foregroundColor] = block.kind == .quote || (block.kind == .task && block.isChecked) ? NSColor.secondaryLabelColor : color
+        attrs[.foregroundColor] = block.kind == .quote || (block.kind == .task && block.isChecked) ? NotePalette.secondaryText(for: color) : color
         attrs[.paragraphStyle] = paragraph
         if block.kind == .code { attrs[.foregroundColor] = theme.foreground }
         if block.kind == .task && block.isChecked { attrs[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
         return attrs
     }
 
-    static func inlineAttributes(_ mark: NoteTextMark, block: NoteBlock) -> [NSAttributedString.Key: Any] {
+    static func inlineAttributes(_ mark: NoteTextMark, block: NoteBlock, color: NSColor = .labelColor) -> [NSAttributedString.Key: Any] {
         var values: [NSAttributedString.Key: Any] = [
             .noteBold: mark.bold, .noteItalic: mark.italic, .noteInlineCode: mark.code,
             .noteStrikethrough: mark.strikethrough, .noteLink: mark.link ?? "",
             .font: font(block, bold: mark.bold, italic: mark.italic, code: mark.code),
             .strikethroughStyle: mark.strikethrough || (block.kind == .task && block.isChecked) ? NSUnderlineStyle.single.rawValue : 0
         ]
-        if mark.code { values[.backgroundColor] = NSColor.quaternaryLabelColor.withAlphaComponent(0.1) }
+        if mark.code { values[.backgroundColor] = NotePalette.inlineCodeBackground(for: color) }
         if let url = mark.clickableURL { values[.link] = url }
         return values
     }

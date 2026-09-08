@@ -5,7 +5,9 @@ final class PaperPanel: NSPanel {
     var onToggleCollapsed: (() -> Void)?
     var onRequestClose: (() -> Void)?
     var onEndResize: (() -> Void)?
+    var onBeginMove: (() -> Void)?
     private var resizeSession: ResizeSession?
+    var isResizingByMouse: Bool { resizeSession != nil }
 
     private struct ResizeSession {
         let edges: NoteResizeEdges
@@ -17,6 +19,11 @@ final class PaperPanel: NSPanel {
     override var canBecomeMain: Bool { true }
 
     override func sendEvent(_ event: NSEvent) {
+        // A new press starts a new gesture even if the previous mouse-up was
+        // lost while switching screens or focus. Never reuse its resize origin.
+        if event.type == .leftMouseDown || event.type == .rightMouseDown {
+            finishResize()
+        }
         if let session = resizeSession,
            event.type == .leftMouseDragged || event.type == .leftMouseUp {
             let pointer = convertPoint(toScreen: event.locationInWindow)
@@ -32,6 +39,13 @@ final class PaperPanel: NSPanel {
         // window; passive display still uses the nonactivating panel behavior.
         if event.type == .leftMouseDown || event.type == .rightMouseDown {
             onActivate?()
+        }
+        let contextClick = event.type == .rightMouseDown ||
+            (event.type == .leftMouseDown && event.modifierFlags.contains(.control))
+        if contextClick, let surface = contentView as? NoteWindowSurface,
+           let region = surface.titlebarDragRegion(at: event.locationInWindow) {
+            region.showColorMenu(with: event)
+            return
         }
         if event.type == .leftMouseDown, let surface = contentView as? NoteWindowSurface {
             let edges = surface.resizeEdges(at: event.locationInWindow)
@@ -50,6 +64,14 @@ final class PaperPanel: NSPanel {
             return
         }
         super.sendEvent(event)
+    }
+
+    override func performDrag(with event: NSEvent) {
+        finishResize()
+        onBeginMove?()
+        // WindowServer still owns movement and Space switching. This returns
+        // immediately, so do not treat its return as the end of the gesture.
+        super.performDrag(with: event)
     }
 
     private func finishResize() {

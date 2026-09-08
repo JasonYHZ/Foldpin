@@ -22,6 +22,10 @@ final class TableAddControls: NSView {
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    func updateColors(_ ink: NSColor) {
+        for button in [rowButton, columnButton] where button.ink != ink { button.ink = ink }
+    }
+
     func containsControl(at point: NSPoint) -> Bool {
         !isHidden && [rowButton, columnButton].contains { !$0.isHidden && $0.frame.contains(point) }
     }
@@ -55,6 +59,12 @@ final class TableAddControls: NSView {
 
 @MainActor
 final class TableAddButton: NSButton {
+    var ink: NSColor = .labelColor {
+        didSet {
+            contentTintColor = NotePalette.secondaryText(for: ink)
+            needsDisplay = true
+        }
+    }
     var onPointerChange: ((NSPoint) -> Void)?
     private var hovered = false
     private var pointerArea: NSTrackingArea?
@@ -84,7 +94,7 @@ final class TableAddButton: NSButton {
         hovered = false; needsDisplay = true; onPointerChange?(event.locationInWindow)
     }
     override func draw(_ dirtyRect: NSRect) {
-        NSColor.labelColor.withAlphaComponent(hovered || isHighlighted ? 0.12 : 0.045).setFill()
+        ink.withAlphaComponent(hovered || isHighlighted ? 0.12 : 0.045).setFill()
         NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 4, yRadius: 4).fill()
         super.draw(dirtyRect)
     }

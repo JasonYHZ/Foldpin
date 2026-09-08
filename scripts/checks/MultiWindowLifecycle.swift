@@ -29,6 +29,9 @@ import Testing
     UserDefaults.standard.setVolatileDomain(["noteAppearance": "paper", "appLanguage": "en"], forName: UserDefaults.argumentDomain)
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
+    if ProcessInfo.processInfo.environment["FOLDPIN_CHECK_DARK"] == "1" {
+        app.appearance = NSAppearance(named: .darkAqua)
+    }
     let directory = URL(fileURLWithPath: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_DATA"]!)
     let library = NoteLibrary(directory: directory)
     let a = try #require(library.entries.first)
@@ -48,6 +51,32 @@ import Testing
     #expect(firstEditor !== secondEditor)
     let undo = try #require(firstEditor.undoManager)
     #expect(undo !== secondEditor.undoManager)
+    // Window-level enter/exit must change only chrome, even on an inactive note.
+    let surface = try #require(first.paper.contentView as? NoteWindowSurface)
+    let originalFrame = first.paper.frame
+    let originalContent = a.store.document.content
+    let dragPoint = NSPoint(x: originalFrame.width / 2, y: originalFrame.height - NoteLayout.headerHeight / 2)
+    let dragBefore = try #require(surface.titlebarDragRegion(at: dragPoint))
+    let dragFrame = dragBefore.frame
+    let pointer = try #require(NSEvent.enterExitEvent(with: .mouseEntered, location: NSPoint(x: 100, y: 100),
+        modifierFlags: [], timestamp: 0, windowNumber: first.paper.windowNumber, context: nil,
+        eventNumber: 0, trackingNumber: 0, userData: nil))
+    let exit = try #require(NSEvent.enterExitEvent(with: .mouseExited, location: NSPoint(x: -10, y: -10),
+        modifierFlags: [], timestamp: 0, windowNumber: first.paper.windowNumber, context: nil,
+        eventNumber: 1, trackingNumber: 0, userData: nil))
+    var transaction = Transaction(); transaction.disablesAnimations = true
+    withTransaction(transaction) { surface.mouseEntered(with: pointer) }
+    #expect(first.titlebarState.isPointerInside)
+    try snapshot(surface, name: "titlebar-hover")
+    #expect(surface.titlebarDragRegion(at: dragPoint) === dragBefore && dragBefore.frame == dragFrame)
+    withTransaction(transaction) { surface.mouseExited(with: exit) }
+    #expect(!first.titlebarState.isPointerInside)
+    // Let SwiftUI finish the fade before capturing the inactive appearance.
+    try await Task.sleep(for: .milliseconds(180))
+    try snapshot(surface, name: "titlebar-idle")
+    #expect(first.paper.frame == originalFrame && a.store.document.content == originalContent)
+    #expect(findEditor(surface) === firstEditor && firstEditor.undoManager === undo)
+    #expect(surface.titlebarDragRegion(at: dragPoint) === dragBefore && dragBefore.frame == dragFrame)
     undo.groupsByEvent = false
     undo.beginUndoGrouping()
     firstEditor.setSelectedRange(NSRange(location: (firstEditor.string as NSString).length, length: 0))
@@ -56,11 +85,16 @@ import Testing
     let edited = a.store.document.content
     let untouched = b.store.document
     first.togglePin()
+    withTransaction(transaction) { surface.mouseEntered(with: pointer) }
+    try await Task.sleep(for: .milliseconds(180))
+    try snapshot(surface, name: "titlebar-pinned")
     #expect(try command("m", in: first.paper))
     try await Task.sleep(for: .milliseconds(80))
     #expect(a.store.isCollapsed && !b.store.isCollapsed && a.store.document.isPinned && !b.store.document.isPinned)
     #expect(first.paper.frame.height == NoteLayout.headerHeight)
     #expect(findEditor(first.paper.contentView!) === firstEditor)
+    withTransaction(transaction) { surface.mouseEntered(with: pointer) }
+    try snapshot(surface, name: "titlebar-collapsed")
     first.toggleCollapsed()
     #expect(try command("w", in: first.paper))
     #expect(a.store.document.isShelved && !first.isVisible && second.isVisible)

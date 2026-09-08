@@ -7,6 +7,8 @@ enum NoteAppearance: String, CaseIterable, Identifiable {
 
     static let preferenceKey = "noteAppearance"
     static let paperColor = Color(nsColor: NotePalette.paperBackground)
+    var textColor: NSColor { self == .paper ? NotePalette.paperText : .labelColor }
+    var secondaryTextColor: NSColor { NotePalette.secondaryText(for: textColor) }
     var id: String { rawValue }
     func title(bundle: Bundle) -> String {
         self == .paper ? String(localized: "Paper", bundle: bundle) : String(localized: "Glass", bundle: bundle)
@@ -40,16 +42,17 @@ struct NoteSheetSurface: ViewModifier {
 
 struct NoteSheetFill: View {
     var appearance: NoteAppearance
+    var color: NoteColor = .original
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         if appearance == .paper {
-            NoteAppearance.paperColor
+            Color(nsColor: NotePalette.paperBackground(for: color))
         } else {
             if reduceTransparency || contrast == .increased {
-                Color(nsColor: .windowBackgroundColor)
+                Color(nsColor: NotePalette.solidGlassBackground(for: color))
             } else {
                 // Regular glass supplies adaptive blur and contrast. Keep only
                 // a light reading tint so its material remains visible.

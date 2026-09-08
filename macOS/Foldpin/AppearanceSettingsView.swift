@@ -49,6 +49,9 @@ struct AppearanceSettingsView: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
+                Text(String(localized: "Right-click a note’s title bar to choose a color for that note.", bundle: languageSettings.bundle))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 Label(String(localized: "\(appearance.title(bundle: languageSettings.bundle)) applied · Preference saved", bundle: languageSettings.bundle), systemImage: "checkmark.circle")
                     .font(.system(size: 12, weight: .medium))
                 Text(reduceTransparency || contrast == .increased
@@ -121,11 +124,12 @@ struct AppearanceSettingsView: View {
 private struct AppearancePreview: View {
     @ObservedObject private var languageSettings = LanguageSettings.shared
     var appearance: NoteAppearance
+    private var secondaryInk: Color { Color(nsColor: appearance.secondaryTextColor) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Image(systemName: "xmark").font(.system(size: 9)).foregroundStyle(.secondary)
+                Image(systemName: "xmark").font(.system(size: 9)).foregroundStyle(secondaryInk)
                 Spacer()
                 HStack(spacing: 12) {
                     Image(systemName: "pin")
@@ -137,10 +141,11 @@ private struct AppearancePreview: View {
             .padding(.bottom, 15)
             Text(String(localized: "Keep that thought", bundle: languageSettings.bundle)).font(.system(size: 13, weight: .medium))
             Text(String(localized: "Jot it. Pin it. Fold it away.", bundle: languageSettings.bundle))
-                .font(.system(size: 11)).foregroundStyle(.secondary).padding(.top, 7)
+                .font(.system(size: 11)).foregroundStyle(secondaryInk).padding(.top, 7)
             Spacer(minLength: 10)
-            Text(String(localized: "Saved on this Mac", bundle: languageSettings.bundle)).font(.system(size: 9)).foregroundStyle(.secondary)
+            Text(String(localized: "Saved on this Mac", bundle: languageSettings.bundle)).font(.system(size: 9)).foregroundStyle(secondaryInk)
         }
+        .foregroundStyle(Color(nsColor: appearance.textColor))
         .padding(14)
         .modifier(NoteSheetSurface(appearance: appearance, cornerRadius: 12))
         .padding(8)

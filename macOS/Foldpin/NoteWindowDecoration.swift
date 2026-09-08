@@ -2,8 +2,12 @@ import AppKit
 import CoreGraphics
 
 enum NoteWindowStyle {
-    static let cornerRadius: CGFloat = 16
+    static let cornerRadius: CGFloat = 28
     static let shadowPadding: CGFloat = 36
+
+    static func resolvedCornerRadius(for size: CGSize) -> CGFloat {
+        min(cornerRadius, max(0, min(size.width, size.height) / 2))
+    }
 }
 
 /// Only the perimeter participates in resizing; the center passes through to
@@ -90,8 +94,9 @@ final class NoteShadowWindow: NSPanel {
 enum NoteShadowDrawing {
     static func draw(in context: CGContext, canvas: CGRect, paper: CGRect) {
         guard paper.width > 0, paper.height > 0 else { return }
-        let shape = CGPath(roundedRect: paper, cornerWidth: NoteWindowStyle.cornerRadius,
-                           cornerHeight: NoteWindowStyle.cornerRadius, transform: nil)
+        let radius = NoteWindowStyle.resolvedCornerRadius(for: paper.size)
+        let shape = CGPath(roundedRect: paper, cornerWidth: radius,
+                           cornerHeight: radius, transform: nil)
         context.saveGState()
         context.addRect(canvas)
         context.addPath(shape)
@@ -137,6 +142,9 @@ private final class NoteShadowView: NSView {
 /// One subtle rounded stroke. It never intercepts text selection or buttons.
 @MainActor
 final class NoteEdgeView: NSView {
+    var isPaper = false {
+        didSet { if isPaper != oldValue { needsDisplay = true } }
+    }
     override var isOpaque: Bool { false }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
@@ -147,11 +155,10 @@ final class NoteEdgeView: NSView {
         let inset = width / 2
         let rect = bounds.insetBy(dx: inset, dy: inset)
         guard rect.width > 0, rect.height > 0 else { return }
-        let path = NSBezierPath(roundedRect: rect,
-                                xRadius: NoteWindowStyle.cornerRadius - inset,
-                                yRadius: NoteWindowStyle.cornerRadius - inset)
-        let color = dark ? NSColor.white : NSColor.black
-        color.withAlphaComponent(highContrast ? 0.55 : (dark ? 0.28 : 0.18)).setStroke()
+        let radius = max(0, NoteWindowStyle.resolvedCornerRadius(for: bounds.size) - inset)
+        let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+        let color = isPaper ? NotePalette.paperText : (dark ? NSColor.white : NSColor.black)
+        color.withAlphaComponent(highContrast ? 0.7 : (isPaper ? 0.24 : (dark ? 0.28 : 0.18))).setStroke()
         path.lineWidth = width
         path.stroke()
     }

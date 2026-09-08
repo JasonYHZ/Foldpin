@@ -1,18 +1,25 @@
 import AppKit
 import SwiftUI
+import OSLog
+import Combine
 
 /// One retained editor and undo history per note, including while shelved.
 @MainActor
 final class PaperWindowController: NSObject, NSWindowDelegate {
     let id: UUID
     let store: NoteStore
+    let titlebarState = NoteTitlebarState()
     private(set) var paper: PaperPanel!
     private var paperShadow: NoteShadowWindow?
     private var restoringFrame = false
     private var paperIsCollapsed = false
     private var expandedMaximumSize = NSSize.zero
     private var pendingGeometryUpdate: Task<Void, Never>?
+    private var colorObservation: AnyCancellable?
     private var languageSettings: LanguageSettings { .shared }
+    #if DEBUG
+    private static let geometryLog = Logger(subsystem: "Foldpin", category: "WindowGeometry")
+    #endif
     var onActivate: ((UUID) -> Void)?
     var onStateChange: (() -> Void)?
     var onShelved: ((UUID, Bool) -> Void)?
@@ -47,6 +54,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         paper.onToggleCollapsed = { [weak self] in self?.toggleCollapsed() }
         paper.onRequestClose = { [weak self] in _ = self?.shelvePaper() }
         paper.onEndResize = { [weak self] in self?.recordGeometry() }
+        paper.onBeginMove = { [weak self] in self?.prepareForMove() }
         paper.isReleasedWhenClosed = false
         paper.isMovable = true
         // Only the explicit header drag region initiates a native window drag.
@@ -63,15 +71,23 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         paper.contentMinSize = NSSize(width: NoteLayout.minimumWidth, height: NoteLayout.minimumExpandedHeight)
         paper.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .fullScreenAuxiliary]
         paper.delegate = self
-        let hosting = TransparentNoteHostingView(rootView: ContentView(store: store,
+        let hosting = TransparentNoteHostingView(rootView: ContentView(store: store, titlebarState: titlebarState,
             onPin: { [weak self] in self?.togglePin() },
             onCollapse: { [weak self] in self?.toggleCollapsed() },
             onShelve: { [weak self] in _ = self?.shelvePaper() },
             onRetryLoad: { [weak self] in self?.retryLoad() },
-            onRevealError: { [weak self] in self?.revealError() }))
+            onRevealError: { [weak self] in self?.revealError() },
+            onColorMenu: { [weak self] in self?.makeColorMenu() }))
         hosting.sizingOptions = []
         hosting.safeAreaRegions = []
-        paper.contentView = NoteWindowSurface(content: hosting)
+        let surface = NoteWindowSurface(content: hosting, onHoverChange: { [weak state = titlebarState] in
+            state?.setPointerInside($0)
+        })
+        paper.contentView = surface
+        // Only color changes reach the surface, not typing or window geometry.
+        colorObservation = store.$document.map(\.color).removeDuplicates().sink { [weak surface] color in
+            surface?.updateColor(color)
+        }
         setFrame(frame)
         // A first-launch note has no stored frame yet.
         if store.document.frame == nil { store.setFrame(frame) }
@@ -83,6 +99,30 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     func applyLanguage() {
         store.localizationBundle = languageSettings.bundle
         paper.title = String(localized: "Foldpin Note", bundle: languageSettings.bundle)
+    }
+
+    func makeColorMenu() -> NSMenu {
+        let menu = NSMenu(title: String(localized: "Note Color", bundle: languageSettings.bundle))
+        menu.autoenablesItems = false
+        for color in NoteColor.allCases {
+            let item = NSMenuItem(title: color.title(bundle: languageSettings.bundle),
+                                  action: #selector(changeColor(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = color.rawValue
+            item.state = color == store.document.color ? .on : .off
+            item.image = NotePalette.colorSwatch(for: color)
+            item.isEnabled = store.loadError == nil
+            menu.addItem(item)
+        }
+        return menu
+    }
+
+    @objc private func changeColor(_ sender: NSMenuItem) {
+        guard store.loadError == nil, let raw = sender.representedObject as? String,
+              let color = NoteColor(rawValue: raw) else { return }
+        store.setColor(color)
+        // No editor replacement, focus request, geometry change or code parse.
+        onStateChange?()
     }
 
     func showPaper(focus: Bool) {
@@ -97,6 +137,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
             else { paper.makeFirstResponder(nil) }
         } else { paper.orderFrontRegardless() }
         paperShadow?.show(below: paper)
+        (paper.contentView as? NoteWindowSurface)?.refreshPointerPresence()
         onStateChange?()
     }
 
@@ -164,6 +205,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         let hadFocus = paper.isKeyWindow
         paperShadow?.orderOut(nil)
         paper.orderOut(nil)
+        (paper.contentView as? NoteWindowSurface)?.refreshPointerPresence()
         onStateChange?()
         onShelved?(id, hadFocus && restoringFocus)
         return true
@@ -202,6 +244,25 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
                height: paperIsCollapsed ? NoteLayout.headerHeight : NoteLayout.minimumExpandedHeight)
     }
 
+    private func applySizeLimits() {
+        let minimum = minimumPaperSize
+        let maximum = paperIsCollapsed
+            ? NSSize(width: expandedMaximumSize.width, height: NoteLayout.headerHeight)
+            : expandedMaximumSize
+        guard paper.contentMinSize != minimum || paper.contentMaxSize != maximum else { return }
+        // Relax a previous collapsed limit before installing either state's
+        // limits. This does not fit the window to a screen or lock its size.
+        paper.contentMaxSize = expandedMaximumSize
+        paper.contentMinSize = minimum
+        paper.contentMaxSize = maximum
+    }
+
+    private func prepareForMove() {
+        traceGeometry("native-drag-start")
+        applySizeLimits()
+        recordGeometry()
+    }
+
     private func applyPaperPresentation() {
         let expanded = store.document.frame?.rect ?? paper.frame
         paperIsCollapsed = store.isCollapsed
@@ -210,11 +271,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
                                              fallback: workingScreen.visibleFrame,
                                              minimumSize: minimumPaperSize)
         restoringFrame = true
-        paper.contentMaxSize = expandedMaximumSize
-        paper.contentMinSize = minimumPaperSize
-        if paperIsCollapsed {
-            paper.contentMaxSize = NSSize(width: expandedMaximumSize.width, height: NoteLayout.headerHeight)
-        }
+        applySizeLimits()
         setFrame(fitted)
         recordGeometry()
     }
@@ -222,16 +279,33 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     func screensChanged() {
         let frame = NoteFrame(paper.frame).fitted(to: NSScreen.screens.map(\.visibleFrame), fallback: workingScreen.visibleFrame,
                                                 minimumSize: minimumPaperSize)
+        traceGeometry("screen-parameters", proposed: frame)
         setFrame(frame); recordGeometry()
         onStateChange?()
     }
 
     func windowDidMove(_ notification: Notification) { scheduleGeometryRecording() }
     func windowDidResize(_ notification: Notification) {
+        if !paper.isResizingByMouse { traceGeometry("window-resized") }
         paperShadow?.updateFrame(for: paper)
         scheduleGeometryRecording()
     }
     func windowDidEndLiveResize(_ notification: Notification) { recordGeometry() }
+
+    func windowDidChangeScreen(_ notification: Notification) { traceGeometry("screen-changed") }
+
+    private func traceGeometry(_ event: String, proposed: CGRect? = nil) {
+        #if DEBUG
+        guard let paper else { return }
+        // Local debug diagnostics only: no note text, title, UUID or file path.
+        let details = "\(event) window=\(paper.windowNumber) frame=\(NSStringFromRect(paper.frame)) "
+            + "min=\(NSStringFromSize(paper.contentMinSize)) max=\(NSStringFromSize(paper.contentMaxSize)) "
+            + "collapsed=\(paperIsCollapsed) restoring=\(restoringFrame) "
+            + "screen=\(paper.screen.map { NSStringFromRect($0.visibleFrame) } ?? "none") "
+            + "scale=\(paper.backingScaleFactor) proposed=\(proposed.map(NSStringFromRect) ?? "none")"
+        Self.geometryLog.notice("\(details, privacy: .public)")
+        #endif
+    }
 
     private func scheduleGeometryRecording() {
         guard paper != nil, !restoringFrame else { return }
@@ -264,11 +338,13 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     }
 
     func dispose() {
+        colorObservation = nil
         pendingGeometryUpdate?.cancel()
         paper.onActivate = nil
         paper.onRequestClose = nil
         paper.onToggleCollapsed = nil
         paper.onEndResize = nil
+        paper.onBeginMove = nil
         paper.delegate = nil
         if let paperShadow { paper.removeChildWindow(paperShadow); paperShadow.orderOut(nil); paperShadow.close() }
         paper.orderOut(nil)

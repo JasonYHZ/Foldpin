@@ -12,6 +12,9 @@ struct BlockMenuCommand {
 /// A single reusable gutter control, outside the scrolling clip view.
 @MainActor
 final class BlockHandleButton: NSButton, NSDraggingSource {
+    var ink: NSColor = .labelColor {
+        didSet { if ink != oldValue { needsDisplay = true } }
+    }
     var blockID: UUID?
     var onOpen: ((UUID, BlockHandleButton) -> Void)?
     var onMenuFinished: (() -> Void)?
@@ -133,10 +136,10 @@ final class BlockHandleButton: NSButton, NSDraggingSource {
 
     override func draw(_ dirtyRect: NSRect) {
         if hovered || isHighlighted {
-            NSColor.labelColor.withAlphaComponent(0.08).setFill()
+            ink.withAlphaComponent(0.08).setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 4, yRadius: 4).fill()
         }
-        NSColor.secondaryLabelColor.setFill()
+        NotePalette.secondaryText(for: ink).setFill()
         for x in [-2.5, 2.5] {
             for y in [-5.0, 0, 5] {
                 NSBezierPath(ovalIn: NSRect(x: bounds.midX + x - 1.25, y: bounds.midY + y - 1.25, width: 2.5, height: 2.5)).fill()

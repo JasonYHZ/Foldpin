@@ -166,6 +166,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let pin = item(String(localized: "Pin Note", bundle: languageSettings.bundle), #selector(togglePin))
         pin.state = current?.store.document.isPinned == true ? .on : .off
         pin.isEnabled = enabled
+        let color = NSMenuItem(title: String(localized: "Note Color", bundle: languageSettings.bundle), action: nil, keyEquivalent: "")
+        color.image = NSImage(systemSymbolName: "paintpalette", accessibilityDescription: nil)
+        color.submenu = current?.makeColorMenu()
+        color.isEnabled = enabled
+        menu.addItem(color)
         item(String(localized: "Shelve All Notes", bundle: languageSettings.bundle), #selector(shelveAll)).isEnabled = windows.values.contains { $0.isVisible }
         menu.addItem(.separator())
         _ = item(String(localized: "Settings…", bundle: languageSettings.bundle), #selector(showSettings), key: ",")

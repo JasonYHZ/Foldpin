@@ -375,6 +375,23 @@
         }
       }
     },
+    "Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blue"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝色"
+          }
+        }
+      }
+    },
     "Bold": {
       "extractionState": "manual",
       "localizations": {
@@ -1158,6 +1175,23 @@
         }
       }
     },
+    "Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Green"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "绿色"
+          }
+        }
+      }
+    },
     "Header Column": {
       "extractionState": "manual",
       "localizations": {
@@ -1787,6 +1821,23 @@
         }
       }
     },
+    "Note Color": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note Color"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "纸片颜色"
+          }
+        }
+      }
+    },
     "Note text": {
       "extractionState": "manual",
       "localizations": {
@@ -1940,6 +1991,23 @@
         }
       }
     },
+    "Original": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原色"
+          }
+        }
+      }
+    },
     "Paper": {
       "extractionState": "manual",
       "localizations": {
@@ -2025,6 +2093,23 @@
         }
       }
     },
+    "Pink": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pink"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "粉色"
+          }
+        }
+      }
+    },
     "Plain Text": {
       "extractionState": "manual",
       "localizations": {
@@ -2038,6 +2123,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "纯文本"
+          }
+        }
+      }
+    },
+    "Purple": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purple"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "紫色"
           }
         }
       }
@@ -2174,6 +2276,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "重试保存"
+          }
+        }
+      }
+    },
+    "Right-click a note’s title bar to choose a color for that note.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right-click a note’s title bar to choose a color for that note."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右键点击纸片标题栏，即可为这张纸片选择颜色。"
+          }
+        }
+      }
+    },
+    "Right-click to change this note’s color": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right-click to change this note’s color"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右键更改这张纸片的颜色"
           }
         }
       }
@@ -2905,6 +3041,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "窗口"
+          }
+        }
+      }
+    },
+    "Yellow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yellow"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黄色"
           }
         }
       }
