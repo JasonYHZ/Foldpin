@@ -165,10 +165,9 @@ final class NoteWindowSurface: NSView {
             dragRegion = findDragRegion(in: hosting)
         }
         guard let dragRegion, !dragRegion.isHiddenOrHasHiddenAncestor else { return nil }
-        let point = dragRegion.convert(windowPoint, from: nil)
         // SwiftUI can allow drawing outside the representable, so visibleRect
         // may exceed its bounds. Never treat that overflow as draggable space.
-        return dragRegion.bounds.intersection(dragRegion.visibleRect).contains(point) ? dragRegion : nil
+        return dragRegion.containsDragPoint(windowPoint) ? dragRegion : nil
     }
 
     private func findDragRegion(in view: NSView) -> NoteWindowDragView? {

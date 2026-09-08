@@ -88,13 +88,15 @@ private struct NoteTitlebar: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @FocusState private var focusedAction: Action?
-    private enum Action: Hashable { case close, pin, collapse, shelve }
+    @State private var isIconPickerPresented = false
+    @State private var isIconHovered = false
+    private enum Action: Hashable { case close, icon, pin, collapse, shelve }
     var onPin: () -> Void
     var onCollapse: () -> Void
     var onShelve: () -> Void
     var onColorMenu: (() -> NSMenu?)?
     private let closeButtonSize: CGFloat = 26
-    private var controlsVisible: Bool { state.isPointerInside || focusedAction != nil || voiceOverEnabled }
+    private var controlsVisible: Bool { state.isPointerInside || focusedAction != nil || voiceOverEnabled || isIconPickerPresented }
     private let buttonSize: CGFloat = 28
 
     var body: some View {
@@ -104,7 +106,9 @@ private struct NoteTitlebar: View {
                 .focused($focusedAction, equals: .close)
                 .opacity(controlsVisible ? 1 : 0)
                 .allowsHitTesting(controlsVisible)
-            WindowDragRegion(onDoubleClick: onCollapse, onContextMenu: onColorMenu)
+            if store.isCollapsed { iconButton }
+            WindowDragRegion(onDoubleClick: onCollapse, onContextMenu: onColorMenu,
+                             hasCenteredIcon: !store.isCollapsed && (store.document.icon != nil || controlsVisible))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay(alignment: .leading) {
                     if store.isCollapsed {
@@ -151,7 +155,46 @@ private struct NoteTitlebar: View {
         .padding(.leading, NoteLayout.editorHorizontalInset - closeButtonSize / 2)
         .padding(.trailing, 8)
         .frame(height: NoteLayout.headerHeight)
+        .overlay {
+            // Center against the full window, independent of the unequal controls.
+            if !store.isCollapsed { iconButton }
+        }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: controlsVisible)
+        .onChange(of: store.isCollapsed) { _, _ in isIconPickerPresented = false }
+        .onChange(of: store.document.isShelved) { _, shelved in if shelved { isIconPickerPresented = false } }
+        .onChange(of: store.loadError) { _, error in if error != nil { isIconPickerPresented = false } }
+    }
+
+    private var iconButton: some View {
+        Button { isIconPickerPresented = true } label: {
+            Group {
+                if let icon = store.document.icon {
+                    Text(icon).font(.system(size: 18))
+                } else {
+                    Image(systemName: "face.smiling").font(.system(size: 15, weight: .regular))
+                        .foregroundStyle(ink.opacity(0.65))
+                }
+            }
+            .frame(width: 26, height: 28)
+            .background(ink.opacity(isIconHovered ? 0.06 : 0), in: .rect(cornerRadius: 6))
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .disabled(store.loadError != nil)
+        .focused($focusedAction, equals: .icon)
+        .onHover { isIconHovered = $0 }
+        .opacity(store.document.icon != nil || controlsVisible ? 1 : 0)
+        .allowsHitTesting(store.document.icon != nil || controlsVisible)
+        .help(store.document.icon == nil ? String(localized: "Add Icon", bundle: languageSettings.bundle)
+              : String(localized: "Change Icon", bundle: languageSettings.bundle))
+        .accessibilityLabel(store.document.icon == nil ? String(localized: "Add Icon", bundle: languageSettings.bundle)
+                            : String(localized: "Change Icon", bundle: languageSettings.bundle))
+        .accessibilityValue(store.document.icon ?? String(localized: "No Icon", bundle: languageSettings.bundle))
+        .popover(isPresented: $isIconPickerPresented, arrowEdge: .bottom) {
+            NoteIconPicker(selectedIcon: store.document.icon, onSelect: { icon in
+                if store.setIcon(icon) { isIconPickerPresented = false }
+            }, onClose: { isIconPickerPresented = false })
+        }
     }
 
     private var collapsedTitle: String {

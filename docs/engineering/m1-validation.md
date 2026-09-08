@@ -1,5 +1,39 @@
 # M1 原生单纸片验证记录
 
+## 2026-09-09 Emoji 滚动开销与分类跳变
+
+用户实际使用反馈轻微卡顿，快速滚动时底部分组反复跳变。代码检查发现十个嵌套 LazyVGrid 各自估算高度、各组 onGeometryChange 分别发布分类，分类状态还会刷新整个面板；未做运行时剖析，不能断言这是全部卡顿来源。
+
+实现改为单个 LazyVStack，标题 / 表情行均固定 36 点，共用不可变行表和位置索引；一个 onScrollGeometryChange 从实际 visibleRect.minY 计算唯一分类，只让独立底栏观察变化。移除各组几何回调和动态高度依赖，滚动不重建 / 过滤全部表情。搜索与分组跳转、跨组键盘保持，新增查询版本防止旧排队跳转覆盖新结果。
+
+- 一次 Debug 构建通过：`/private/tmp/Foldpin-emoji-scroll-build.log`，无新增编译警告，只有既有环境提示。
+- 3 项 `noteEmojiGrid` 检查通过：1 / 37 / 281 / 1,500 点正反向位移时分类顺序稳定，远距离跳组与首尾越界；全部 1,906 + 40 常用项目保留、锚点唯一、左右遍历与跨组上下移动；中英文 / 自选表情 / 无结果搜索和清空恢复。日志 `/private/tmp/Foldpin-emoji-scroll-tests.log`。
+- 未启动 Foldpin、创建可见检查窗口、修改用户数据或重跑高亮 / 存储测试。测试覆盖布局模型和分类计算，不等同于真实滚轮 / 触控板 / VoiceOver 验证；未测量屏幕帧率、CPU 或内存改进百分比，实际流畅度仍待新版使用确认。
+
+## 2026-09-09 Emoji 分组连续滚动
+
+表情分组改为同一个连续列表，常用及全部九类按内容高度依次排列；底部分类按钮变为分组滚动锚点，滚动时同步指示当前组。搜索独立过滤，清空恢复完整列表，搜索中点击分类会恢复并跳转。常用 / 分类里的相同表情使用独立滚动与焦点 ID，方向键可跨分组移动。
+
+- 一次 Debug 构建通过：`/private/tmp/Foldpin-emoji-continuous-build.log`。只有既有模拟器服务与 App Intents 提示，无新增编译警告。
+- 本次只改面板布局与交互，未重复表情数据 / 存储测试，未启动 Foldpin 或操作用户窗口。真实滚轮 / 触控板、分类定位和联动、搜索返回、跨组键盘及 VoiceOver 未做 UI 验证。
+
+## 2026-09-09 居中图标与完整 Emoji 面板
+
+展开图标改为相对整个窗口居中，折叠仍位于首行标题前。面板仅 Emoji，按用户参考增加搜索 / 随机、10 列懒加载网格、常用及九类底栏、移除；本地 Unicode 16.0 / CLDR 46 共 1,906 个基础表情，中文 / 英文搜索跨分类，自选组合可直接粘贴。
+
+- 一次 Debug 构建通过：`/private/tmp/Foldpin-emoji-picker-build.log`。无新增编译警告，只有既有模拟器服务与 App Intents 提示。
+- `noteEmojiCatalog` 过滤的 3 项检查通过：完整目录打包 / 分类 / 单个 Emoji 验证、中英文大小写及全角搜索、跨类别查询、肤色 / ZWJ / 旗帜 / 键帽与展示变体；日志 `/private/tmp/Foldpin-emoji-picker-tests.log`。此前图标存储的 4 项检查未重复。
+- 应用包中已包含相同哈希的目录、Unicode 许可与来源记录；新文案 en / zh-Hans 均已打包。
+- 没有启动 Foldpin、创建可见窗口或操作用户笔记。居中按钮的实际点击 / 原生拖动、窄窗口及不同屏幕的 popover 定位、键盘滚动 / VoiceOver / 中文 IME 未做实际 UI 验证。
+
+## 2026-09-09 纸片 Emoji 图标
+
+关闭按钮旁增加添加 / 更换图标入口，原生 popover 提供常用 Emoji、自选输入和移除；已选图标常显，折叠首行标题之前及收纳架同步展示。单张图标作为 JSON v2 可选元数据保存，不进入正文或修改其时间，标题栏高度与右侧工具按钮保持。说明见[纸片图标](note-icons.md)。
+
+- 最终 Debug 构建通过：`/private/tmp/Foldpin-note-icons-build.log`。首次构建发现默认 MainActor 与 Codable 回调之间的隔离警告，已将纯 Unicode 校验声明为 nonisolated 并重新构建；en / zh-Hans 打包资源均包含 12 项图标面板文案。
+- 仅运行 `noteIcon` 过滤的 4 项检查，全部通过：常用表情、肤色、ZWJ 家庭、国旗和键帽完整保留，普通文本 / 多 Emoji / 超长输入拒绝；v1 / v2 缺省与非法字符串兼容且读取不改字节；独立保存、更换、移除、折叠 / 收纳 / 重启保留，正文 / 布局 / 颜色 / modifiedAt 不变；保存失败重试与损坏文件保护。日志 `/private/tmp/Foldpin-note-icons-tests.log`。
+- 没有启动 Foldpin、创建可见窗口或使用真实笔记测试。SwiftUI popover 的点击 / Esc / 系统 Emoji 面板输入、VoiceOver、焦点恢复和中文 IME 未做实际 UI 验证；未重跑无关窗口 / 高亮性能测试。
+
 ## 2026-09-09 逐张纸片选色
 
 补齐标题栏空白右键 / Control-click 与菜单栏「纸片颜色」：原色、黄、绿、蓝、粉、紫。颜色随单张纸片保存，纸感共用原生和 SwiftUI 彩纸背景，通透使用 NSGlassEffectView.tintColor；原色取消染色，减少透明度 / 增强对比度使用匹配实色。活动表格单元格同步纸面，不替换编辑器或重跑代码高亮。使用与实现说明见[纸片颜色](note-colors.md)。

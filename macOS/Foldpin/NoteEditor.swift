@@ -169,21 +169,44 @@ final class NativeEditorHost: NSView {
 struct WindowDragRegion: NSViewRepresentable {
     var onDoubleClick: () -> Void
     var onContextMenu: (() -> NSMenu?)? = nil
+    var hasCenteredIcon = false
     func makeNSView(context: Context) -> NSView {
         let view = NoteWindowDragView()
         view.onDoubleClick = onDoubleClick
         view.onContextMenu = onContextMenu
+        view.hasCenteredIcon = hasCenteredIcon
         return view
     }
     func updateNSView(_ nsView: NSView, context: Context) {
         (nsView as? NoteWindowDragView)?.onDoubleClick = onDoubleClick
         (nsView as? NoteWindowDragView)?.onContextMenu = onContextMenu
+        (nsView as? NoteWindowDragView)?.hasCenteredIcon = hasCenteredIcon
     }
 }
 
 final class NoteWindowDragView: NSView {
     var onDoubleClick: (() -> Void)?
     var onContextMenu: (() -> NSMenu?)?
+    var hasCenteredIcon = false
+
+    private var centeredIconFrame: NSRect? {
+        guard hasCenteredIcon, let contentView = window?.contentView else { return nil }
+        let centerX = convert(NSPoint(x: contentView.bounds.midX, y: 0), from: contentView).x
+        return NSRect(x: centerX - 13, y: bounds.midY - 14, width: 26, height: 28)
+    }
+
+    func containsDragPoint(_ windowPoint: NSPoint) -> Bool {
+        let point = convert(windowPoint, from: nil)
+        // The centered SwiftUI button overlays this region. Let both the panel
+        // event router and AppKit hit testing pass its clicks through.
+        return bounds.intersection(visibleRect).contains(point)
+            && centeredIconFrame?.contains(point) != true
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        if centeredIconFrame?.contains(convert(point, from: superview)) == true { return nil }
+        return super.hitTest(point)
+    }
     override func menu(for event: NSEvent) -> NSMenu? { onContextMenu?() }
     func showColorMenu(with event: NSEvent) {
         guard let menu = onContextMenu?() else { return }

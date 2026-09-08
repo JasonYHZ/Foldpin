@@ -137,6 +137,23 @@
         }
       }
     },
+    "Activities": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activities"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "活动"
+          }
+        }
+      }
+    },
     "Add Column": {
       "extractionState": "manual",
       "localizations": {
@@ -150,6 +167,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "添加列"
+          }
+        }
+      }
+    },
+    "Add Icon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Icon"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加图标"
           }
         }
       }
@@ -184,6 +218,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "图片文件缺失，原有纸片未被覆盖。"
+          }
+        }
+      }
+    },
+    "Animals & Nature": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animals & Nature"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "动物与自然"
           }
         }
       }
@@ -460,6 +511,23 @@
         }
       }
     },
+    "Change Icon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change Icon"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更换图标"
+          }
+        }
+      }
+    },
     "Changes apply immediately and are saved automatically.": {
       "extractionState": "manual",
       "localizations": {
@@ -494,6 +562,23 @@
         }
       }
     },
+    "Clear Search": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear Search"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除搜索"
+          }
+        }
+      }
+    },
     "Click for actions; drag to reorder.": {
       "extractionState": "manual",
       "localizations": {
@@ -507,6 +592,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "点击打开菜单，拖动调整顺序。"
+          }
+        }
+      }
+    },
+    "Close": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
           }
         }
       }
@@ -677,6 +779,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "折叠成一行，留在桌面上（⌘M）"
+          }
+        }
+      }
+    },
+    "Common Emoji": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common Emoji"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常用表情"
           }
         }
       }
@@ -988,6 +1107,23 @@
         }
       }
     },
+    "Emoji": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emoji"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表情符号"
+          }
+        }
+      }
+    },
     "Expand Note": {
       "extractionState": "manual",
       "localizations": {
@@ -1018,6 +1154,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "文件"
+          }
+        }
+      }
+    },
+    "Flags": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flags"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旗帜"
           }
         }
       }
@@ -1103,6 +1256,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "跟随系统"
+          }
+        }
+      }
+    },
+    "Food & Drink": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Food & Drink"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "食物与饮品"
           }
         }
       }
@@ -1719,6 +1889,23 @@
         }
       }
     },
+    "No Icon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Icon"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无图标"
+          }
+        }
+      }
+    },
     "No content yet": {
       "extractionState": "manual",
       "localizations": {
@@ -1732,6 +1919,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "还没有写下内容"
+          }
+        }
+      }
+    },
+    "No emoji found. Try another keyword.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No emoji found. Try another keyword."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有找到表情，试试其他关键词。"
           }
         }
       }
@@ -1906,6 +2110,23 @@
         }
       }
     },
+    "Objects": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "物品"
+          }
+        }
+      }
+    },
     "On Desktop": {
       "extractionState": "manual",
       "localizations": {
@@ -2076,6 +2297,23 @@
         }
       }
     },
+    "People & Body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "People & Body"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "人物与身体"
+          }
+        }
+      }
+    },
     "Pin Note": {
       "extractionState": "manual",
       "localizations": {
@@ -2195,6 +2433,23 @@
         }
       }
     },
+    "Random Emoji": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Random Emoji"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "随机表情"
+          }
+        }
+      }
+    },
     "Redo": {
       "extractionState": "manual",
       "localizations": {
@@ -2208,6 +2463,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "重做"
+          }
+        }
+      }
+    },
+    "Remove Icon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove Icon"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除图标"
           }
         }
       }
@@ -2378,6 +2650,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "保存中…"
+          }
+        }
+      }
+    },
+    "Search Emoji": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search Emoji"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索表情"
+          }
+        }
+      }
+    },
+    "Search Results": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search Results"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索结果"
+          }
+        }
+      }
+    },
+    "Search or paste an emoji…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search or paste an emoji…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索或粘贴表情…"
           }
         }
       }
@@ -2603,6 +2926,23 @@
         }
       }
     },
+    "Smileys & Emotion": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smileys & Emotion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表情与情感"
+          }
+        }
+      }
+    },
     "Soft glass with desktop colors": {
       "extractionState": "manual",
       "localizations": {
@@ -2616,6 +2956,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "柔和磨砂玻璃，映入桌面色彩"
+          }
+        }
+      }
+    },
+    "Symbols": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Symbols"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "符号"
           }
         }
       }
@@ -2905,6 +3262,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "切换完成状态"
+          }
+        }
+      }
+    },
+    "Travel & Places": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travel & Places"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旅行与地点"
           }
         }
       }

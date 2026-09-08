@@ -1,0 +1,28 @@
+{
+  "emojiVersion": "16.0",
+  "cldrVersion": "46",
+  "count": 1906,
+  "catalogSHA256": "84f2c88da4103043af448c2d63266725a3a0463d6dae7bfafba8b796c4a04603",
+  "sources": [
+    {
+      "file": "emoji-test.txt",
+      "url": "https://www.unicode.org/Public/emoji/16.0/emoji-test.txt",
+      "sha256": "24f0c534e86cf142e2496953e8f0e46a3e702392911eddcd29c6cced85139697"
+    },
+    {
+      "file": "zh.xml",
+      "url": "https://raw.githubusercontent.com/unicode-org/cldr/release-46/common/annotations/zh.xml",
+      "sha256": "487e16c5e64b6ac1cb38a91b5f2dc25349ded224bcd78ec1f14a92bba3ef3147"
+    },
+    {
+      "file": "zh-derived.xml",
+      "url": "https://raw.githubusercontent.com/unicode-org/cldr/release-46/common/annotationsDerived/zh.xml",
+      "sha256": "01d48d98a8612f779c17707db51f2ba2c55292d6c690f8a0828dd748c042206a"
+    },
+    {
+      "file": "LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/unicode-org/cldr/release-46/LICENSE",
+      "sha256": "743308f92225393665b0722b73418b4d4061fd2163e8e9c38b3368904acf19d6"
+    }
+  ]
+}

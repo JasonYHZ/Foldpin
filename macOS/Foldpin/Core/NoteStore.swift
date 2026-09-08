@@ -58,6 +58,19 @@ final class NoteStore: ObservableObject {
         scheduleSave()
     }
 
+    @discardableResult func setIcon(_ value: String?) -> Bool {
+        guard loadError == nil else { return false }
+        let icon: String?
+        if let value {
+            guard let normalized = NoteIcon.normalized(value) else { return false }
+            icon = normalized
+        } else { icon = nil }
+        guard document.icon != icon else { return true }
+        document.icon = icon
+        scheduleSave()
+        return true
+    }
+
     func setShelved(_ value: Bool) {
         guard loadError == nil, document.isShelved != value else { return }
         document.isShelved = value

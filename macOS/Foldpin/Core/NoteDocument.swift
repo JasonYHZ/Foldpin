@@ -14,13 +14,14 @@ struct NoteDocument: Codable, Equatable, Sendable {
     var isShelved = false
     var isCollapsed = false
     var color: NoteColor = .original
+    var icon: String?
     var frame: NoteFrame?
     var modifiedAt = Date()
 
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case version, id, text, content, isPinned, isShelved, isCollapsed, color, frame, modifiedAt
+        case version, id, text, content, isPinned, isShelved, isCollapsed, color, icon, frame, modifiedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -41,6 +42,7 @@ struct NoteDocument: Codable, Equatable, Sendable {
         // Optional v2 metadata: older notes and unknown future presets use the
         // original surface without changing the note's content on load.
         color = NoteColor(rawValue: try values.decodeIfPresent(String.self, forKey: .color) ?? "") ?? .original
+        icon = try values.decodeIfPresent(String.self, forKey: .icon).flatMap(NoteIcon.normalized)
         frame = try values.decodeIfPresent(NoteFrame.self, forKey: .frame)
         modifiedAt = try values.decode(Date.self, forKey: .modifiedAt)
     }
@@ -54,6 +56,7 @@ struct NoteDocument: Codable, Equatable, Sendable {
         try values.encode(isShelved, forKey: .isShelved)
         try values.encode(isCollapsed, forKey: .isCollapsed)
         try values.encode(color, forKey: .color)
+        try values.encodeIfPresent(icon, forKey: .icon)
         try values.encodeIfPresent(frame, forKey: .frame)
         try values.encode(modifiedAt, forKey: .modifiedAt)
     }
@@ -65,6 +68,7 @@ struct NoteDocument: Codable, Equatable, Sendable {
     func validate() throws {
         guard version == Self.currentVersion else { throw NoteFileError.unsupportedVersion }
         try content.validate()
+        if let icon, NoteIcon.normalized(icon) != icon { throw NoteFileError.invalidContent }
         if let frame, !frame.isValid { throw NoteFileError.invalidLayout }
     }
 }

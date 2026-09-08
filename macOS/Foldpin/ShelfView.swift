@@ -78,6 +78,9 @@ private struct ShelfNoteRow: View {
         Button(action: onOpen) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
+                    if let icon = store.document.icon {
+                        Text(icon).font(.system(size: 16)).accessibilityHidden(true)
+                    }
                     Text(store.loadError == nil ? title : String(localized: "Could not load", bundle: languageSettings.bundle))
                         .font(.system(size: 13, weight: .medium)).lineLimit(1)
                     Spacer(minLength: 4)
