@@ -4,3 +4,11 @@
 DerivedData/
 **/xcuserdata/
 *.xcuserstate
+*.xcresult/
+*.xcarchive/
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
