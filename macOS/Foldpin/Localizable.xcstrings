@@ -137,6 +137,23 @@
         }
       }
     },
+    "Actions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作"
+          }
+        }
+      }
+    },
     "Activities": {
       "extractionState": "manual",
       "localizations": {
@@ -205,6 +222,23 @@
         }
       }
     },
+    "All content copied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All content copied"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制全部内容"
+          }
+        }
+      }
+    },
     "An image file is missing. The existing note has not been overwritten.": {
       "extractionState": "manual",
       "localizations": {
@@ -235,6 +269,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "动物与自然"
+          }
+        }
+      }
+    },
+    "Application": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Application"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用"
           }
         }
       }
@@ -320,6 +371,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "自动识别"
+          }
+        }
+      }
+    },
+    "Back": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回"
           }
         }
       }
@@ -558,6 +626,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "选择喜欢的外观，随时可以切换。"
+          }
+        }
+      }
+    },
+    "Clear Formatting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear Formatting"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除格式"
           }
         }
       }
@@ -847,7 +932,24 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "拷贝"
+            "value": "复制"
+          }
+        }
+      }
+    },
+    "Copy All Content": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy All Content"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制全部内容"
           }
         }
       }
@@ -882,6 +984,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "复制代码"
+          }
+        }
+      }
+    },
+    "Copy Image": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Image"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制图片"
+          }
+        }
+      }
+    },
+    "Could not copy all content": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not copy all content"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法复制全部内容"
+          }
+        }
+      }
+    },
+    "Could not copy image. Check that its image file is available and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not copy image. Check that its image file is available and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法复制图片，请检查图片文件是否可用后重试。"
           }
         }
       }
@@ -971,6 +1124,23 @@
         }
       }
     },
+    "Current Note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Note"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前纸片"
+          }
+        }
+      }
+    },
     "Cut": {
       "extractionState": "manual",
       "localizations": {
@@ -1018,6 +1188,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "删除区块"
+          }
+        }
+      }
+    },
+    "Delete Column": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Column"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除当前列"
+          }
+        }
+      }
+    },
+    "Delete Note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Note"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除当前纸片"
+          }
+        }
+      }
+    },
+    "Delete Row": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Row"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除当前行"
           }
         }
       }
@@ -1086,6 +1307,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "复制内容块"
+          }
+        }
+      }
+    },
+    "Duplicate Note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate Note"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "创建纸片副本"
           }
         }
       }
@@ -1617,6 +1855,57 @@
         }
       }
     },
+    "Inline Code": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inline Code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行内代码"
+          }
+        }
+      }
+    },
+    "Insert Column Left": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insert Column Left"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在左侧插入列"
+          }
+        }
+      }
+    },
+    "Insert Column Right": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insert Column Right"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在右侧插入列"
+          }
+        }
+      }
+    },
     "Insert Image…": {
       "extractionState": "manual",
       "localizations": {
@@ -1630,6 +1919,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "插入图片…"
+          }
+        }
+      }
+    },
+    "Insert Row Above": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insert Row Above"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在上方插入行"
+          }
+        }
+      }
+    },
+    "Insert Row Below": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insert Row Below"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在下方插入行"
           }
         }
       }
@@ -1940,6 +2263,23 @@
         }
       }
     },
+    "No matching actions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有匹配的操作"
+          }
+        }
+      }
+    },
     "No supported code colors were found in this file.": {
       "extractionState": "manual",
       "localizations": {
@@ -2072,6 +2412,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "纸片标题：%@"
+          }
+        }
+      }
+    },
+    "Notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "纸片"
           }
         }
       }
@@ -2242,6 +2599,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "纸感"
+          }
+        }
+      }
+    },
+    "Paper and app actions (⌘K). Hold ⌘ to reveal button shortcuts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paper and app actions (⌘K). Hold ⌘ to reveal button shortcuts."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "纸片与应用操作（⌘K）。长按 ⌘ 查看按钮快捷键。"
           }
         }
       }
@@ -2450,6 +2824,23 @@
         }
       }
     },
+    "Recently Deleted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently Deleted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近删除"
+          }
+        }
+      }
+    },
     "Redo": {
       "extractionState": "manual",
       "localizations": {
@@ -2497,6 +2888,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "移除导入主题"
+          }
+        }
+      }
+    },
+    "Restore Note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Note"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复纸片"
           }
         }
       }
@@ -2684,6 +3092,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "搜索结果"
+          }
+        }
+      }
+    },
+    "Search for actions…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search for actions…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索操作…"
           }
         }
       }
@@ -2956,6 +3381,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "柔和磨砂玻璃，映入桌面色彩"
+          }
+        }
+      }
+    },
+    "Strikethrough": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strikethrough"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除线"
           }
         }
       }

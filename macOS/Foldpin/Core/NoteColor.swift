@@ -1,7 +1,7 @@
 import Foundation
 
 /// Per-note presentation metadata. Material and light/dark remain app preferences.
-enum NoteColor: String, Codable, CaseIterable, Sendable {
+nonisolated enum NoteColor: String, Codable, CaseIterable, Sendable {
     case original, yellow, green, blue, pink, purple
 
     func title(bundle: Bundle = .main) -> String {

@@ -31,6 +31,7 @@ struct ShelfView: View {
     var onOpen: (UUID) -> Void
     var onNew: () -> Void
     var onRetry: () -> Void
+    var onRestore: (UUID) -> Void = { _ in }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -53,14 +54,41 @@ struct ShelfView: View {
                     ForEach(library.entries) { entry in
                         ShelfNoteRow(store: entry.store, onOpen: { onOpen(entry.id) })
                     }
+                    if !library.deletedEntries.isEmpty {
+                        DisclosureGroup {
+                            ForEach(library.deletedEntries) { entry in
+                                DeletedNoteRow(store: entry.store, onRestore: { onRestore(entry.id) })
+                            }
+                        } label: {
+                            Text(String(localized: "Recently Deleted", bundle: languageSettings.bundle) + " (\(library.deletedEntries.count))")
+                                .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                        }.padding(.top, 8)
+                    }
                 }
             }
-            .frame(height: min(360, max(92, CGFloat(library.entries.count) * 100)))
+            .frame(height: min(360, max(160, CGFloat(library.entries.count + library.deletedEntries.count) * 100)))
             Text(String(localized: "Your content, position, and pin setting are kept.", bundle: languageSettings.bundle))
                 .font(.system(size: 10)).foregroundStyle(.secondary)
         }
         .padding(18).frame(width: 320)
         .environment(\.locale, languageSettings.locale)
+    }
+}
+
+private struct DeletedNoteRow: View {
+    @ObservedObject var store: NoteStore
+    @ObservedObject private var language = LanguageSettings.shared
+    var onRestore: () -> Void
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(store.document.summary(bundle: language.bundle)).font(.system(size: 12)).lineLimit(1)
+                Spacer()
+                Button(String(localized: "Restore Note", bundle: language.bundle), action: onRestore)
+                    .buttonStyle(.borderless).font(.system(size: 11))
+            }
+            if let error = store.saveError { Text(error).font(.system(size: 10)).foregroundStyle(.red) }
+        }.padding(8)
     }
 }
 

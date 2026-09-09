@@ -16,6 +16,8 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     private var expandedMaximumSize = NSSize.zero
     private var pendingGeometryUpdate: Task<Void, Never>?
     private var colorObservation: AnyCancellable?
+    private var actionsPanel: NoteActionsPanel?
+    private var copyFeedbackTask: Task<Void, Never>?
     private var languageSettings: LanguageSettings { .shared }
     #if DEBUG
     private static let geometryLog = Logger(subsystem: "Foldpin", category: "WindowGeometry")
@@ -23,6 +25,9 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     var onActivate: ((UUID) -> Void)?
     var onStateChange: (() -> Void)?
     var onShelved: ((UUID, Bool) -> Void)?
+    var onApplicationAction: ((NoteAction) -> Void)?
+    var canPerformApplicationAction: ((NoteAction) -> Bool)?
+    var onDelete: (() -> Void)?
 
     init(entry: NoteLibrary.Entry, initialFrame: NSRect? = nil) {
         id = entry.id
@@ -60,6 +65,8 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         paper.onRequestClose = { [weak self] in _ = self?.shelvePaper() }
         paper.onEndResize = { [weak self] in self?.recordGeometry() }
         paper.onBeginMove = { [weak self] in self?.prepareForMove() }
+        paper.onAction = { [weak self] in self?.performAction($0) }
+        paper.onShortcutHints = { [weak state = titlebarState] in state?.setShortcutHints($0) }
         paper.isReleasedWhenClosed = false
         paper.isMovable = true
         // Only the explicit header drag region initiates a native window drag.
@@ -82,7 +89,8 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
             onShelve: { [weak self] in _ = self?.shelvePaper() },
             onRetryLoad: { [weak self] in self?.retryLoad() },
             onRevealError: { [weak self] in self?.revealError() },
-            onColorMenu: { [weak self] in self?.makeColorMenu() }))
+            onColorMenu: { [weak self] in self?.makeColorMenu() },
+            onActions: { [weak self] in self?.performAction(.actions) }))
         hosting.sizingOptions = []
         hosting.safeAreaRegions = []
         let surface = NoteWindowSurface(content: hosting, onHoverChange: { [weak state = titlebarState] in
@@ -106,6 +114,70 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         paper.title = String(localized: "Foldpin Note", bundle: languageSettings.bundle)
     }
 
+    private func actionIsEnabled(_ action: NoteAction) -> Bool {
+        guard paper.isVisible, store.document.deletedAt == nil else { return false }
+        if action == .actions { return true }
+        if action == .duplicateNote { return store.loadError == nil && canPerformApplicationAction?(action) != false }
+        if action.isPaperAction { return store.loadError == nil }
+        return canPerformApplicationAction?(action) ?? false
+    }
+
+    func performAction(_ action: NoteAction) {
+        guard actionIsEnabled(action) else { NSSound.beep(); return }
+        if action != .actions, actionsPanel?.isShown == true { actionsPanel?.close(restoringFocus: true) }
+        if let color = action.noteColor {
+            store.setColor(color)
+            onStateChange?()
+            return
+        }
+        switch action {
+        case .actions:
+            if actionsPanel?.isShown == true {
+                actionsPanel?.close(restoringFocus: true)
+                return
+            }
+            paper.cancelShortcutHints()
+            titlebarState.isActionsPresented = true
+            let menu = actionsPanel ?? NoteActionsPanel()
+            actionsPanel = menu
+            menu.onClose = { [weak state = titlebarState] in state?.isActionsPresented = false }
+            menu.show(in: paper, anchorView: titlebarState.actionsAnchor, store: store,
+                         isEnabled: { [weak self] in self?.actionIsEnabled($0) ?? false },
+                         perform: { [weak self] in self?.performAction($0) })
+        case .pin: togglePin()
+        case .collapse: toggleCollapsed()
+        case .shelve: shelvePaper()
+        case .icon: titlebarState.iconRequest += 1
+        case .copyAll:
+            commitMarkedText()
+            do {
+                try NoteClipboard.copy(store.document.content, file: store.file)
+                copyFeedbackTask?.cancel()
+                titlebarState.copiedAll = true
+                copyFeedbackTask = Task { [weak state = titlebarState] in
+                    do { try await Task.sleep(for: .seconds(2)) } catch { return }
+                    state?.copiedAll = false
+                }
+            }
+            catch {
+                let alert = NSAlert()
+                alert.messageText = String(localized: "Could not copy all content", bundle: languageSettings.bundle)
+                alert.informativeText = error.localizedDescription
+                alert.beginSheetModal(for: paper)
+            }
+        case .deleteNote: onDelete?()
+        case .duplicateNote:
+            commitMarkedText()
+            onApplicationAction?(action)
+        case .color:
+            guard let view = paper.contentView else { return }
+            let point = NSPoint(x: max(16, view.bounds.maxX - 170),
+                                y: view.isFlipped ? NoteLayout.headerHeight : view.bounds.maxY - NoteLayout.headerHeight)
+            makeColorMenu().popUp(positioning: nil, at: point, in: view)
+        default: onApplicationAction?(action)
+        }
+    }
+
     func makeColorMenu() -> NSMenu {
         let menu = NSMenu(title: String(localized: "Note Color", bundle: languageSettings.bundle))
         menu.autoenablesItems = false
@@ -113,6 +185,10 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
             let item = NSMenuItem(title: color.title(bundle: languageSettings.bundle),
                                   action: #selector(changeColor(_:)), keyEquivalent: "")
             item.target = self
+            if let action = NoteAction.colors.first(where: { $0.noteColor == color }) {
+                item.keyEquivalent = action.key
+                item.keyEquivalentModifierMask = action.modifiers
+            }
             item.representedObject = color.rawValue
             item.state = color == store.document.color ? .on : .off
             item.image = NotePalette.colorSwatch(for: color)
@@ -131,6 +207,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     }
 
     func showPaper(focus: Bool) {
+        guard store.document.deletedAt == nil else { return }
         if pendingGeometryUpdate != nil { recordGeometry() }
         store.setShelved(false)
         paper.level = store.document.isPinned ? .floating : .normal
@@ -151,7 +228,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         showPaper(focus: true)
     }
 
-    private func activatePaper() {
+    func activatePaper() {
         onActivate?(id)
         if !NSApp.isActive { NSApp.activate() }
         paper.makeKeyAndOrderFront(nil)
@@ -169,6 +246,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
 
     @objc func toggleCollapsed() {
         guard store.loadError == nil else { return }
+        actionsPanel?.close(restoringFocus: true)
         commitMarkedText()
         recordGeometry()
         let collapsing = !store.isCollapsed
@@ -199,6 +277,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
 
     @discardableResult func shelvePaper(restoringFocus: Bool = true) -> Bool {
         guard store.loadError == nil else { return false }
+        if actionsPanel?.isShown == true { actionsPanel?.close(restoringFocus: true) }
         commitMarkedText()
         recordGeometry()
         store.setShelved(true)
@@ -217,6 +296,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     }
 
     @objc func togglePin() {
+        guard store.loadError == nil else { return }
         store.setPinned(!store.document.isPinned)
         paper.level = store.document.isPinned ? .floating : .normal
         if paper.isVisible { paperShadow?.show(below: paper) }
@@ -263,6 +343,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     }
 
     private func prepareForMove() {
+        actionsPanel?.close()
         traceGeometry("native-drag-start")
         applySizeLimits()
         recordGeometry()
@@ -291,6 +372,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
 
     func windowDidMove(_ notification: Notification) { scheduleGeometryRecording() }
     func windowDidResize(_ notification: Notification) {
+        actionsPanel?.close()
         if !paper.isResizingByMouse { traceGeometry("window-resized") }
         paperShadow?.updateFrame(for: paper)
         scheduleGeometryRecording()
@@ -342,7 +424,25 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         return store.loadError != nil || store.flush()
     }
 
+    func hideDeletedPaper() {
+        actionsPanel?.close()
+        pendingGeometryUpdate?.cancel()
+        pendingGeometryUpdate = nil
+        paperShadow?.orderOut(nil)
+        paper.orderOut(nil)
+        titlebarState.setPointerInside(false)
+    }
+
     func dispose() {
+        copyFeedbackTask?.cancel()
+        actionsPanel?.close()
+        actionsPanel = nil
+        paper.cancelShortcutHints()
+        paper.onAction = nil
+        paper.onShortcutHints = nil
+        onApplicationAction = nil
+        canPerformApplicationAction = nil
+        onDelete = nil
         colorObservation = nil
         pendingGeometryUpdate?.cancel()
         paper.onActivate = nil

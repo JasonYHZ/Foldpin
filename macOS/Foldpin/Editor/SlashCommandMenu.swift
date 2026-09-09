@@ -254,9 +254,9 @@ final class SlashMenuContentView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         let outline = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 12, yRadius: 12)
-        NSColor.controlBackgroundColor.setFill()
+        EditorMenuPalette.background.setFill()
         outline.fill()
-        NSColor.separatorColor.setStroke()
+        EditorMenuPalette.border.setStroke()
         outline.lineWidth = 0.75
         outline.stroke()
         NSColor.separatorColor.setFill()
@@ -316,7 +316,7 @@ final class SlashSuggestionButton: NSButton {
     override func draw(_ dirtyRect: NSRect) {
         if showsSelection || isFooter && isHovered || isHighlighted {
             let shape = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 7, yRadius: 7)
-            NSColor.quaternaryLabelColor.withAlphaComponent(0.08).setFill()
+            EditorMenuPalette.selection.setFill()
             shape.fill()
         }
         if showsKeyboardFocus {

@@ -15,6 +15,7 @@ final class NoteLibrary: ObservableObject {
     }
     let directory: URL
     @Published private(set) var entries: [Entry] = []
+    @Published private(set) var deletedEntries: [Entry] = []
     @Published private(set) var failure: Error?
     var canCreate: Bool { failure == nil }
     private var notesURL: URL { directory.appendingPathComponent("notes", isDirectory: true) }
@@ -32,7 +33,8 @@ final class NoteLibrary: ObservableObject {
             try migrateLegacyNote()
             let files = try FileManager.default.contentsOfDirectory(at: notesURL, includingPropertiesForKeys: [.isRegularFileKey])
                 .filter { $0.pathExtension == "json" }.sorted { $0.lastPathComponent < $1.lastPathComponent }
-            let old = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+            let previousEntries = entries + deletedEntries
+            let old = Dictionary(uniqueKeysWithValues: previousEntries.map { ($0.id, $0) })
             var loaded: [Entry] = []
             var seen = Set<UUID>()
             for url in files {
@@ -40,17 +42,40 @@ final class NoteLibrary: ObservableObject {
                 // A retry must not discard a live editor's store or pending edits.
                 loaded.append(old[id] ?? Entry(id: id, store: NoteStore(file: NoteFile(url: url, assetDirectory: assetsURL, expectedID: id))))
             }
-            for entry in entries where !loaded.contains(where: { $0.id == entry.id }) { loaded.append(entry) }
-            entries = loaded
+            for entry in previousEntries where !loaded.contains(where: { $0.id == entry.id }) { loaded.append(entry) }
+            entries = loaded.filter { $0.store.document.deletedAt == nil }
+            deletedEntries = loaded.filter { $0.store.document.deletedAt != nil }
+                .sorted { $0.store.document.deletedAt! > $1.store.document.deletedAt! }
             failure = nil
-            if entries.isEmpty { _ = createNote() }
+            if entries.isEmpty && deletedEntries.isEmpty { _ = createNote() }
         } catch { failure = error }
     }
 
     @discardableResult func createNote() -> Entry? {
+        persistNewNote(NoteDocument())
+    }
+
+    @discardableResult func duplicateNote(_ id: UUID) -> Entry? {
+        guard canCreate, let source = entry(id), source.store.loadError == nil, source.store.flush() else { return nil }
+        var document = source.store.document
+        document.id = UUID()
+        document.content.blocks = document.content.blocks.map { block in
+            var copy = block; copy.id = UUID(); return copy
+        }
+        document.isShelved = false
+        document.deletedAt = nil
+        document.modifiedAt = Date()
+        if var frame = document.frame {
+            frame.x += 24; frame.y -= 24
+            document.frame = frame
+        }
+        return persistNewNote(document)
+    }
+
+    private func persistNewNote(_ value: NoteDocument) -> Entry? {
         guard canCreate else { return nil }
         do {
-            var document = NoteDocument()
+            var document = value
             while FileManager.default.fileExists(atPath: file(for: document.id).url.path) { document.id = UUID() }
             let file = file(for: document.id)
             // Persist first. A failed creation never becomes an apparently saved window.
@@ -63,6 +88,20 @@ final class NoteLibrary: ObservableObject {
     }
 
     func entry(_ id: UUID) -> Entry? { entries.first { $0.id == id } }
+
+    @discardableResult func deleteNote(_ id: UUID) -> Bool {
+        guard let entry = entry(id), entry.store.setDeletedAt(Date()) else { return false }
+        entries.removeAll { $0.id == id }
+        deletedEntries.insert(entry, at: 0)
+        return true
+    }
+
+    @discardableResult func restoreNote(_ id: UUID) -> Entry? {
+        guard let entry = deletedEntries.first(where: { $0.id == id }), entry.store.setDeletedAt(nil) else { return nil }
+        deletedEntries.removeAll { $0.id == id }
+        entries.append(entry)
+        return entry
+    }
 
     func message(bundle: Bundle) -> String? {
         guard let failure else { return nil }

@@ -70,6 +70,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             rebuildMenu()
         }
         window.onStateChange = { [weak self] in self?.updateEdge(); self?.rebuildMenu() }
+        window.canPerformApplicationAction = { [weak self] action in
+            guard let self else { return false }
+            if action == .newNote || action == .duplicateNote { return library.canCreate }
+            if action == .shelveAll { return windows.values.contains { $0.isVisible } }
+            return true
+        }
+        window.onApplicationAction = { [weak self] action in
+            guard let self else { return }
+            switch action {
+            case .newNote: newPaper()
+            case .duplicateNote: duplicatePaper(entry.id)
+            case .shelf: showShelf()
+            case .shelveAll: shelveAll()
+            case .settings: showSettings()
+            case .captureShortcut:
+                if let button = statusItem?.button {
+                    makeCaptureShortcutMenu().popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.maxY), in: button)
+                }
+            default: break
+            }
+        }
+        window.onDelete = { [weak self] in self?.deletePaper(entry.id) }
         window.onShelved = { [weak self] id, hadFocus in
             guard let self, hadFocus else { return }
             if let next = library.entries.reversed().compactMap({ self.windows[$0.id] }).first(where: { $0.id != id && $0.isVisible }) {
@@ -78,6 +100,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         windows[entry.id] = window
         return window
+    }
+
+    private func deletePaper(_ id: UUID) {
+        guard let window = windows[id], window.prepareToTerminate(), library.deleteNote(id) else { return }
+        let hadFocus = window.isKey
+        window.hideDeletedPaper()
+        if lastActiveID == id { lastActiveID = nil }
+        updateEdge(); rebuildMenu()
+        if hadFocus {
+            if let next = library.entries.reversed().compactMap({ windows[$0.id] }).first(where: \.isVisible) {
+                next.showPaper(focus: true)
+            } else { previousApplication?.activate() }
+        }
+    }
+
+    private func duplicatePaper(_ id: UUID) {
+        guard let source = windows[id], source.prepareToTerminate() else { return }
+        guard let copy = library.duplicateNote(id) else { showShelf(); rebuildMenu(); return }
+        popover.close()
+        controller(for: copy).showPaper(focus: true)
+        updateEdge(); rebuildMenu()
+    }
+
+    private func restorePaper(_ id: UUID) {
+        guard let entry = library.restoreNote(id) else { return }
+        popover.close()
+        controller(for: entry).showPaper(focus: true)
+        updateEdge(); rebuildMenu()
     }
 
     @objc func newPaper() {
@@ -109,7 +159,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(rootView: ShelfView(library: library,
             onOpen: { [weak self] in self?.openPaper($0) }, onNew: { [weak self] in self?.newPaper() },
-            onRetry: { [weak self] in self?.retryLibrary() }))
+            onRetry: { [weak self] in self?.retryLibrary() },
+            onRestore: { [weak self] in self?.restorePaper($0) }))
     }
 
     private func updateEdge() {
@@ -152,36 +203,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func rebuildMenu() {
         guard statusItem != nil else { return }
         let menu = NSMenu()
-        func item(_ title: String, _ action: Selector, key: String = "") -> NSMenuItem {
+        func item(_ title: String, _ action: Selector, key: String = "", command: NoteAction? = nil) -> NSMenuItem {
             let value = NSMenuItem(title: title, action: action, keyEquivalent: key)
+            if let command {
+                value.keyEquivalent = command.key
+                value.keyEquivalentModifierMask = command.modifiers
+            }
             value.target = self; menu.addItem(value); return value
         }
         item(String(localized: "New Note", bundle: languageSettings.bundle), #selector(newPaper), key: "n").isEnabled = library.canCreate
-        _ = item(String(localized: "Open Shelf", bundle: languageSettings.bundle), #selector(showShelf))
+        _ = item(String(localized: "Open Shelf", bundle: languageSettings.bundle), #selector(showShelf), command: .shelf)
+        item(String(localized: "Actions", bundle: languageSettings.bundle), #selector(showActions), command: .actions).isEnabled = currentPaper?.isVisible == true
         menu.addItem(.separator())
         let current = currentPaper
         let enabled = current?.isVisible == true && current?.store.loadError == nil
-        item(current?.store.isCollapsed == true ? String(localized: "Expand Note", bundle: languageSettings.bundle) : String(localized: "Collapse to One Line", bundle: languageSettings.bundle), #selector(toggleCollapsed)).isEnabled = enabled
-        item(String(localized: "Shelve Note", bundle: languageSettings.bundle), #selector(shelvePaper)).isEnabled = enabled
-        let pin = item(String(localized: "Pin Note", bundle: languageSettings.bundle), #selector(togglePin))
+        item(current?.store.isCollapsed == true ? String(localized: "Expand Note", bundle: languageSettings.bundle) : String(localized: "Collapse to One Line", bundle: languageSettings.bundle), #selector(toggleCollapsed), command: .collapse).isEnabled = enabled
+        item(String(localized: "Shelve Note", bundle: languageSettings.bundle), #selector(shelvePaper), command: .shelve).isEnabled = enabled
+        let pin = item(String(localized: "Pin Note", bundle: languageSettings.bundle), #selector(togglePin), command: .pin)
         pin.state = current?.store.document.isPinned == true ? .on : .off
         pin.isEnabled = enabled
+        item(NoteAction.icon.title(bundle: languageSettings.bundle, hasIcon: current?.store.document.icon != nil),
+             #selector(showIconPicker), command: .icon).isEnabled = enabled
         let color = NSMenuItem(title: String(localized: "Note Color", bundle: languageSettings.bundle), action: nil, keyEquivalent: "")
         color.image = NSImage(systemSymbolName: "paintpalette", accessibilityDescription: nil)
         color.submenu = current?.makeColorMenu()
+        color.keyEquivalent = NoteAction.color.key
+        color.keyEquivalentModifierMask = NoteAction.color.modifiers
         color.isEnabled = enabled
         menu.addItem(color)
         item(String(localized: "Shelve All Notes", bundle: languageSettings.bundle), #selector(shelveAll)).isEnabled = windows.values.contains { $0.isVisible }
         menu.addItem(.separator())
         _ = item(String(localized: "Settings…", bundle: languageSettings.bundle), #selector(showSettings), key: ",")
         let parent = NSMenuItem(title: String(localized: "Show / Shelve Shortcut", bundle: languageSettings.bundle), action: nil, keyEquivalent: "")
-        let choices = NSMenu()
-        for choice in 0...1 {
-            let child = NSMenuItem(title: GlobalShortcut.label(for: choice), action: #selector(changeShortcut(_:)), keyEquivalent: "")
-            child.target = self; child.tag = choice; child.state = shortcutChoice == choice ? .on : .off
-            choices.addItem(child)
-        }
-        parent.submenu = choices; menu.addItem(parent)
+        parent.submenu = makeCaptureShortcutMenu(); menu.addItem(parent)
         if shortcutStatus != 0 {
             let warning = NSMenuItem(title: String(localized: "Shortcut unavailable. Choose another combination.", bundle: languageSettings.bundle), action: nil, keyEquivalent: "")
             warning.isEnabled = false; menu.addItem(warning)
@@ -190,6 +244,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = item(String(localized: "Quit Foldpin", bundle: languageSettings.bundle), #selector(quit), key: "q")
         menu.autoenablesItems = false
         statusItem.menu = menu
+    }
+
+    private func makeCaptureShortcutMenu() -> NSMenu {
+        let choices = NSMenu()
+        for choice in 0...1 {
+            let child = NSMenuItem(title: GlobalShortcut.label(for: choice), action: #selector(changeShortcut(_:)), keyEquivalent: "")
+            child.target = self; child.tag = choice; child.state = shortcutChoice == choice ? .on : .off
+            choices.addItem(child)
+        }
+        return choices
     }
 
     private func applyLanguage() {
@@ -226,6 +290,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggleCollapsed() { currentPaper?.toggleCollapsed() }
+    @objc private func showActions() {
+        guard let current = currentPaper, current.isVisible else { return }
+        current.activatePaper()
+        current.performAction(.actions)
+    }
+    @objc private func showIconPicker() {
+        guard let current = currentPaper, current.isVisible else { return }
+        current.activatePaper()
+        current.performAction(.icon)
+    }
     @objc private func togglePin() { currentPaper?.togglePin() }
     @objc private func shelvePaper() { _ = currentPaper?.shelvePaper() }
     @objc private func shelveAll() {

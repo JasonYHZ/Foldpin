@@ -2,13 +2,14 @@ import AppKit
 import UniformTypeIdentifiers
 
 enum NoteEditorStatus: Equatable {
-    case importingImage, insertionChanged, imageFailed
+    case importingImage, insertionChanged, imageFailed, imageCopyFailed
 
     func description(bundle: Bundle) -> String {
         switch self {
         case .importingImage: String(localized: "Importing image…", bundle: bundle)
         case .insertionChanged: String(localized: "The insertion block changed. Please insert the image again.", bundle: bundle)
         case .imageFailed: String(localized: "Could not insert image. Choose an image under 40 MB and 80 megapixels.", bundle: bundle)
+        case .imageCopyFailed: String(localized: "Could not copy image. Check that its image file is available and try again.", bundle: bundle)
         }
     }
 }
@@ -31,6 +32,9 @@ final class PaperTextView: NSTextView {
         return NSPasteboard.general.writeObjects([item])
     }
     var file: NoteFile?
+    var writeImageToPasteboard: (NoteImage, NoteFile) throws -> Void = { image, file in
+        try NoteClipboard.copyImage(image, file: file)
+    }
     var codeThemes = CodeThemeSettings.shared
     var noteColor: NSColor = .labelColor
     private var paperBackground = NotePalette.paperBackground
@@ -1034,7 +1038,7 @@ final class PaperTextView: NSTextView {
         if let selectedBlockID, !hasMarkedText() {
             if flags == .command {
                 switch event.charactersIgnoringModifiers {
-                case "c": performBlockAction(.copy, blockID: selectedBlockID); return true
+                case "c": copy(nil); return true
                 case "x": cut(nil); return true
                 case "d": performBlockAction(.duplicate, blockID: selectedBlockID); return true
                 default: break
@@ -1134,18 +1138,69 @@ final class PaperTextView: NSTextView {
 
     override func menu(for event: NSEvent) -> NSMenu? {
         dismissSlashMenu()
-        if let selectedBlockID { return makeBlockActionMenu(blockID: selectedBlockID) }
-        let menu = super.menu(for: event) ?? NSMenu()
-        if !menu.items.contains(where: { $0.action == #selector(pasteAsPlainText(_:)) }) {
-            let plain = NSMenuItem(title: String(localized: "Paste as Plain Text", bundle: bundle),
-                                   action: #selector(pasteAsPlainText(_:)), keyEquivalent: "")
-            plain.target = self
-            menu.addItem(plain)
+        guard !hasMarkedText(), tableCellEditor?.hasMarkedText() != true else { return nil }
+        return contextMenu(at: convert(event.locationInWindow, from: nil)) ?? super.menu(for: event)
+    }
+
+    /// Resolve the pointer before consulting selection: another block may
+    /// still own the caret or the gutter's previous selection.
+    func contextMenu(at point: NSPoint) -> NSMenu? {
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+              let surface = blockSurfaces().first(where: { $0.rect.contains(point) }),
+              let block = content.blocks.first(where: { $0.id == surface.blockID }) else { return nil }
+        if block.kind.isAttachment {
+            var cell: (row: Int, column: Int)?
+            if block.kind == .table, let frame = tableFrame(blockID: block.id) {
+                cell = tableLayout(for: block, width: frame.width).cell(at: NSPoint(x: point.x - frame.minX, y: point.y - frame.minY))
+            }
+            guard selectBlock(block.id) else { return nil }
+            return makeBlockActionMenu(blockID: block.id, tableCell: cell)
         }
-        menu.insertItem(.separator(), at: 0)
-        let item = NSMenuItem(title: String(localized: "Block", bundle: bundle), action: nil, keyEquivalent: "")
-        item.submenu = makeBlockMenu()
-        menu.insertItem(item, at: 0)
+        endTableCellEditing()
+        clearBlockSelection()
+        let position = characterIndexForInsertion(at: point)
+        let selection = selectedRange()
+        if selection.length == 0 || !NSLocationInRange(position, selection) {
+            setSelectedRange(NSRange(location: position, length: 0))
+        }
+        window?.makeFirstResponder(self)
+        return makeTextActionMenu(blockID: block.id)
+    }
+
+    func makeTextActionMenu(blockID: UUID) -> NSMenu? {
+        guard let blockMenu = makeBlockActionMenu(blockID: blockID) else { return nil }
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        if let conversion = blockMenu.items.first(where: { $0.submenu != nil }) {
+            blockMenu.removeItem(conversion)
+            menu.addItem(conversion)
+        }
+        if canFormatSelection {
+            for (label, selector, key, symbol, mark) in [
+                (String(localized: "Bold", bundle: bundle), #selector(toggleBold(_:)), "b", "bold", NSAttributedString.Key.noteBold),
+                (String(localized: "Italic", bundle: bundle), #selector(toggleItalic(_:)), "i", "italic", .noteItalic),
+                (String(localized: "Strikethrough", bundle: bundle), #selector(toggleStrikethrough(_:)), "", "strikethrough", .noteStrikethrough),
+                (String(localized: "Inline Code", bundle: bundle), #selector(toggleInlineCode(_:)), "", "chevron.left.forwardslash.chevron.right", .noteInlineCode)
+            ] {
+                let item = NSMenuItem(title: label, action: selector, keyEquivalent: key)
+                item.target = self
+                item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+                item.state = markIsEnabled(mark) ? .on : .off
+                menu.addItem(item)
+            }
+            add(menu, String(localized: "Clear Formatting", bundle: bundle), #selector(clearInlineFormatting(_:)))
+            menu.items.last?.image = NSImage(systemSymbolName: "textformat", accessibilityDescription: nil)
+        } else if content.blocks.first(where: { $0.id == blockID })?.kind == .code {
+            appendCodeActions(to: menu, blockID: blockID)
+        }
+        menu.addItem(.separator())
+        add(menu, String(localized: "Cut", bundle: bundle), #selector(cut(_:)), key: "x", enabled: selectedRange().length > 0)
+        add(menu, String(localized: "Copy", bundle: bundle), #selector(copy(_:)), key: "c", enabled: selectedRange().length > 0)
+        add(menu, String(localized: "Paste", bundle: bundle), #selector(paste(_:)), key: "v")
+        add(menu, String(localized: "Paste as Plain Text", bundle: bundle), #selector(pasteAsPlainText(_:)))
+        let actions = NSMenuItem(title: String(localized: "Block actions", bundle: bundle), action: nil, keyEquivalent: "")
+        actions.submenu = blockMenu
+        menu.addItem(.separator()); menu.addItem(actions)
         return menu
     }
 
@@ -1293,8 +1348,48 @@ final class PaperTextView: NSTextView {
 
     @objc private func toggleBold(_ sender: Any?) { toggleMark(.noteBold) }
     @objc private func toggleItalic(_ sender: Any?) { toggleMark(.noteItalic) }
+    @objc private func toggleStrikethrough(_ sender: Any?) { toggleMark(.noteStrikethrough) }
+    @objc private func toggleInlineCode(_ sender: Any?) { toggleMark(.noteInlineCode) }
+    private var canFormatSelection: Bool {
+        guard isEditable, !hasMarkedText(), tableCellEditor == nil else { return false }
+        let selection = selectedRange()
+        let affected = selection.length == 0 ? spans.filter { $0.block.id == activeSpan?.block.id }
+            : spans.filter { NSIntersectionRange($0.range, selection).length > 0 }
+        return !affected.isEmpty && affected.allSatisfy { !$0.block.kind.isAttachment && $0.block.kind != .code }
+    }
+    private func markIsEnabled(_ key: NSAttributedString.Key) -> Bool {
+        let selection = selectedRange()
+        if selection.length == 0 { return typingAttributes[key] as? Bool == true }
+        var enabled = true
+        attributedString().enumerateAttribute(key, in: selection) { value, _, _ in
+            if value as? Bool != true { enabled = false }
+        }
+        return enabled
+    }
+    @objc private func clearInlineFormatting(_ sender: Any?) {
+        guard canFormatSelection else { return }
+        let keys: [NSAttributedString.Key] = [.noteBold, .noteItalic, .noteInlineCode, .noteStrikethrough, .noteLink,
+                                             .link, .strikethroughStyle, .underlineStyle, .backgroundColor]
+        let selection = selectedRange()
+        if selection.length == 0 {
+            for key in keys { typingAttributes.removeValue(forKey: key) }
+            typingAttributes[.font] = BlockTextCodec.font(activeSpan?.block ?? NoteBlock(), bold: false, italic: false, code: false)
+            return
+        }
+        let value = NSMutableAttributedString(attributedString: attributedString().attributedSubstring(from: selection))
+        for key in keys { value.removeAttribute(key, range: NSRange(location: 0, length: value.length)) }
+        // Explicit empty marks prevent the insertion caret's old attributes
+        // from leaking back into the cleared selection.
+        value.addAttributes([.noteBold: false, .noteItalic: false, .noteInlineCode: false, .noteStrikethrough: false, .noteLink: ""],
+                            range: NSRange(location: 0, length: value.length))
+        breakUndoCoalescing()
+        super.insertText(value, replacementRange: selection)
+        setSelectedRange(selection)
+        refreshStyles(force: true)
+        breakUndoCoalescing()
+    }
     private func toggleMark(_ key: NSAttributedString.Key) {
-        guard isEditable, !hasMarkedText(), activeSpan?.block.kind != .code, activeSpan?.block.kind != .image else { return }
+        guard canFormatSelection else { return }
         let selection = selectedRange()
         if selection.length == 0 {
             typingAttributes[key] = !(typingAttributes[key] as? Bool ?? false)
@@ -1304,7 +1399,7 @@ final class PaperTextView: NSTextView {
             return
         }
         let value = NSMutableAttributedString(attributedString: attributedString().attributedSubstring(from: selection))
-        let enabled = !(value.attribute(key, at: 0, effectiveRange: nil) as? Bool ?? false)
+        let enabled = !markIsEnabled(key)
         value.addAttribute(key, value: enabled, range: NSRange(location: 0, length: value.length))
         breakUndoCoalescing()
         super.insertText(value, replacementRange: selection)
@@ -1314,7 +1409,11 @@ final class PaperTextView: NSTextView {
     }
 
     override func copy(_ sender: Any?) {
-        if let selectedBlockID { performBlockAction(.copy, blockID: selectedBlockID); return }
+        if let selectedBlockID {
+            let isImage = content.blocks.first(where: { $0.id == selectedBlockID })?.kind == .image
+            performBlockAction(isImage ? .copyImage : .copy, blockID: selectedBlockID)
+            return
+        }
         super.copy(sender)
         guard selectedRange().length > 0 else { return }
         let value = attributedString().attributedSubstring(from: selectedRange())
@@ -1696,8 +1795,9 @@ extension PaperTextView {
         blockHandle?.isHidden = true
     }
 
-    func makeBlockActionMenu(blockID: UUID) -> NSMenu? {
-        guard isEditable, !hasMarkedText(), let index = content.blocks.firstIndex(where: { $0.id == blockID }) else { return nil }
+    func makeBlockActionMenu(blockID: UUID, tableCell: (row: Int, column: Int)? = nil) -> NSMenu? {
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+              let index = content.blocks.firstIndex(where: { $0.id == blockID }) else { return nil }
         let block = content.blocks[index]
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -1724,7 +1824,16 @@ extension PaperTextView {
         }
         convert.submenu = kinds
         convert.isEnabled = !block.kind.isAttachment
-        menu.addItem(convert)
+        if !block.kind.isAttachment { menu.addItem(convert) }
+        if block.kind == .code {
+            menu.addItem(.separator())
+            appendCodeActions(to: menu, blockID: blockID)
+        }
+        if block.kind == .task {
+            let completed = item(String(localized: "Toggle Completed", bundle: bundle), .toggleTask, symbol: "checkmark.square")
+            completed.state = block.isChecked ? .on : .off
+            menu.addItem(completed)
+        }
         if block.kind == .table {
             menu.addItem(.separator())
             menu.addItem(item(String(localized: "Add Row", bundle: bundle), .addTableRow, symbol: "plus"))
@@ -1735,9 +1844,22 @@ extension PaperTextView {
             let headerColumn = item(String(localized: "Header Column", bundle: bundle), .toggleHeaderColumn, symbol: "rectangle.split.2x1")
             headerColumn.state = block.table?.headerColumn == true ? .on : .off
             menu.addItem(headerColumn)
+            if let cell = tableCell, let table = block.table,
+               table.rows.indices.contains(cell.row), (0..<table.columnCount).contains(cell.column) {
+                menu.addItem(.separator())
+                menu.addItem(item(String(localized: "Insert Row Above", bundle: bundle), .insertTableRow(cell.row), symbol: "arrow.up"))
+                menu.addItem(item(String(localized: "Insert Row Below", bundle: bundle), .insertTableRow(cell.row + 1), symbol: "arrow.down"))
+                menu.addItem(item(String(localized: "Insert Column Left", bundle: bundle), .insertTableColumn(cell.column), symbol: "arrow.left"))
+                menu.addItem(item(String(localized: "Insert Column Right", bundle: bundle), .insertTableColumn(cell.column + 1), symbol: "arrow.right"))
+                menu.addItem(item(String(localized: "Delete Row", bundle: bundle), .deleteTableRow(cell.row), symbol: "minus", enabled: table.rows.count > 1))
+                menu.addItem(item(String(localized: "Delete Column", bundle: bundle), .deleteTableColumn(cell.column), symbol: "minus", enabled: table.columnCount > 1))
+            }
         }
         menu.addItem(.separator())
-        menu.addItem(item(String(localized: "Copy Block", bundle: bundle), .copy, symbol: "doc.on.clipboard", key: "c"))
+        if block.kind == .image {
+            menu.addItem(item(String(localized: "Copy Image", bundle: bundle), .copyImage, symbol: "photo.on.rectangle", key: "c"))
+        }
+        menu.addItem(item(String(localized: "Copy Block", bundle: bundle), .copy, symbol: "doc.on.clipboard", key: block.kind == .image ? "" : "c"))
         menu.addItem(item(String(localized: "Duplicate Block", bundle: bundle), .duplicate, symbol: "doc.on.doc", key: "d"))
         let up = item(String(localized: "Move Block Up", bundle: bundle), .moveUp, symbol: "arrow.up", enabled: index > 0)
         let down = item(String(localized: "Move Block Down", bundle: bundle), .moveDown, symbol: "arrow.down", enabled: index < content.blocks.count - 1)
@@ -1745,6 +1867,24 @@ extension PaperTextView {
         menu.addItem(.separator())
         menu.addItem(item(String(localized: "Delete Block", bundle: bundle), .delete, symbol: "trash"))
         return menu
+    }
+
+    private func appendCodeActions(to menu: NSMenu, blockID: UUID) {
+        guard let block = content.blocks.first(where: { $0.id == blockID && $0.kind == .code }) else { return }
+        let language = NSMenuItem(title: String(localized: "Code Language", bundle: bundle), action: nil, keyEquivalent: "")
+        language.image = NSImage(systemSymbolName: "chevron.left.forwardslash.chevron.right", accessibilityDescription: nil)
+        let choices = NSMenu(); choices.autoenablesItems = false
+        for value in CodeLanguage.allCases {
+            let item = NSMenuItem(title: value.title(bundle: bundle), action: #selector(performBlockMenuAction(_:)), keyEquivalent: "")
+            item.target = self; item.representedObject = BlockMenuCommand(blockID: blockID, action: .codeLanguage(value))
+            item.state = block.language == value ? .on : .off
+            choices.addItem(item)
+        }
+        language.submenu = choices; menu.addItem(language)
+        let copy = NSMenuItem(title: String(localized: "Copy Code", bundle: bundle), action: #selector(performBlockMenuAction(_:)), keyEquivalent: "")
+        copy.target = self; copy.representedObject = BlockMenuCommand(blockID: blockID, action: .copyCode)
+        copy.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
+        menu.addItem(copy)
     }
 
     @objc private func performBlockMenuAction(_ sender: NSMenuItem) {
@@ -1762,6 +1902,25 @@ extension PaperTextView {
         var destination = index
         var selectedID: UUID? = blockID
         switch action {
+        case .copyCode: return copyCode(blockID: blockID)
+        case .codeLanguage(let language):
+            guard content.blocks[index].kind == .code else { return false }
+            setCodeLanguage(language, blockID: blockID)
+            return true
+        case .toggleTask:
+            guard next.blocks[index].kind == .task else { return false }
+            next.blocks[index].isChecked.toggle()
+        case .copyImage:
+            guard content.blocks[index].kind == .image, let image = content.blocks[index].image else { return false }
+            guard let file else { onStatusChange?(.imageCopyFailed); return false }
+            do {
+                try writeImageToPasteboard(image, file)
+                onStatusChange?(nil)
+                return true
+            } catch {
+                onStatusChange?(.imageCopyFailed)
+                return false
+            }
         case .copy:
             return writeBlockToPasteboard(NoteContent(blocks: [content.blocks[index]]))
         case .convert(let kind):
@@ -1787,6 +1946,22 @@ extension PaperTextView {
             if action == .toggleHeaderRow { table.headerRow.toggle() }
             else { table.headerColumn.toggle() }
             next.blocks[index].table = table
+        case .insertTableRow(let row):
+            guard var table = next.blocks[index].table, (0...table.rows.count).contains(row) else { return false }
+            table.rows.insert(Array(repeating: "", count: table.columnCount), at: row)
+            next.blocks[index].table = table
+        case .insertTableColumn(let column):
+            guard var table = next.blocks[index].table, (0...table.columnCount).contains(column) else { return false }
+            for row in table.rows.indices { table.rows[row].insert("", at: column) }
+            next.blocks[index].table = table
+        case .deleteTableRow(let row):
+            guard var table = next.blocks[index].table, table.rows.count > 1, table.rows.indices.contains(row) else { return false }
+            table.rows.remove(at: row)
+            next.blocks[index].table = table
+        case .deleteTableColumn(let column):
+            guard var table = next.blocks[index].table, table.columnCount > 1, (0..<table.columnCount).contains(column) else { return false }
+            for row in table.rows.indices { table.rows[row].remove(at: column) }
+            next.blocks[index].table = table
         case .moveUp, .moveDown:
             destination += action == .moveUp ? -1 : 1
             guard next.blocks.indices.contains(destination) else { return false }
@@ -1798,6 +1973,11 @@ extension PaperTextView {
             selectedID = nil
         }
         replaceDocument(next, block: destination)
+        switch action {
+        case .insertTableRow(let row): beginTableCellEditing(blockID: blockID, row: row, column: 0); return true
+        case .insertTableColumn(let column): beginTableCellEditing(blockID: blockID, row: 0, column: column); return true
+        default: break
+        }
         if let selectedID { selectBlock(selectedID) }
         return true
     }
@@ -2121,6 +2301,9 @@ extension PaperTextView {
         cell.onTextChange = { [weak self] text in self?.updateTableCell(blockID: blockID, row: row, column: column, text: text) }
         cell.onNavigate = { [weak self] delta in self?.navigateTableCell(delta) }
         cell.onExit = { [weak self] in self?.leaveTable() }
+        cell.onContextMenu = { [weak self] in
+            self?.makeBlockActionMenu(blockID: blockID, tableCell: (row, column))
+        }
         cell.onHistory = { [weak self] redo in
             guard let self else { return }
             if redo { undoManager?.redo() } else { undoManager?.undo() }

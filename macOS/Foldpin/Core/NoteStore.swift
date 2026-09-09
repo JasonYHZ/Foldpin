@@ -77,6 +77,18 @@ final class NoteStore: ObservableObject {
         scheduleSave()
     }
 
+    /// Commit the lifecycle transition before removing the visible entry.
+    /// On failure keep both the original state and the unsaved content visible.
+    @discardableResult func setDeletedAt(_ date: Date?) -> Bool {
+        guard loadError == nil else { return false }
+        let previous = document.deletedAt
+        document.deletedAt = date
+        isDirty = true
+        if flush() { return true }
+        document.deletedAt = previous
+        return false
+    }
+
     func setFrame(_ frame: CGRect) {
         guard loadError == nil, document.frame != NoteFrame(frame) else { return }
         document.frame = NoteFrame(frame)

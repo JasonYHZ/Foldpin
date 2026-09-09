@@ -15,13 +15,14 @@ struct NoteDocument: Codable, Equatable, Sendable {
     var isCollapsed = false
     var color: NoteColor = .original
     var icon: String?
+    var deletedAt: Date?
     var frame: NoteFrame?
     var modifiedAt = Date()
 
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case version, id, text, content, isPinned, isShelved, isCollapsed, color, icon, frame, modifiedAt
+        case version, id, text, content, isPinned, isShelved, isCollapsed, color, icon, deletedAt, frame, modifiedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -43,6 +44,7 @@ struct NoteDocument: Codable, Equatable, Sendable {
         // original surface without changing the note's content on load.
         color = NoteColor(rawValue: try values.decodeIfPresent(String.self, forKey: .color) ?? "") ?? .original
         icon = try values.decodeIfPresent(String.self, forKey: .icon).flatMap(NoteIcon.normalized)
+        deletedAt = try values.decodeIfPresent(Date.self, forKey: .deletedAt)
         frame = try values.decodeIfPresent(NoteFrame.self, forKey: .frame)
         modifiedAt = try values.decode(Date.self, forKey: .modifiedAt)
     }
@@ -57,6 +59,7 @@ struct NoteDocument: Codable, Equatable, Sendable {
         try values.encode(isCollapsed, forKey: .isCollapsed)
         try values.encode(color, forKey: .color)
         try values.encodeIfPresent(icon, forKey: .icon)
+        try values.encodeIfPresent(deletedAt, forKey: .deletedAt)
         try values.encodeIfPresent(frame, forKey: .frame)
         try values.encode(modifiedAt, forKey: .modifiedAt)
     }
@@ -69,6 +72,7 @@ struct NoteDocument: Codable, Equatable, Sendable {
         guard version == Self.currentVersion else { throw NoteFileError.unsupportedVersion }
         try content.validate()
         if let icon, NoteIcon.normalized(icon) != icon { throw NoteFileError.invalidContent }
+        if let deletedAt, !deletedAt.timeIntervalSinceReferenceDate.isFinite { throw NoteFileError.invalidContent }
         if let frame, !frame.isValid { throw NoteFileError.invalidLayout }
     }
 }

@@ -12,6 +12,7 @@ struct ContentView: View {
     var onRetryLoad: () -> Void
     var onRevealError: () -> Void
     var onColorMenu: (() -> NSMenu?)? = nil
+    var onActions: () -> Void = {}
 
     var body: some View {
         GeometryReader { geometry in
@@ -54,17 +55,7 @@ struct ContentView: View {
             }
             // The native block editor owns all empty-block hints.
             NoteEditor(store: store, appearance: appearance, onEscape: onShelve)
-            HStack(spacing: 8) {
-                Text(store.hotKeyWarning == nil ? store.shortcutLabel : String(localized: "Shortcut unavailable", bundle: languageSettings.bundle))
-                    .help(store.hotKeyWarning ?? String(localized: "Show or shelve your note. Change the shortcut in the menu bar.", bundle: languageSettings.bundle))
-                Spacer()
-                Text(store.status)
-                    .foregroundStyle(store.saveError == nil ? Color(nsColor: appearance.secondaryTextColor)
-                                     : (appearance == .paper ? Color(nsColor: NotePalette.paperError) : Color.red))
-                    .accessibilityLabel(String(localized: "Save status: \(store.status)", bundle: languageSettings.bundle))
-            }
-            .font(.system(size: 10)).foregroundStyle(Color(nsColor: appearance.secondaryTextColor))
-            .padding(.top, 8).padding(.bottom, 11).padding(.horizontal, 18)
+            NoteFooter(store: store, state: titlebarState, appearance: appearance, onActions: onActions)
         }
     }
 }
@@ -72,6 +63,16 @@ struct ContentView: View {
 @MainActor
 final class NoteTitlebarState: ObservableObject {
     @Published private(set) var isPointerInside = false
+    @Published private(set) var showsShortcutHints = false
+    @Published var isActionsPresented = false
+    @Published var iconRequest = 0
+    @Published var copiedAll = false
+    weak var actionsAnchor: NSView?
+
+    func setShortcutHints(_ value: Bool) {
+        guard showsShortcutHints != value else { return }
+        showsShortcutHints = value
+    }
 
     func setPointerInside(_ value: Bool) {
         guard isPointerInside != value else { return }
@@ -96,12 +97,12 @@ private struct NoteTitlebar: View {
     var onShelve: () -> Void
     var onColorMenu: (() -> NSMenu?)?
     private let closeButtonSize: CGFloat = 26
-    private var controlsVisible: Bool { state.isPointerInside || focusedAction != nil || voiceOverEnabled || isIconPickerPresented }
+    private var controlsVisible: Bool { state.isPointerInside || state.showsShortcutHints || state.isActionsPresented || focusedAction != nil || voiceOverEnabled || isIconPickerPresented }
     private let buttonSize: CGFloat = 28
 
     var body: some View {
         HStack(spacing: 3) {
-            NoteTitlebarButton(symbol: "xmark", label: String(localized: "Close Note", bundle: languageSettings.bundle), help: String(localized: "Close the note and keep it on the shelf (⌘W)", bundle: languageSettings.bundle), isClose: true, buttonSize: closeButtonSize, action: onShelve)
+            NoteTitlebarButton(symbol: "xmark", label: String(localized: "Close Note", bundle: languageSettings.bundle), help: String(localized: "Close the note and keep it on the shelf (⌘W)", bundle: languageSettings.bundle), isClose: true, buttonSize: closeButtonSize, ink: ink, shortcut: .shelve, showsHint: state.showsShortcutHints, action: onShelve)
                 .disabled(store.loadError != nil)
                 .focused($focusedAction, equals: .close)
                 .opacity(controlsVisible ? 1 : 0)
@@ -129,18 +130,18 @@ private struct NoteTitlebar: View {
                 NoteTitlebarButton(symbol: store.document.isPinned ? "pin.fill" : "pin",
                                    label: store.document.isPinned ? String(localized: "Unpin Note", bundle: languageSettings.bundle) : String(localized: "Pin Note", bundle: languageSettings.bundle),
                                    help: String(localized: "Keep this note visible while using other apps", bundle: languageSettings.bundle),
-                                   selected: store.document.isPinned, buttonSize: buttonSize, symbolSize: 14, ink: ink, action: onPin)
+                                   selected: store.document.isPinned, buttonSize: buttonSize, symbolSize: 14, ink: ink, shortcut: .pin, showsHint: state.showsShortcutHints, action: onPin)
                     .disabled(store.loadError != nil)
                     .focused($focusedAction, equals: .pin)
                 NoteTitlebarButton(symbol: store.isCollapsed ? "chevron.down" : "chevron.up",
                                    label: store.isCollapsed ? String(localized: "Expand Note", bundle: languageSettings.bundle) : String(localized: "Collapse Note", bundle: languageSettings.bundle),
                                    help: store.isCollapsed ? String(localized: "Restore the original size (⌘M)", bundle: languageSettings.bundle) : String(localized: "Collapse to one line on the desktop (⌘M)", bundle: languageSettings.bundle),
-                                   buttonSize: buttonSize, symbolSize: 16, ink: ink, action: onCollapse)
+                                   buttonSize: buttonSize, symbolSize: 16, ink: ink, shortcut: .collapse, showsHint: state.showsShortcutHints, action: onCollapse)
                     .disabled(store.loadError != nil)
                     .focused($focusedAction, equals: .collapse)
                 NoteTitlebarButton(symbol: "tray.and.arrow.down", label: String(localized: "Shelve Note", bundle: languageSettings.bundle),
                                    help: String(localized: "Move to the screen edge, keeping content and position", bundle: languageSettings.bundle),
-                                   buttonSize: buttonSize, symbolSize: 15, ink: ink, action: onShelve)
+                                   buttonSize: buttonSize, symbolSize: 15, ink: ink, shortcut: .shelve, showsHint: state.showsShortcutHints, action: onShelve)
                     .disabled(store.loadError != nil)
                     .focused($focusedAction, equals: .shelve)
             }
@@ -162,13 +163,20 @@ private struct NoteTitlebar: View {
         .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: controlsVisible)
         .onChange(of: store.isCollapsed) { _, _ in isIconPickerPresented = false }
         .onChange(of: store.document.isShelved) { _, shelved in if shelved { isIconPickerPresented = false } }
+        .onChange(of: store.document.deletedAt) { _, date in if date != nil { isIconPickerPresented = false } }
         .onChange(of: store.loadError) { _, error in if error != nil { isIconPickerPresented = false } }
+        .onChange(of: state.iconRequest) { _, _ in
+            if store.loadError == nil, !store.document.isShelved { isIconPickerPresented = true }
+        }
+        .onChange(of: state.isActionsPresented) { _, presented in if presented { isIconPickerPresented = false } }
     }
 
     private var iconButton: some View {
         Button { isIconPickerPresented = true } label: {
             Group {
-                if let icon = store.document.icon {
+                if state.showsShortcutHints {
+                    TitlebarShortcutHint(action: .icon, ink: ink)
+                } else if let icon = store.document.icon {
                     Text(icon).font(.system(size: 18))
                 } else {
                     Image(systemName: "face.smiling").font(.system(size: 15, weight: .regular))
@@ -215,6 +223,8 @@ private struct NoteTitlebarButton: View {
     var buttonSize: CGFloat = 26
     var symbolSize: CGFloat = 14
     var ink: Color = .primary
+    var shortcut: NoteAction? = nil
+    var showsHint = false
     var action: () -> Void
     @State private var hovered = false
     @Environment(\.isEnabled) private var isEnabled
@@ -222,7 +232,9 @@ private struct NoteTitlebarButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                if isClose {
+                if showsHint, isEnabled, let shortcut {
+                    TitlebarShortcutHint(action: shortcut, ink: ink)
+                } else if isClose {
                     Circle().fill(Color(red: 1, green: 0.37, blue: 0.35)).frame(width: 14, height: 14)
                     Image(systemName: symbol)
                         .font(.system(size: 7, weight: .bold))
@@ -240,7 +252,76 @@ private struct NoteTitlebarButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
-        .help(help)
+        .help(help + (shortcut.flatMap { help.contains($0.keycaps.joined()) ? nil : " (" + $0.keycaps.joined() + ")" } ?? ""))
         .accessibilityLabel(label)
+    }
+}
+
+private struct TitlebarShortcutHint: View {
+    let action: NoteAction
+    let ink: Color
+    var body: some View {
+        Text(action.heldHint).font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(ink).frame(minWidth: 20, minHeight: 21)
+            .background(ink.opacity(0.05), in: .rect(cornerRadius: 4))
+            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(ink.opacity(0.25), lineWidth: 0.7))
+            .accessibilityHidden(true)
+    }
+}
+
+private struct NoteFooter: View {
+    @ObservedObject private var language = LanguageSettings.shared
+    @ObservedObject var store: NoteStore
+    @ObservedObject var state: NoteTitlebarState
+    let appearance: NoteAppearance
+    let onActions: () -> Void
+    @State private var hovered = false
+    private var ink: Color { Color(nsColor: appearance.secondaryTextColor) }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 4) {
+                if store.saveError != nil || store.hotKeyWarning != nil {
+                    Image(systemName: "exclamationmark.circle")
+                }
+                Text(state.copiedAll && store.saveError == nil ? String(localized: "All content copied", bundle: language.bundle) : store.status)
+                    .lineLimit(1).truncationMode(.tail)
+            }
+            .font(.system(size: 10))
+            .foregroundStyle(store.saveError == nil ? ink :
+                                (appearance == .paper ? Color(nsColor: NotePalette.paperError) : Color.red))
+            .help(store.hotKeyWarning ?? store.shortcutLabel + " · " + String(localized: "Show or shelve your note. Change the shortcut in the menu bar.", bundle: language.bundle))
+            .accessibilityLabel(String(localized: "Save status: \(store.status)", bundle: language.bundle))
+            Spacer(minLength: 0)
+            Button(action: onActions) {
+                HStack(spacing: 7) {
+                    Text(String(localized: "Actions", bundle: language.bundle)).font(.system(size: 11, weight: .medium))
+                    ShortcutKeycaps(keys: NoteAction.actions.keycaps)
+                }
+                .padding(.horizontal, 9).frame(height: 29)
+                .background(ink.opacity(hovered ? 0.09 : 0.045), in: Capsule())
+                .overlay(Capsule().strokeBorder(ink.opacity(0.12), lineWidth: 0.5))
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain).onHover { hovered = $0 }
+            .background(NoteActionsAnchor(state: state))
+            .help(String(localized: "Paper and app actions (⌘K). Hold ⌘ to reveal button shortcuts.", bundle: language.bundle))
+            .accessibilityLabel(String(localized: "Actions", bundle: language.bundle) + " ⌘K")
+        }
+        .foregroundStyle(ink)
+        .padding(.leading, 18).padding(.trailing, 12).padding(.top, 4).padding(.bottom, 8)
+    }
+}
+
+private struct NoteActionsAnchor: NSViewRepresentable {
+    let state: NoteTitlebarState
+    func makeNSView(context: Context) -> NSView {
+        let view = AnchorView()
+        state.actionsAnchor = view
+        return view
+    }
+    func updateNSView(_ view: NSView, context: Context) { state.actionsAnchor = view }
+    private final class AnchorView: NSView {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
     }
 }

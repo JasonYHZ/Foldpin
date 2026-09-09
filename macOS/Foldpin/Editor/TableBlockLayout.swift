@@ -91,6 +91,12 @@ final class TableCellTextView: NSTextView {
     var onNavigate: ((Int) -> Void)?
     var onExit: (() -> Void)?
     var onHistory: ((Bool) -> Void)?
+    var onContextMenu: (() -> NSMenu?)?
+
+    override func menu(for event: NSEvent) -> NSMenu? {
+        guard !hasMarkedText() else { return nil }
+        return onContextMenu?() ?? super.menu(for: event)
+    }
 
     override func didChangeText() {
         super.didChangeText()

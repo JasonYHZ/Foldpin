@@ -6,6 +6,11 @@ final class PaperPanel: NSPanel {
     var onRequestClose: (() -> Void)?
     var onEndResize: (() -> Void)?
     var onBeginMove: (() -> Void)?
+    var onAction: ((NoteAction) -> Void)?
+    var onShortcutHints: ((Bool) -> Void)?
+    private var commandHintWork: DispatchWorkItem?
+    private var commandIsDown = false
+    private var shortcutMonitor: Any?
     private var resizeSession: ResizeSession?
     var isResizingByMouse: Bool { resizeSession != nil }
 
@@ -80,12 +85,58 @@ final class PaperPanel: NSPanel {
         onEndResize?()
     }
 
+    override func becomeKey() {
+        super.becomeKey()
+        // Observe before the application menu consumes Copy/Paste/etc. This
+        // local monitor exists only while this paper owns keyboard focus.
+        guard shortcutMonitor == nil else { return }
+        commandIsDown = NSEvent.modifierFlags.contains(.command)
+        shortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: [.flagsChanged, .keyDown, .leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self, self.isKeyWindow, NSApp.isActive else { return event }
+            if event.type == .flagsChanged { self.updateCommandHold(event.modifierFlags) }
+            else { self.cancelShortcutHints() }
+            return event
+        }
+    }
+
     override func resignKey() {
         finishResize()
+        cancelShortcutHints()
+        commandIsDown = false
+        if let shortcutMonitor { NSEvent.removeMonitor(shortcutMonitor); self.shortcutMonitor = nil }
         super.resignKey()
     }
 
+    private func updateCommandHold(_ flags: NSEvent.ModifierFlags) {
+        let modifiers = flags.intersection([.command, .control, .option, .shift])
+        let wasDown = commandIsDown
+        commandIsDown = modifiers.contains(.command)
+        guard modifiers == .command, isKeyWindow, NSApp.isActive else {
+            cancelShortcutHints()
+            return
+        }
+        guard !wasDown else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, self.isKeyWindow, NSApp.isActive, self.commandIsDown else { return }
+            self.onShortcutHints?(true)
+        }
+        commandHintWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: work)
+    }
+
+    func cancelShortcutHints() {
+        commandHintWork?.cancel()
+        commandHintWork = nil
+        onShortcutHints?(false)
+    }
+
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        cancelShortcutHints()
+        if isKeyWindow, event.type == .keyDown, let onAction,
+           let action = NoteAction.matching(key: event.charactersIgnoringModifiers, modifiers: event.modifierFlags) {
+            if !event.isARepeat { onAction(action) }
+            return true
+        }
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
         guard isKeyWindow, event.type == .keyDown, modifiers == .command else {
             return super.performKeyEquivalent(with: event)
