@@ -150,6 +150,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         case .icon: titlebarState.iconRequest += 1
         case .copyAll:
             commitMarkedText()
+            guard audioEditor?.prepareAudioForHiding() != false else { return }
             do {
                 try NoteClipboard.copy(store.document.content, file: store.file)
                 copyFeedbackTask?.cancel()
@@ -237,6 +238,15 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
 
     func windowDidBecomeKey(_ notification: Notification) { onActivate?(id) }
 
+    private var audioEditor: PaperTextView? {
+        func find(_ view: NSView) -> PaperTextView? {
+            if let editor = view as? PaperTextView { return editor }
+            for child in view.subviews { if let editor = find(child) { return editor } }
+            return nil
+        }
+        return paper.contentView.flatMap(find)
+    }
+
     private func commitMarkedText() {
         if let editor = paper.firstResponder as? NSTextView, editor.hasMarkedText() {
             editor.unmarkText()
@@ -250,6 +260,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         commitMarkedText()
         recordGeometry()
         let collapsing = !store.isCollapsed
+        if collapsing, audioEditor?.prepareAudioForHiding() == false { return }
         store.setCollapsed(collapsing)
         // Never hide unsaved content or its error behind a title-bar strip.
         if collapsing && !store.flush() {
@@ -280,6 +291,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         if actionsPanel?.isShown == true { actionsPanel?.close(restoringFocus: true) }
         commitMarkedText()
         recordGeometry()
+        guard audioEditor?.prepareAudioForHiding() != false else { return false }
         store.setShelved(true)
         guard store.flush() else {
             store.setShelved(false)
@@ -436,6 +448,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
 
     func prepareToTerminate() -> Bool {
         commitMarkedText()
+        guard audioEditor?.prepareAudioForHiding() != false else { return false }
         recordGeometry()
         return store.loadError != nil || store.flush()
     }
@@ -450,6 +463,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     }
 
     func dispose() {
+        audioEditor?.stopAudio()
         copyFeedbackTask?.cancel()
         actionsPanel?.close()
         actionsPanel = nil

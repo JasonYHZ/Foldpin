@@ -175,7 +175,7 @@ import Testing
         let editor = inlineSlashEditor(NoteContent(plainText: prefix))
         editor.insertText("/", replacementRange: editor.selectedRange())
         let codeIndex = NoteBlockKind.allCases.firstIndex(of: .code)!
-        for _ in 0..<(NoteBlockKind.allCases.count + codeIndex) { editor.moveDown(nil) }
+        for _ in 0..<(NoteBlockKind.allCases.count + 1 + codeIndex) { editor.moveDown(nil) }
         #expect(editor.hasSlashSuggestions)
         editor.insertNewline(nil)
         #expect(!editor.hasSlashSuggestions && editor.currentBlockKind == .code)

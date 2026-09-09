@@ -51,6 +51,17 @@ enum NoteClipboard {
 
     static func copy(_ content: NoteContent, file: NoteFile, to board: NSPasteboard = .general) throws {
         try content.validate()
+        var audioData: [UUID: Data] = [:]
+        var audioBytes = 0
+        for audio in content.blocks.compactMap(\.audio) where audioData[audio.id] == nil {
+            let url = file.audioURL(audio)
+            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
+            // Rich clipboard formats make multiple encoded copies. Export large
+            // recordings separately instead of allocating unbounded clipboard data.
+            guard !audio.isDraft, size <= 32 * 1024 * 1024 - audioBytes else { throw NoteAudioCopyError(message: String(localized: "Finish the recording before copying. For audio over 32 MB, use Export Audio instead.", bundle: LanguageSettings.shared.bundle)) }
+            let data = try Data(contentsOf: url)
+            audioBytes += data.count; audioData[audio.id] = data
+        }
         var imageData: [UUID: Data] = [:]
         for block in content.blocks {
             guard let image = block.image else { continue }
@@ -63,8 +74,15 @@ enum NoteClipboard {
             image: { imageData[$0.id].flatMap(NSImage.init(data:)) }))
         let fullRange = NSRange(location: 0, length: rendered.length)
         rendered.enumerateAttribute(.attachment, in: fullRange) { value, range, _ in
-            guard let attachment = value as? NSTextAttachment,
-                  let png = attachment.image.flatMap({ image -> Data? in
+            guard let attachment = value as? NSTextAttachment else { return }
+            if let metadata = rendered.attribute(.blockAudio, at: range.location, effectiveRange: nil) as? Data,
+               let audio = try? JSONDecoder().decode(NoteAudio.self, from: metadata), let data = audioData[audio.id] {
+                let wrapper = FileWrapper(regularFileWithContents: data)
+                wrapper.preferredFilename = "audio-\(audio.id).\(audio.fileExtension)"
+                rendered.addAttribute(.attachment, value: NSTextAttachment(fileWrapper: wrapper), range: range)
+                return
+            }
+            guard let png = attachment.image.flatMap({ image -> Data? in
                       guard let tiff = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
                       return bitmap.representation(using: .png, properties: [:])
                   }) else { return }
@@ -79,7 +97,7 @@ enum NoteClipboard {
         item.setString(content.plainText, forType: .string)
         item.setData(try JSONEncoder().encode(content), forType: blocksType)
         item.setData(rtfd, forType: .rtfd)
-        item.setString(html(content, imageData: imageData), forType: .html)
+        item.setString(html(content, imageData: imageData, audioData: audioData), forType: .html)
         board.clearContents()
         guard board.writeObjects([item]) else { throw CocoaError(.fileWriteUnknown) }
     }
@@ -107,7 +125,7 @@ enum NoteClipboard {
         }.joined()
     }
 
-    private static func html(_ content: NoteContent, imageData: [UUID: Data]) -> String {
+    private static func html(_ content: NoteContent, imageData: [UUID: Data], audioData: [UUID: Data]) -> String {
         var result = "<html><head><meta charset=\"utf-8\"></head><body>"
         var list: String?
         for block in content.blocks {
@@ -119,6 +137,8 @@ enum NoteClipboard {
             }
             if let image = block.image, let data = imageData[image.id] {
                 result += "<p><img src=\"data:image/png;base64,\(data.base64EncodedString())\" alt=\"\(escape(image.name))\" width=\"\(min(640, image.pixelWidth))\"></p>"
+            } else if let audio = block.audio, let data = audioData[audio.id] {
+                result += "<p>\(escape(audio.name)) · \(NoteAudio.timestamp(audio.duration))<br><audio controls src=\"data:\(audio.mimeType);base64,\(data.base64EncodedString())\">\(escape(audio.name))</audio></p>"
             } else if let table = block.table {
                 result += "<table style=\"border-collapse:collapse\">"
                 for (rowIndex, row) in table.rows.enumerated() {
@@ -141,4 +161,9 @@ enum NoteClipboard {
         if let list { result += "</\(list)>" }
         return result + "</body></html>"
     }
+}
+
+nonisolated private struct NoteAudioCopyError: LocalizedError {
+    let message: String
+    var errorDescription: String? { message }
 }

@@ -6,6 +6,7 @@ extension NSAttributedString.Key {
     static let blockChecked = Self("Foldpin.checked")
     static let blockLanguage = Self("Foldpin.language")
     static let blockImage = Self("Foldpin.image")
+    static let blockAudio = Self("Foldpin.audio")
     static let blockTable = Self("Foldpin.table")
     static let blockBoundary = Self("Foldpin.boundary")
     static let nextBlock = Self("Foldpin.nextBlock")
@@ -33,6 +34,7 @@ enum BlockTextCodec {
             .blockChecked: block.isChecked, .blockLanguage: block.language.rawValue
         ]
         if let image = block.image, let data = try? JSONEncoder().encode(image) { values[.blockImage] = data }
+        if let audio = block.audio, let data = try? JSONEncoder().encode(audio) { values[.blockAudio] = data }
         if let table = block.table, let data = try? JSONEncoder().encode(table) { values[.blockTable] = data }
         return values
     }
@@ -71,7 +73,10 @@ enum BlockTextCodec {
             block.isChecked = attributes[.blockChecked] as? Bool ?? false
             block.language = (attributes[.blockLanguage] as? String).flatMap(CodeLanguage.init(rawValue:)) ?? .plain
             var textRange = range
-            if block.kind == .divider, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil {
+            if block.kind == .audio, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
+               let data = attributes[.blockAudio] as? Data, let audio = try? JSONDecoder().decode(NoteAudio.self, from: data), audio.isValid {
+                block.audio = audio
+            } else if block.kind == .divider, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil {
                 block.text = ""
             } else if block.kind == .table, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
                       let data = attributes[.blockTable] as? Data,
@@ -134,6 +139,7 @@ enum BlockTextCodec {
     static func render(_ content: NoteContent, color: NSColor, width: CGFloat,
                        theme: NativeCodeTheme? = nil, cachedSyntaxOnly: Bool = false, startingOrdinal: Int = 1,
                        tableLayout: ((NoteBlock, CGFloat) -> TableBlockLayout)? = nil,
+                       audioModel: ((NoteBlock) -> AudioBlockModel?)? = nil,
                        image: (NoteImage) -> NSImage?) -> NSAttributedString {
         let theme = theme ?? .github
         let result = NSMutableAttributedString(string: "")
@@ -148,6 +154,11 @@ enum BlockTextCodec {
             for mark in block.marks where mark.location + mark.length <= (block.text as NSString).length {
                 let range = NSRange(location: prefixLength + mark.location, length: mark.length)
                 value.addAttributes(inlineAttributes(mark, block: block, color: color), range: range)
+            }
+            if let audio = block.audio {
+                let attachment = AudioTextAttachment(audio: audio, width: max(80, width - 2), model: audioModel?(block))
+                value.setAttributedString(NSAttributedString(attachment: attachment))
+                value.addAttributes(attributes, range: NSRange(location: 0, length: value.length))
             }
             if let asset = block.image {
                 let attachment = NSTextAttachment()

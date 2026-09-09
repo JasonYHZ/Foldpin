@@ -16,6 +16,7 @@ struct NoteEditor: NSViewRepresentable {
         editor.noteColor = textColor
         editor.updatePaperBackground(NotePalette.paperBackground(for: store.document.color))
         host.updateColors(textColor)
+        editor.onAudioCommit = { [weak store] in store?.flush() ?? false }
         editor.onContentChange = { [weak store] in store?.edit($0) }
         editor.onEscape = onEscape
         editor.configure(content: store.document.content)

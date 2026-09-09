@@ -1,5 +1,7 @@
 import AppKit
 import UniformTypeIdentifiers
+import AVFoundation
+import Combine
 
 enum NoteEditorStatus: Equatable {
     case importingImage, insertionChanged, imageFailed, imageCopyFailed
@@ -15,6 +17,11 @@ enum NoteEditorStatus: Equatable {
 }
 
 final class PaperTextView: NSTextView {
+    var onAudioCommit: (() -> Bool)?
+    private var audioModels: [UUID: AudioBlockModel] = [:]
+    private var audioViews: [UUID: NSView] = [:]
+    private var audioViewsScheduled = false
+    private var updatingAudioViews = false
     var onEscape: (() -> Void)?
     var onContentChange: ((NoteContent) -> Void)?
     var onStatusChange: ((NoteEditorStatus?) -> Void)?
@@ -112,6 +119,7 @@ final class PaperTextView: NSTextView {
         images.totalCostLimit = 16 * 1_024 * 1_024
         tableLayouts.removeAll()
         self.content = content
+        synchronizeAudioModels()
         drawsBackground = false
         // The app supplies both palettes; AppKit must not invert their colors
         // a second time or rewrite them during copy/paste in dark appearance.
@@ -136,6 +144,7 @@ final class PaperTextView: NSTextView {
     func updateColors(_ color: NSColor) {
         guard noteColor != color else { return }
         noteColor = color
+        for model in audioModels.values { model.objectWillChange.send() }
         blockHandle?.ink = color
         tableControls?.updateColors(color)
         refreshStyles(force: true)
@@ -241,7 +250,7 @@ final class PaperTextView: NSTextView {
             case .task: label = String(localized: "To-do", bundle: bundle)
             case .quote: label = String(localized: "Quote", bundle: bundle)
             case .code: label = String(localized: "Type or paste code", bundle: bundle)
-            case .image, .divider, .table: return nil
+            case .image, .divider, .table, .audio: return nil
             }
             let paragraph = NSMutableParagraphStyle()
             paragraph.lineBreakMode = .byTruncatingTail
@@ -300,6 +309,7 @@ final class PaperTextView: NSTextView {
     override func layout() {
         invalidateBlockGeometry()
         super.layout()
+        scheduleAudioViews()
         // TextKit may finalize attachment positions after the edit callback.
         // Reposition the active cell and its controls once that layout settles.
         scheduleTableControlsUpdate()
@@ -417,6 +427,7 @@ final class PaperTextView: NSTextView {
     }
 
     @objc private func codeViewportChanged(_ notification: Notification) {
+        scheduleAudioViews()
         // Coalesce geometry updates while leaving the existing overlay visible.
         // Only a confirmed pointer/block change should hide it.
         scheduleCodeToolbarUpdate()
@@ -438,7 +449,8 @@ final class PaperTextView: NSTextView {
         }
         return BlockTextCodec.render(value, color: noteColor, width: max(80, bounds.width - textContainerInset.width * 2),
                                      theme: codeThemes.theme, cachedSyntaxOnly: true, startingOrdinal: startingOrdinal,
-                                     tableLayout: { [unowned self] block, width in self.tableLayout(for: block, width: width) }) { [weak self] asset in
+                                     tableLayout: { [unowned self] block, width in self.tableLayout(for: block, width: width) },
+                                     audioModel: { [weak self] in self?.audioModel(for: $0) }) { [weak self] asset in
             guard let self else { return nil }
             if let cached = images.object(forKey: asset.id as NSUUID) { return cached }
             guard let url = file?.imageURL(asset.id), let image = NSImage(contentsOf: url) else { return nil }
@@ -497,6 +509,7 @@ final class PaperTextView: NSTextView {
         content = NoteContent(blocks: next.map(\.block))
         if !hasMarkedText(), !isRestoringHistory, renumberListsIfNeeded() { return }
         if !hasMarkedText() { refreshStyles(previous: old) }
+        synchronizeAudioModels()
         onContentChange?(content)
         if slashMenu != nil && !slashContextIsValid { dismissSlashMenu() }
     }
@@ -562,6 +575,7 @@ final class PaperTextView: NSTextView {
         spans = BlockTextCodec.read(attributedString(), typing: typingAttributes)
         content = NoteContent(blocks: spans.map(\.block))
         if !hasMarkedText() { refreshStyles(force: true) }
+        synchronizeAudioModels()
         onContentChange?(content)
         if !slashContextIsValid { dismissSlashMenu() }
     }
@@ -724,6 +738,7 @@ final class PaperTextView: NSTextView {
             setSelectedRange(NSRange(location: span.textRange.location + min(max(0, offset), span.textRange.length), length: 0))
         }
         refreshStyles(force: true)
+        synchronizeAudioModels()
         onContentChange?(content)
         breakUndoCoalescing()
         if preservingSelection, let previousScrollOrigin {
@@ -1090,9 +1105,10 @@ final class PaperTextView: NSTextView {
         if slashMenuContext != context {
             dismissSlashMenu()
             let blockID = context.source.id
-            let entries = NoteBlockKind.allCases.map {
-                SlashCommandMenu.Entry(kind: $0, title: $0 == .paragraph ? String(localized: "Text", bundle: bundle) : title($0))
+            var entries = NoteBlockKind.allCases.map {
+                SlashCommandMenu.Entry(kind: $0, title: $0 == .paragraph ? String(localized: "Text", bundle: bundle) : $0 == .audio ? String(localized: "Record Audio", bundle: bundle) : title($0))
             }
+            entries.append(.init(kind: .audio, title: String(localized: "Import Audio…", bundle: bundle), importsAudio: true))
             let suggestions = SlashCommandMenu(blockID: blockID, entries: entries, bundle: bundle)
             suggestions.onChoose = { [weak self] kind in
                 guard let self else { return }
@@ -1100,6 +1116,10 @@ final class PaperTextView: NSTextView {
                 dismissSlashMenu()
                 guard valid else { return }
                 if kind == .image { chooseImage(nil) } else { changeKind(kind) }
+            }
+            suggestions.onImportAudio = { [weak self] in
+                guard let self, slashContext == context else { return }
+                dismissSlashMenu(); chooseAudio(nil)
             }
             suggestions.onDismiss = { [weak self] in self?.dismissSlashMenu() }
             slashMenu = suggestions
@@ -1206,7 +1226,7 @@ final class PaperTextView: NSTextView {
 
     private func makeBlockMenu() -> NSMenu {
         let menu = NSMenu()
-        for kind in NoteBlockKind.allCases where kind != .image {
+        for kind in NoteBlockKind.allCases where kind != .image && kind != .audio {
             let item = NSMenuItem(title: title(kind), action: #selector(selectKind(_:)), keyEquivalent: "")
             item.representedObject = kind.rawValue
             item.target = self
@@ -1214,6 +1234,8 @@ final class PaperTextView: NSTextView {
             item.image = BlockMenuIcon.image(for: kind)
             menu.addItem(item)
         }
+        add(menu, String(localized: "Record Audio", bundle: bundle), #selector(recordAudio(_:)))
+        add(menu, String(localized: "Import Audio…", bundle: bundle), #selector(chooseAudio(_:)))
         add(menu, String(localized: "Insert Image…", bundle: bundle), #selector(chooseImage(_:)), enabled: !importInProgress)
         menu.addItem(.separator())
         add(menu, String(localized: "Bold", bundle: bundle), #selector(toggleBold(_:)), key: "b")
@@ -1262,6 +1284,7 @@ final class PaperTextView: NSTextView {
         case .task: String(localized: "To-do", bundle: bundle)
         case .quote: String(localized: "Quote", bundle: bundle)
         case .code: String(localized: "Code Block", bundle: bundle)
+        case .audio: String(localized: "Audio", bundle: bundle)
         case .image: String(localized: "Image", bundle: bundle)
         }
     }
@@ -1272,6 +1295,7 @@ final class PaperTextView: NSTextView {
     }
 
     func changeKind(_ kind: NoteBlockKind) {
+        if kind == .audio { recordAudio(nil); return }
         if let context = slashContext {
             applySlashCommand(NoteBlock(kind: kind), context: context)
             return
@@ -1414,6 +1438,7 @@ final class PaperTextView: NSTextView {
             performBlockAction(isImage ? .copyImage : .copy, blockID: selectedBlockID)
             return
         }
+        if copyAudioSelection() != nil { return }
         super.copy(sender)
         guard selectedRange().length > 0 else { return }
         let value = attributedString().attributedSubstring(from: selectedRange())
@@ -1427,6 +1452,11 @@ final class PaperTextView: NSTextView {
     }
 
     override func cut(_ sender: Any?) {
+        if selectedBlockID == nil, let copied = copyAudioSelection() {
+            guard copied, isEditable, !hasMarkedText() else { return }
+            super.insertText("", replacementRange: selectedRange())
+            return
+        }
         guard let selectedBlockID else { super.cut(sender); return }
         if performBlockAction(.copy, blockID: selectedBlockID) {
             performBlockAction(.delete, blockID: selectedBlockID)
@@ -1456,7 +1486,7 @@ final class PaperTextView: NSTextView {
             if !insertPastedBlocks(value) { insertPastedText(value.plainText, interpretingMarkdown: false) }
             return
         }
-        if importImages(from: board) { return }
+        if importAudio(from: board) || importImages(from: board) { return }
         if let text = board.string(forType: .string) {
             insertPastedText(text)
         }
@@ -1481,6 +1511,9 @@ final class PaperTextView: NSTextView {
     @discardableResult
     func insertPastedBlocks(_ value: NoteContent) -> Bool {
         guard isEditable, !hasMarkedText(), tableCellEditor == nil, (try? value.validate()) != nil else { return false }
+        for audio in value.blocks.compactMap(\.audio) {
+            guard let file, FileManager.default.fileExists(atPath: file.audioURL(audio).path) else { return false }
+        }
         let range = selectedRange()
         guard range.location != NSNotFound, NSMaxRange(range) <= (string as NSString).length,
               let startIndex = spans.lastIndex(where: { $0.range.location <= range.location }),
@@ -1585,7 +1618,7 @@ final class PaperTextView: NSTextView {
         defer { suppressMarkdownShortcuts = previous }
         let index = characterIndexForInsertion(at: convert(sender.draggingLocation, from: nil))
         setSelectedRange(NSRange(location: index, length: 0))
-        return importImages(from: sender.draggingPasteboard) || super.performDragOperation(sender)
+        return importAudio(from: sender.draggingPasteboard) || importImages(from: sender.draggingPasteboard) || super.performDragOperation(sender)
     }
 
     private func importImage(url: URL? = nil, data: Data? = nil, target: UUID, command: SlashCommandContext? = nil) {
@@ -1898,6 +1931,7 @@ extension PaperTextView {
     func performBlockAction(_ action: BlockAction, blockID: UUID) -> Bool {
         guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
               let index = content.blocks.firstIndex(where: { $0.id == blockID }) else { return false }
+        if (action == .copy || action == .duplicate), let model = audioModels[blockID], model.isRecording, !model.finish() { return false }
         var next = content
         var destination = index
         var selectedID: UUID? = blockID
@@ -1922,6 +1956,11 @@ extension PaperTextView {
                 return false
             }
         case .copy:
+            if content.blocks[index].audio != nil {
+                guard let file else { return false }
+                do { try NoteClipboard.copy(NoteContent(blocks: [content.blocks[index]]), file: file); return true }
+                catch { audioError(error.localizedDescription); return false }
+            }
             return writeBlockToPasteboard(NoteContent(blocks: [content.blocks[index]]))
         case .convert(let kind):
             guard !kind.isAttachment, !next.blocks[index].kind.isAttachment else { return false }
@@ -2342,6 +2381,7 @@ extension PaperTextView {
         updateTypingStyle()
         needsDisplay = true
         scheduleCodeToolbarUpdate()
+        synchronizeAudioModels()
         onContentChange?(content)
     }
 
@@ -2407,5 +2447,176 @@ extension PaperTextView {
         tableCellEditor = nil
         editingTableCell = nil
         scheduleTableControlsUpdate()
+    }
+}
+
+// MARK: - Local audio attachments
+extension PaperTextView {
+    private func audioModel(for block: NoteBlock) -> AudioBlockModel? {
+        guard let audio = block.audio, let file else { return nil }
+        if let existing = audioModels[block.id] { existing.update(audio); return existing }
+        let model = AudioBlockModel(blockID: block.id, audio: audio, file: file, editor: self)
+        audioModels[block.id] = model
+        return model
+    }
+    private func synchronizeAudioModels() {
+        let ids = Set(content.blocks.filter { $0.audio != nil }.map(\.id))
+        for id in Array(audioModels.keys) where !ids.contains(id) {
+            audioModels.removeValue(forKey: id)?.stop()
+            audioViews.removeValue(forKey: id)?.removeFromSuperview()
+        }
+        scheduleAudioViews()
+    }
+    private func scheduleAudioViews() {
+        guard !audioViewsScheduled, !audioModels.isEmpty || content.blocks.contains(where: { $0.audio != nil }) else { return }
+        audioViewsScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            audioViewsScheduled = false
+            synchronizeAudioViews()
+        }
+    }
+    func synchronizeAudioViews() {
+        guard !updatingAudioViews else { return }
+        updatingAudioViews = true
+        defer { updatingAudioViews = false }
+        var visible: Set<UUID> = []
+        let surfaces = Set(blockSurfaces().map(\.blockID))
+        for span in spans where span.block.audio != nil && surfaces.contains(span.block.id) {
+            guard let manager = textLayoutManager, let source = manager.textContentManager,
+                  let location = source.location(source.documentRange.location, offsetBy: span.textRange.location),
+                  let fragment = manager.textLayoutFragment(for: location) else { continue }
+            let attachment = fragment.frameForTextAttachment(at: location)
+            let rect = attachment.offsetBy(dx: textContainerOrigin.x + fragment.layoutFragmentFrame.minX,
+                                           dy: textContainerOrigin.y + fragment.layoutFragmentFrame.minY)
+            guard rect.width > 0, rect.height > 0, rect.intersects(visibleRect), let model = audioModel(for: span.block) else { continue }
+            visible.insert(span.block.id)
+            let view: NSView
+            if let existing = audioViews[span.block.id] { view = existing }
+            else { view = model.makePlayerView(); audioViews[span.block.id] = view; addSubview(view, positioned: .above, relativeTo: nil) }
+            if view.frame != rect { view.frame = rect }
+        }
+        for id in Array(audioViews.keys) where !visible.contains(id) { audioViews.removeValue(forKey: id)?.removeFromSuperview() }
+    }
+    @discardableResult func updateAudio(_ audio: NoteAudio, blockID: UUID) -> Bool {
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true, audio.isValid,
+              let index = content.blocks.firstIndex(where: { $0.id == blockID && $0.audio?.id == audio.id }) else { return false }
+        var next = content; next.blocks[index].audio = audio
+        replaceDocument(next, block: index, preservingSelection: true)
+        return onAudioCommit?() ?? true
+    }
+    func deleteAudioBlock(_ id: UUID) { _ = performBlockAction(.delete, blockID: id) }
+    @discardableResult func prepareAudioForHiding() -> Bool {
+        var saved = true
+        for model in Array(audioModels.values) {
+            if model.isRecording, !model.finish() { saved = false }
+            model.pause()
+        }
+        return saved
+    }
+    func stopAudio() { for model in audioModels.values { model.stop() } }
+
+    private func copyAudioSelection() -> Bool? {
+        let range = selectedRange()
+        guard range.length > 0, NSMaxRange(range) <= attributedString().length else { return nil }
+        func selectedContent() -> NoteContent {
+            NoteContent(blocks: BlockTextCodec.read(attributedString().attributedSubstring(from: range), typing: typingAttributes).map(\.block))
+        }
+        let selected = selectedContent()
+        guard selected.blocks.contains(where: { $0.audio != nil }) else { return nil }
+        guard let file, !hasMarkedText() else { return false }
+        for block in selected.blocks {
+            if let model = audioModels[block.id], model.isRecording, !model.finish() { return false }
+        }
+        do { try NoteClipboard.copy(selectedContent(), file: file); return true }
+        catch { audioError(error.localizedDescription); return false }
+    }
+
+    private func audioError(_ message: String) {
+        guard let window else { return }
+        let alert = NSAlert(); alert.messageText = String(localized: "Audio", bundle: bundle); alert.informativeText = message
+        alert.beginSheetModal(for: window)
+    }
+    @objc func recordAudio(_ sender: Any?) {
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+              let source = activeSpan?.block, let file else { return }
+        guard AudioBlockModel.recording == nil, !AudioBlockModel.requestingRecording else {
+            audioError(String(localized: "Finish the current recording before starting another.", bundle: bundle)); return
+        }
+        let context = slashContext
+        AudioBlockModel.requestingRecording = true
+        Task { [weak self] in
+            defer { AudioBlockModel.requestingRecording = false }
+            let allowed = await AVCaptureDevice.requestAccess(for: .audio)
+            guard let self else { return }
+            guard allowed else { audioError(String(localized: "Allow microphone access for Foldpin in System Settings to record audio.", bundle: bundle)); return }
+            guard isEditable, !hasMarkedText(), content.blocks.contains(source), window?.isVisible == true else { return }
+            do {
+                try FileManager.default.createDirectory(at: file.assetsURL, withIntermediateDirectories: true)
+                let draft = NoteAudio(name: String(localized: "Voice Recording", bundle: bundle), fileExtension: "m4a", duration: 0, isDraft: true)
+                let recorder = try AVAudioRecorder(url: file.audioURL(draft), settings: [AVFormatIDKey: kAudioFormatMPEG4AAC,
+                    AVSampleRateKey: 44100, AVNumberOfChannelsKey: 1, AVEncoderBitRateKey: 64000])
+                guard recorder.prepareToRecord() else { throw CocoaError(.fileWriteUnknown) }
+                guard let id = insertAudio(draft, source: source, context: context),
+                      let model = audioModels[id] else { recorder.stop(); return }
+                guard onAudioCommit?() != false else { recorder.stop(); model.error = "Audio could not be saved. Your recording file is kept; retry saving."; return }
+                model.start(recorder)
+            } catch { audioError(String(localized: "Could not start recording. Your draft is kept.", bundle: bundle)) }
+        }
+    }
+    @objc func chooseAudio(_ sender: Any?) {
+        guard isEditable, !hasMarkedText(), let source = activeSpan?.block, let window else { return }
+        let context = slashContext
+        let panel = NSOpenPanel(); panel.allowedContentTypes = [.audio]; panel.allowsMultipleSelection = false
+        panel.beginSheetModal(for: window) { [weak self] result in
+            guard result == .OK, let url = panel.url else { return }
+            self?.importAudio(url: url, source: source, context: context)
+        }
+    }
+    private func importAudio(from board: NSPasteboard) -> Bool {
+        guard let source = activeSpan?.block,
+              let urls = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL],
+              let url = urls.first, let type = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType,
+              type.conforms(to: .audio) else { return false }
+        importAudio(url: url, source: source); return true
+    }
+    private func importAudio(url: URL, source: NoteBlock, context: SlashCommandContext? = nil) {
+        guard !importInProgress, let file, isEditable else { return }
+        importInProgress = true
+        let directory = file.assetsURL
+        Task { [weak self] in
+            do {
+                let audio = try await Task.detached(priority: .userInitiated) {
+                    try NoteAudioImporter.prepare(url: url, directory: directory)
+                }.value
+                guard let self else { return }
+                importInProgress = false
+                guard let id = insertAudio(audio, source: source, context: context) else {
+                    audioError(String(localized: "The insertion block changed. Import the audio again; the source file is unchanged.", bundle: bundle)); return
+                }
+                if onAudioCommit?() == false {
+                    audioModels[id]?.error = "Audio could not be saved. Your recording file is kept; retry saving."
+                }
+            } catch {
+                guard let self else { return }
+                importInProgress = false
+                audioError(String(localized: "Could not import audio. Choose a readable audio file under 500 MB.", bundle: bundle))
+            }
+        }
+    }
+    @discardableResult private func insertAudio(_ audio: NoteAudio, source: NoteBlock, context: SlashCommandContext?) -> UUID? {
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+              let index = content.blocks.firstIndex(of: source) else { return nil }
+        let block = NoteBlock(kind: .audio, audio: audio)
+        if let context {
+            guard let insertion = context.inserting(block, in: content), applySlashCommand(block, context: context) else { return nil }
+            return insertion.content.blocks[insertion.index].id
+        }
+        var next = content
+        let destination = source.text.isEmpty && !source.kind.isAttachment ? index : index + 1
+        if destination == index { next.blocks[index] = block } else { next.blocks.insert(block, at: destination) }
+        if destination == next.blocks.count - 1 { next.blocks.append(NoteBlock()) }
+        replaceDocument(next, block: destination + 1)
+        return block.id
     }
 }

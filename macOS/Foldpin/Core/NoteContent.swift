@@ -2,9 +2,9 @@ import Foundation
 
 enum NoteBlockKind: String, Codable, CaseIterable, Sendable {
     // Keep the existing H1 / H2 raw values compatible with saved notes.
-    case paragraph, heading, subheading, heading3, heading4, bullet, orderedList, task, quote, divider, table, code, image
+    case paragraph, heading, subheading, heading3, heading4, bullet, orderedList, task, quote, divider, table, code, image, audio
 
-    var isAttachment: Bool { [.image, .divider, .table].contains(self) }
+    var isAttachment: Bool { [.image, .divider, .table, .audio].contains(self) }
 
     var headingLevel: Int? {
         switch self {
@@ -192,10 +192,11 @@ struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
     var isChecked = false
     var language: CodeLanguage = .plain
     var image: NoteImage?
+    var audio: NoteAudio?
     var table: NoteTable?
 
     init(id: UUID = UUID(), kind: NoteBlockKind = .paragraph, text: String = "", marks: [NoteTextMark] = [],
-         isChecked: Bool = false, language: CodeLanguage? = nil, image: NoteImage? = nil, table: NoteTable? = nil) {
+         isChecked: Bool = false, language: CodeLanguage? = nil, image: NoteImage? = nil, table: NoteTable? = nil, audio: NoteAudio? = nil) {
         self.id = id
         self.kind = kind
         self.text = text
@@ -203,10 +204,11 @@ struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
         self.isChecked = isChecked
         self.language = language ?? (kind == .code ? .automatic : .plain)
         self.image = image
+        self.audio = audio
         self.table = table ?? (kind == .table ? NoteTable() : nil)
     }
 
-    var plainText: String { table?.plainText ?? image.map { "[\($0.name)]" } ?? (kind == .divider ? "---" : text) }
+    var plainText: String { audio.map { "[\($0.name) · \(NoteAudio.timestamp($0.duration))]" } ?? table?.plainText ?? image.map { "[\($0.name)]" } ?? (kind == .divider ? "---" : text) }
 }
 
 struct NoteContent: Codable, Equatable, Sendable {
@@ -236,6 +238,9 @@ struct NoteContent: Codable, Equatable, Sendable {
             throw NoteFileError.invalidContent
         }
         for block in blocks {
+            if block.kind == .audio {
+                guard let audio = block.audio, audio.isValid, block.text.isEmpty, block.marks.isEmpty else { throw NoteFileError.invalidContent }
+            } else if block.audio != nil { throw NoteFileError.invalidContent }
             if block.kind == .table {
                 guard let table = block.table, table.isValid, block.text.isEmpty, block.marks.isEmpty else {
                     throw NoteFileError.invalidContent

@@ -7,7 +7,8 @@ final class SlashCommandMenu {
     struct Entry {
         let kind: NoteBlockKind
         let title: String
-        var isMedia: Bool { kind == .code || kind == .image }
+        var importsAudio = false
+        var isMedia: Bool { kind == .code || kind == .image || kind == .audio }
 
         func inputHint(bundle: Bundle) -> String {
             let prefix: String
@@ -22,7 +23,7 @@ final class SlashCommandMenu {
             case .task: prefix = "[]"
             case .quote: prefix = "\""
             case .code: prefix = "```"
-            case .paragraph, .image, .table: return ""
+            case .paragraph, .image, .table, .audio: return ""
             }
             return prefix
         }
@@ -38,6 +39,7 @@ final class SlashCommandMenu {
             case .task: "checkmark.square"
             case .quote: "text.quote"
             case .code: "chevron.left.forwardslash.chevron.right"
+            case .audio: importsAudio ? "waveform" : "mic"
             case .image: "photo"
             }
         }
@@ -47,6 +49,7 @@ final class SlashCommandMenu {
     let entries: [Entry]
     private(set) var selectedIndex = 0
     var onChoose: ((NoteBlockKind) -> Void)?
+    var onImportAudio: (() -> Void)?
     var onDismiss: (() -> Void)?
     private var panel: SlashSuggestionPanel?
     private let bundle: Bundle
@@ -76,7 +79,7 @@ final class SlashCommandMenu {
 
     func chooseSelected() {
         guard entries.indices.contains(selectedIndex) else { return }
-        onChoose?(entries[selectedIndex].kind)
+        if entries[selectedIndex].importsAudio { onImportAudio?() } else { onChoose?(entries[selectedIndex].kind) }
     }
 
     /// Also used for offscreen layout checks without opening user windows.

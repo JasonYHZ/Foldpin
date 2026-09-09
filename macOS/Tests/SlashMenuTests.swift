@@ -3,10 +3,12 @@ import Testing
 @testable import FoldpinCore
 
 @MainActor private func menuEntries(bundle: Bundle = .main) -> [SlashCommandMenu.Entry] {
-    let keys = ["Text", "Heading 1", "Heading 2", "Heading 3", "Heading 4", "Bullet List", "Numbered List", "To-do", "Quote", "Divider", "Table", "Code Block", "Image"]
-    return zip(NoteBlockKind.allCases, keys).map {
+    let keys = ["Text", "Heading 1", "Heading 2", "Heading 3", "Heading 4", "Bullet List", "Numbered List", "To-do", "Quote", "Divider", "Table", "Code Block", "Image", "Record Audio"]
+    var entries = zip(NoteBlockKind.allCases, keys).map {
         SlashCommandMenu.Entry(kind: $0.0, title: bundle.localizedString(forKey: $0.1, value: nil, table: nil))
     }
+    entries.append(.init(kind: .audio, title: "Import Audio…", importsAudio: true))
+    return entries
 }
 
 @Test @MainActor func slashPickerKeepsKeyboardSelectionScrollAndCloseAction() throws {
@@ -14,11 +16,13 @@ import Testing
     var choice: NoteBlockKind?
     var dismissed = false
     menu.onChoose = { choice = $0 }
+    var imported = false
+    menu.onImportAudio = { imported = true }
     menu.onDismiss = { dismissed = true }
     let view = menu.makeContentView(maximumHeight: 220)
     view.layoutSubtreeIfNeeded()
     #expect(view.frame.height == 220)
-    #expect(view.rows.count == NoteBlockKind.allCases.count)
+    #expect(view.rows.count == menu.entries.count)
     #expect(view.rows.allSatisfy { !$0.acceptsFirstResponder && !$0.needsPanelToBecomeKey })
     menu.moveSelection(-1)
     #expect(menu.selectedIndex == menu.entries.count - 1)
@@ -27,7 +31,7 @@ import Testing
     #expect(view.scrollView.contentView.bounds.minY > 0)
     #expect(view.closeButton.frame.maxY <= view.bounds.maxY)
     menu.chooseSelected()
-    #expect(choice == .image)
+    #expect(imported && choice == nil)
     menu.moveSelection(1)
     #expect(menu.selectedIndex == 0 && view.rows[0].showsKeyboardFocus)
     view.rows[1].performClick(nil)
@@ -74,8 +78,10 @@ import Testing
     #expect(view.scrollView.contentView.bounds.minY > 0)
     var chosen: NoteBlockKind?
     menu.onChoose = { chosen = $0 }
+    var imported = false
+    menu.onImportAudio = { imported = true }
     menu.chooseSelected()
-    #expect(chosen == .image)
+    #expect(imported && chosen == nil)
 }
 
 @Test @MainActor func slashPickerRealPointerMotionAndClickStillTakeOver() throws {
@@ -111,7 +117,7 @@ import Testing
             view.appearance = NSAppearance(named: name)
             menu.moveSelection(1)
             view.layoutSubtreeIfNeeded()
-            #expect(view.rows.count == 13)
+            #expect(view.rows.count == menu.entries.count)
             for row in view.rows {
                 let title = NSAttributedString(string: row.title, attributes: [.font: NSFont.systemFont(ofSize: 14)]).size().width
                 let hint = NSAttributedString(string: row.shortcutHint, attributes: [.font: NSFont.systemFont(ofSize: 11)]).size().width
