@@ -108,6 +108,18 @@ final class NoteStore: ObservableObject {
                                           rememberedHeight: document.frame?.height ?? 340))
     }
 
+    /// Commit a desktop move before changing the visible window. Failed writes
+    /// retain the previous geometry, content, and the original error for retry.
+    @discardableResult func saveArrangedWindowFrame(_ frame: CGRect, collapsed: Bool) -> Bool {
+        guard loadError == nil, !document.isShelved, document.deletedAt == nil,
+              NoteFrame(frame).isValid else { return false }
+        let previous = document.frame
+        recordWindowFrame(frame, collapsed: collapsed)
+        if flush() { return true }
+        document.frame = previous
+        return false
+    }
+
     private func scheduleSave() {
         isDirty = true
         pendingSave?.cancel()

@@ -4,7 +4,7 @@ import AppKit
 nonisolated enum NoteAction: String, CaseIterable, Identifiable {
     case actions, pin, collapse, shelve, icon, color, copyAll, duplicateNote, deleteNote
     case original, yellow, green, blue, pink, purple
-    case newNote, shelf, shelveAll, settings, captureShortcut
+    case newNote, shelf, arrange, undoArrangement, shelveAll, settings, captureShortcut
     var id: String { rawValue }
 
     var key: String {
@@ -24,7 +24,7 @@ nonisolated enum NoteAction: String, CaseIterable, Identifiable {
         case .newNote: "n"
         case .shelf: "o"
         case .settings: ","
-        case .color, .duplicateNote, .deleteNote, .shelveAll, .captureShortcut: ""
+        case .color, .duplicateNote, .deleteNote, .arrange, .undoArrangement, .shelveAll, .captureShortcut: ""
         }
     }
     var usesShift: Bool { [.pin, .icon, .copyAll, .shelf].contains(self) }
@@ -65,6 +65,8 @@ nonisolated enum NoteAction: String, CaseIterable, Identifiable {
         case .original, .yellow, .green, .blue, .pink, .purple: "circle.fill"
         case .newNote: "square.and.pencil"
         case .shelf: "tray.full"
+        case .arrange: "rectangle.3.group"
+        case .undoArrangement: "arrow.uturn.backward"
         case .shelveAll: "square.stack.3d.down.right"
         case .settings: "gearshape"
         case .captureShortcut: "keyboard"
@@ -84,6 +86,8 @@ nonisolated enum NoteAction: String, CaseIterable, Identifiable {
         case .original, .yellow, .green, .blue, .pink, .purple: noteColor!.title(bundle: bundle)
         case .newNote: String(localized: "New Note", bundle: bundle)
         case .shelf: String(localized: "Open Shelf", bundle: bundle)
+        case .arrange: String(localized: "Arrange Desktop Notes", bundle: bundle)
+        case .undoArrangement: String(localized: "Undo Arrangement", bundle: bundle)
         case .shelveAll: String(localized: "Shelve All Notes", bundle: bundle)
         case .settings: String(localized: "Settings…", bundle: bundle)
         case .captureShortcut: String(localized: "Show / Shelve Shortcut", bundle: bundle)

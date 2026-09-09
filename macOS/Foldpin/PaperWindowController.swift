@@ -315,6 +315,22 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         onStateChange?()
     }
 
+    var canArrange: Bool {
+        isVisible && !store.document.isShelved && store.document.deletedAt == nil
+            && store.loadError == nil && !paper.isResizingByMouse
+    }
+
+    @discardableResult func moveForArrangement(to origin: CGPoint) -> Bool {
+        guard canArrange else { return false }
+        actionsPanel?.close(restoringFocus: true)
+        recordGeometry()
+        let target = CGRect(origin: origin, size: paper.frame.size)
+        guard store.saveArrangedWindowFrame(target, collapsed: paperIsCollapsed) else { return false }
+        setFrame(target)
+        (paper.contentView as? NoteWindowSurface)?.refreshPointerPresence()
+        return true
+    }
+
     private func setFrame(_ frame: CGRect) {
         pendingGeometryUpdate?.cancel()
         pendingGeometryUpdate = nil

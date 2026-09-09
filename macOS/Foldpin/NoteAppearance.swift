@@ -58,6 +58,13 @@ struct NoteSheetFill: View {
                 // a light reading tint so its material remains visible.
                 (colorScheme == .dark ? Color.black : Color.white)
                     .opacity(colorScheme == .dark ? 0.16 : 0.12)
+                    .overlay {
+                        // A persistent color wash inside the existing glass
+                        // content survives the system's inactive-window tint.
+                        if let tint = NotePalette.glassReadingTint(for: color) {
+                            Color(nsColor: tint)
+                        }
+                    }
             }
         }
     }

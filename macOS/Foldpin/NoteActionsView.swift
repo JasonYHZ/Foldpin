@@ -88,7 +88,7 @@ struct NoteActionsView: View {
 
     private let sections: [[NoteAction]] = [
         [.pin, .collapse, .shelve, .copyAll, .duplicateNote, .icon, .color],
-        [.newNote, .shelf, .shelveAll],
+        [.newNote, .shelf, .arrange, .undoArrangement, .shelveAll],
         [.settings, .captureShortcut],
         [.deleteNote]
     ]

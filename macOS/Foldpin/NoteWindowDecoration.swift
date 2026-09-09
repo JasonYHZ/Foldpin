@@ -74,6 +74,13 @@ final class NoteShadowWindow: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        // This is decoration, not a reachable document window. Near the menu
+        // bar its padding must extend beyond visibleFrame; constraining it
+        // independently displaces the shadow from the paper it belongs to.
+        frameRect
+    }
+
     func show(below paper: NSWindow) {
         collectionBehavior = paper.collectionBehavior
         level = paper.level

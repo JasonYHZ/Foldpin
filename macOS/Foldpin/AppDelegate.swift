@@ -3,11 +3,12 @@ import SwiftUI
 import Combine
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private let languageSettings = LanguageSettings.shared
     let library = NoteLibrary()
     private var windows: [UUID: PaperWindowController] = [:]
     private var lastActiveID: UUID?
+    private var lastArrangement: [NoteArrangement.Placement] = []
     private var previousApplication: NSRunningApplication?
     private var languageSubscription: AnyCancellable?
     private var observers: [NSObjectProtocol] = []
@@ -73,6 +74,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.canPerformApplicationAction = { [weak self] action in
             guard let self else { return false }
             if action == .newNote || action == .duplicateNote { return library.canCreate }
+            if action == .arrange { return windows.values.contains { $0.canArrange } }
+            if action == .undoArrangement { return canUndoArrangement }
             if action == .shelveAll { return windows.values.contains { $0.isVisible } }
             return true
         }
@@ -82,6 +85,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case .newNote: newPaper()
             case .duplicateNote: duplicatePaper(entry.id)
             case .shelf: showShelf()
+            case .arrange: arrangePapers()
+            case .undoArrangement: undoArrangement()
             case .shelveAll: shelveAll()
             case .settings: showSettings()
             case .captureShortcut:
@@ -213,35 +218,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         item(String(localized: "New Note", bundle: languageSettings.bundle), #selector(newPaper), key: "n").isEnabled = library.canCreate
         _ = item(String(localized: "Open Shelf", bundle: languageSettings.bundle), #selector(showShelf), command: .shelf)
-        item(String(localized: "Actions", bundle: languageSettings.bundle), #selector(showActions), command: .actions).isEnabled = currentPaper?.isVisible == true
         menu.addItem(.separator())
-        let current = currentPaper
-        let enabled = current?.isVisible == true && current?.store.loadError == nil
-        item(current?.store.isCollapsed == true ? String(localized: "Expand Note", bundle: languageSettings.bundle) : String(localized: "Collapse to One Line", bundle: languageSettings.bundle), #selector(toggleCollapsed), command: .collapse).isEnabled = enabled
-        item(String(localized: "Shelve Note", bundle: languageSettings.bundle), #selector(shelvePaper), command: .shelve).isEnabled = enabled
-        let pin = item(String(localized: "Pin Note", bundle: languageSettings.bundle), #selector(togglePin), command: .pin)
-        pin.state = current?.store.document.isPinned == true ? .on : .off
-        pin.isEnabled = enabled
-        item(NoteAction.icon.title(bundle: languageSettings.bundle, hasIcon: current?.store.document.icon != nil),
-             #selector(showIconPicker), command: .icon).isEnabled = enabled
-        let color = NSMenuItem(title: String(localized: "Note Color", bundle: languageSettings.bundle), action: nil, keyEquivalent: "")
-        color.image = NSImage(systemSymbolName: "paintpalette", accessibilityDescription: nil)
-        color.submenu = current?.makeColorMenu()
-        color.keyEquivalent = NoteAction.color.key
-        color.keyEquivalentModifierMask = NoteAction.color.modifiers
-        color.isEnabled = enabled
-        menu.addItem(color)
+        item(NoteAction.arrange.title(bundle: languageSettings.bundle), #selector(arrangePapers)).isEnabled = windows.values.contains { $0.canArrange }
+        if !lastArrangement.isEmpty {
+            item(NoteAction.undoArrangement.title(bundle: languageSettings.bundle), #selector(undoArrangement)).isEnabled = canUndoArrangement
+        }
+        let visiblePapers = windows.values.filter { $0.isVisible && $0.store.loadError == nil }
+        item(String(localized: "Collapse All Notes", bundle: languageSettings.bundle), #selector(collapseAll)).isEnabled = visiblePapers.contains { !$0.store.isCollapsed }
+        item(String(localized: "Expand All Notes", bundle: languageSettings.bundle), #selector(expandAll)).isEnabled = visiblePapers.contains { $0.store.isCollapsed }
         item(String(localized: "Shelve All Notes", bundle: languageSettings.bundle), #selector(shelveAll)).isEnabled = windows.values.contains { $0.isVisible }
         menu.addItem(.separator())
-        _ = item(String(localized: "Settings…", bundle: languageSettings.bundle), #selector(showSettings), key: ",")
-        let parent = NSMenuItem(title: String(localized: "Show / Shelve Shortcut", bundle: languageSettings.bundle), action: nil, keyEquivalent: "")
-        parent.submenu = makeCaptureShortcutMenu(); menu.addItem(parent)
-        if shortcutStatus != 0 {
-            let warning = NSMenuItem(title: String(localized: "Shortcut unavailable. Choose another combination.", bundle: languageSettings.bundle), action: nil, keyEquivalent: "")
-            warning.isEnabled = false; menu.addItem(warning)
-        }
-        menu.addItem(.separator())
-        _ = item(String(localized: "Quit Foldpin", bundle: languageSettings.bundle), #selector(quit), key: "q")
+        _ = item(String(localized: "Status Menu Settings", bundle: languageSettings.bundle), #selector(showSettings), key: ",")
+        _ = item(String(localized: "Quit", bundle: languageSettings.bundle), #selector(quit), key: "q")
         menu.autoenablesItems = false
         statusItem.menu = menu
     }
@@ -267,6 +255,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func refreshApplicationMenu() {
         if let menu = NSApp.mainMenu { ApplicationMenuLocalization.update(menu, bundle: languageSettings.bundle) }
+        // SwiftUI owns the main menu; install these app-wide commands in its
+        // native Window menu, retaining AppKit's live action validation.
+        guard let menu = NSApp.windowsMenu else { return }
+        let identifier = NSUserInterfaceItemIdentifier("foldpin.arrangeDesktopNotes")
+        if !menu.items.contains(where: { $0.identifier == identifier }) {
+            menu.addItem(.separator())
+            let arrange = NSMenuItem(title: "", action: #selector(arrangePapers), keyEquivalent: "")
+            arrange.identifier = identifier
+            arrange.target = self
+            menu.addItem(arrange)
+            let undo = NSMenuItem(title: "", action: #selector(undoArrangement), keyEquivalent: "")
+            undo.identifier = NSUserInterfaceItemIdentifier("foldpin.undoArrangement")
+            undo.target = self
+            menu.addItem(undo)
+        }
+        for item in menu.items where item.target === self {
+            if item.action == #selector(arrangePapers) {
+                item.title = NoteAction.arrange.title(bundle: languageSettings.bundle)
+            } else if item.action == #selector(undoArrangement) {
+                item.title = NoteAction.undoArrangement.title(bundle: languageSettings.bundle)
+            }
+            item.isEnabled = validateMenuItem(item)
+        }
+    }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(arrangePapers) { return windows.values.contains { $0.canArrange } }
+        if menuItem.action == #selector(undoArrangement) { return canUndoArrangement }
+        return true
     }
 
     @objc func showSettings() {
@@ -289,19 +306,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         else { newPaper() }
     }
 
-    @objc private func toggleCollapsed() { currentPaper?.toggleCollapsed() }
-    @objc private func showActions() {
-        guard let current = currentPaper, current.isVisible else { return }
-        current.activatePaper()
-        current.performAction(.actions)
+    private var canUndoArrangement: Bool {
+        lastArrangement.contains { placement in
+            guard let window = windows[placement.id], window.canArrange else { return false }
+            return window.paper.frame == placement.after
+        }
     }
-    @objc private func showIconPicker() {
-        guard let current = currentPaper, current.isVisible else { return }
-        current.activatePaper()
-        current.performAction(.icon)
+
+    @objc private func arrangePapers() {
+        let screens = NSScreen.screens
+        let fallback = screens.firstIndex(of: workingScreen) ?? 0
+        let items = library.entries.compactMap { entry -> NoteArrangement.Item? in
+            guard let window = windows[entry.id], window.canArrange else { return nil }
+            return NoteArrangement.Item(id: entry.id, frame: window.paper.frame)
+        }
+        let plan = NoteArrangement.placements(for: items, screens: screens.map(\.visibleFrame), fallback: fallback)
+        var moved: [NoteArrangement.Placement] = []
+        for placement in plan where placement.before != placement.after {
+            guard let window = windows[placement.id], window.moveForArrangement(to: placement.after.origin) else { continue }
+            moved.append(placement)
+        }
+        if !moved.isEmpty { lastArrangement = moved }
+        rebuildMenu()
     }
-    @objc private func togglePin() { currentPaper?.togglePin() }
-    @objc private func shelvePaper() { _ = currentPaper?.shelvePaper() }
+
+    @objc private func undoArrangement() {
+        let screens = NSScreen.screens
+        let fallback = screens.firstIndex(of: workingScreen) ?? 0
+        var failed: [NoteArrangement.Placement] = []
+        for placement in lastArrangement {
+            guard let window = windows[placement.id], window.canArrange,
+                  let frame = NoteArrangement.undoFrame(for: placement, current: window.paper.frame,
+                                                       screens: screens.map(\.visibleFrame), fallback: fallback) else { continue }
+            if !window.moveForArrangement(to: frame.origin) { failed.append(placement) }
+        }
+        lastArrangement = failed
+        rebuildMenu()
+    }
+
+    @objc private func collapseAll() { setAllCollapsed(true) }
+    @objc private func expandAll() { setAllCollapsed(false) }
+
+    private func setAllCollapsed(_ collapsed: Bool) {
+        // Shelved and deleted notes stay hidden; reuse each window's save protection.
+        let targets = windows.values.filter {
+            $0.isVisible && $0.store.loadError == nil && $0.store.isCollapsed != collapsed
+        }
+        for window in targets { window.toggleCollapsed() }
+        rebuildMenu()
+    }
+
     @objc private func shelveAll() {
         var failed: PaperWindowController?
         for window in windows.values where window.isVisible {

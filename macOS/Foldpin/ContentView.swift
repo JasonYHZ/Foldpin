@@ -55,7 +55,11 @@ struct ContentView: View {
             }
             // The native block editor owns all empty-block hints.
             NoteEditor(store: store, appearance: appearance, onEscape: onShelve)
-            NoteFooter(store: store, state: titlebarState, appearance: appearance, onActions: onActions)
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                NoteActionsButton(state: titlebarState, appearance: appearance, onActions: onActions)
+            }
+            .padding(.leading, 18).padding(.trailing, 12).padding(.top, 4).padding(.bottom, 8)
         }
     }
 }
@@ -269,47 +273,29 @@ private struct TitlebarShortcutHint: View {
     }
 }
 
-private struct NoteFooter: View {
+private struct NoteActionsButton: View {
     @ObservedObject private var language = LanguageSettings.shared
-    @ObservedObject var store: NoteStore
     @ObservedObject var state: NoteTitlebarState
     let appearance: NoteAppearance
     let onActions: () -> Void
     @State private var hovered = false
     private var ink: Color { Color(nsColor: appearance.secondaryTextColor) }
-
     var body: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 4) {
-                if store.saveError != nil || store.hotKeyWarning != nil {
-                    Image(systemName: "exclamationmark.circle")
-                }
-                Text(state.copiedAll && store.saveError == nil ? String(localized: "All content copied", bundle: language.bundle) : store.status)
-                    .lineLimit(1).truncationMode(.tail)
+        Button(action: onActions) {
+            HStack(spacing: 7) {
+                Text(String(localized: "Actions", bundle: language.bundle)).font(.system(size: 11, weight: .medium))
+                ShortcutKeycaps(keys: NoteAction.actions.keycaps)
             }
-            .font(.system(size: 10))
-            .foregroundStyle(store.saveError == nil ? ink :
-                                (appearance == .paper ? Color(nsColor: NotePalette.paperError) : Color.red))
-            .help(store.hotKeyWarning ?? store.shortcutLabel + " · " + String(localized: "Show or shelve your note. Change the shortcut in the menu bar.", bundle: language.bundle))
-            .accessibilityLabel(String(localized: "Save status: \(store.status)", bundle: language.bundle))
-            Spacer(minLength: 0)
-            Button(action: onActions) {
-                HStack(spacing: 7) {
-                    Text(String(localized: "Actions", bundle: language.bundle)).font(.system(size: 11, weight: .medium))
-                    ShortcutKeycaps(keys: NoteAction.actions.keycaps)
-                }
-                .padding(.horizontal, 9).frame(height: 29)
-                .background(ink.opacity(hovered ? 0.09 : 0.045), in: Capsule())
-                .overlay(Capsule().strokeBorder(ink.opacity(0.12), lineWidth: 0.5))
-                .contentShape(Capsule())
-            }
-            .buttonStyle(.plain).onHover { hovered = $0 }
-            .background(NoteActionsAnchor(state: state))
-            .help(String(localized: "Paper and app actions (⌘K). Hold ⌘ to reveal button shortcuts.", bundle: language.bundle))
-            .accessibilityLabel(String(localized: "Actions", bundle: language.bundle) + " ⌘K")
+            .padding(.horizontal, 9).frame(height: 29)
+            .background(ink.opacity(hovered ? 0.09 : 0.045), in: Capsule())
+            .overlay(Capsule().strokeBorder(ink.opacity(0.12), lineWidth: 0.5))
+            .contentShape(Capsule())
         }
+        .buttonStyle(.plain).onHover { hovered = $0 }
+        .background(NoteActionsAnchor(state: state))
+        .help(String(localized: "Paper and app actions (⌘K). Hold ⌘ to reveal button shortcuts.", bundle: language.bundle))
+        .accessibilityLabel(String(localized: "Actions", bundle: language.bundle) + " ⌘K")
         .foregroundStyle(ink)
-        .padding(.leading, 18).padding(.trailing, 12).padding(.top, 4).padding(.bottom, 8)
     }
 }
 
