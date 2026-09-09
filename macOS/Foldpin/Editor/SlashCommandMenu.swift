@@ -8,7 +8,7 @@ final class SlashCommandMenu {
         let kind: NoteBlockKind
         let title: String
         var importsAudio = false
-        var isMedia: Bool { kind == .code || kind == .image || kind == .audio }
+        var isMedia: Bool { kind == .code || kind == .image || kind == .audio || kind == .video }
 
         func inputHint(bundle: Bundle) -> String {
             let prefix: String
@@ -23,7 +23,7 @@ final class SlashCommandMenu {
             case .task: prefix = "[]"
             case .quote: prefix = "\""
             case .code: prefix = "```"
-            case .paragraph, .image, .table, .audio: return ""
+            case .paragraph, .image, .table, .audio, .video: return ""
             }
             return prefix
         }
@@ -40,6 +40,7 @@ final class SlashCommandMenu {
             case .quote: "text.quote"
             case .code: "chevron.left.forwardslash.chevron.right"
             case .audio: importsAudio ? "waveform" : "mic"
+            case .video: "video"
             case .image: "photo"
             }
         }

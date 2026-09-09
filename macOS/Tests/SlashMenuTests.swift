@@ -3,7 +3,7 @@ import Testing
 @testable import FoldpinCore
 
 @MainActor private func menuEntries(bundle: Bundle = .main) -> [SlashCommandMenu.Entry] {
-    let keys = ["Text", "Heading 1", "Heading 2", "Heading 3", "Heading 4", "Bullet List", "Numbered List", "To-do", "Quote", "Divider", "Table", "Code Block", "Image", "Record Audio"]
+    let keys = ["Text", "Heading 1", "Heading 2", "Heading 3", "Heading 4", "Bullet List", "Numbered List", "To-do", "Quote", "Divider", "Table", "Code Block", "Image", "Record Audio", "Video"]
     var entries = zip(NoteBlockKind.allCases, keys).map {
         SlashCommandMenu.Entry(kind: $0.0, title: bundle.localizedString(forKey: $0.1, value: nil, table: nil))
     }

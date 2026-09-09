@@ -35,6 +35,7 @@ final class AudioBlockModel: ObservableObject {
         if audio != value { audio = value }
     }
     func start(_ recorder: AVAudioRecorder) {
+        VideoBlockModel.playing?.pause()
         Self.playing?.pause()
         self.recorder = recorder
         recorder.isMeteringEnabled = true
@@ -78,6 +79,7 @@ final class AudioBlockModel: ObservableObject {
     func togglePlayback() {
         if isPlaying { pause(); return }
         guard !audio.isDraft, Self.recording == nil else { return }
+        VideoBlockModel.playing?.pause()
         Self.playing?.pause()
         do {
             if player == nil { player = try AVAudioPlayer(contentsOf: file.audioURL(audio)); player?.enableRate = true }
@@ -163,14 +165,7 @@ final class AudioBlockModel: ObservableObject {
         }
     }
     @objc private func exportAction() {
-        guard let window = editor?.window else { return }
-        if isRecording, !finish() { return }
-        let panel = NSSavePanel(); panel.nameFieldStringValue = audio.name + "." + audio.fileExtension
-        panel.beginSheetModal(for: window) { [weak self] response in
-            guard response == .OK, let url = panel.url, let self else { return }
-            do { let data = try Data(contentsOf: file.audioURL(audio), options: .mappedIfSafe); try data.write(to: url, options: .atomic) }
-            catch { self.error = "Could not export audio. Try another location." }
-        }
+        editor?.exportMedia(blockID: blockID)
     }
     isolated deinit { timer?.invalidate(); recorder?.stop(); player?.stop() }
 }

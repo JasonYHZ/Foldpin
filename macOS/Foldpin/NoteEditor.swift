@@ -16,6 +16,7 @@ struct NoteEditor: NSViewRepresentable {
         editor.noteColor = textColor
         editor.updatePaperBackground(NotePalette.paperBackground(for: store.document.color))
         host.updateColors(textColor)
+        editor.onVideoCommit = { [weak store] in store?.flush() ?? false }
         editor.onAudioCommit = { [weak store] in store?.flush() ?? false }
         editor.onContentChange = { [weak store] in store?.edit($0) }
         editor.onEscape = onEscape
@@ -115,6 +116,7 @@ final class NativeEditorHost: NSView {
         let editableChanged = displayedEditable != editor.isEditable
         guard languageChanged || editableChanged else { return }
         displayedLanguage = bundle.bundleURL
+        if languageChanged { editor.refreshImageLanguage(); editor.refreshVideoControls() }
         displayedEditable = editor.isEditable
         editor.scheduleCodeToolbarUpdate()
         editor.needsDisplay = true // Localized placeholders live in the editor.

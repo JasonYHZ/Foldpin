@@ -6,6 +6,7 @@ enum NoteFileError: LocalizedError {
     case invalidContent
     case missingImage
     case missingAudio
+    case missingVideo
 
     var errorDescription: String? {
         description(bundle: .main)
@@ -16,6 +17,7 @@ enum NoteFileError: LocalizedError {
         case .unsupportedVersion: String(localized: "This note requires a newer version of Foldpin.", bundle: bundle)
         case .invalidLayout: String(localized: "The note has invalid position data. The original file is unchanged.", bundle: bundle)
         case .invalidContent: String(localized: "The note contains invalid blocks. The original file is unchanged.", bundle: bundle)
+        case .missingVideo: String(localized: "A video file is missing. The existing note has not been overwritten.", bundle: bundle)
         case .missingAudio: String(localized: "An audio file is missing. The existing note has not been overwritten.", bundle: bundle)
         case .missingImage: String(localized: "An image file is missing. The existing note has not been overwritten.", bundle: bundle)
         }
@@ -33,6 +35,9 @@ struct NoteFile {
     func imageURL(_ id: UUID, original: Bool = false) -> URL {
         assetsURL.appendingPathComponent(id.uuidString + (original ? ".original" : ".png"))
     }
+
+    func videoURL(_ video: NoteVideo) -> URL { assetsURL.appendingPathComponent(video.id.uuidString + "." + video.fileExtension) }
+    func videoPosterURL(_ video: NoteVideo) -> URL { assetsURL.appendingPathComponent(video.id.uuidString + ".poster.jpg") }
 
     func audioURL(_ audio: NoteAudio) -> URL { assetsURL.appendingPathComponent(audio.id.uuidString + "." + audio.fileExtension) }
 
@@ -56,6 +61,7 @@ struct NoteFile {
         // Validate the exact bytes before replacing the previous file.
         try JSONDecoder().decode(NoteDocument.self, from: data).validate()
         for block in document.content.blocks {
+            if let video = block.video, !FileManager.default.fileExists(atPath: videoURL(video).path) { throw NoteFileError.missingVideo }
             if let audio = block.audio, !FileManager.default.fileExists(atPath: audioURL(audio).path) { throw NoteFileError.missingAudio }
         }
         for block in document.content.blocks where block.image != nil {

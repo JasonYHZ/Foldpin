@@ -248,6 +248,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     }
 
     private func commitMarkedText() {
+        audioEditor?.prepareImageEditingForHiding()
         if let editor = paper.firstResponder as? NSTextView, editor.hasMarkedText() {
             editor.unmarkText()
             (editor as? PaperTextView)?.commitContent()

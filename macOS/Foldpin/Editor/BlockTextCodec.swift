@@ -6,6 +6,7 @@ extension NSAttributedString.Key {
     static let blockChecked = Self("Foldpin.checked")
     static let blockLanguage = Self("Foldpin.language")
     static let blockImage = Self("Foldpin.image")
+    static let blockVideo = Self("Foldpin.video")
     static let blockAudio = Self("Foldpin.audio")
     static let blockTable = Self("Foldpin.table")
     static let blockBoundary = Self("Foldpin.boundary")
@@ -34,6 +35,7 @@ enum BlockTextCodec {
             .blockChecked: block.isChecked, .blockLanguage: block.language.rawValue
         ]
         if let image = block.image, let data = try? JSONEncoder().encode(image) { values[.blockImage] = data }
+        if let video = block.video, let data = try? JSONEncoder().encode(video) { values[.blockVideo] = data }
         if let audio = block.audio, let data = try? JSONEncoder().encode(audio) { values[.blockAudio] = data }
         if let table = block.table, let data = try? JSONEncoder().encode(table) { values[.blockTable] = data }
         return values
@@ -73,7 +75,10 @@ enum BlockTextCodec {
             block.isChecked = attributes[.blockChecked] as? Bool ?? false
             block.language = (attributes[.blockLanguage] as? String).flatMap(CodeLanguage.init(rawValue:)) ?? .plain
             var textRange = range
-            if block.kind == .audio, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
+            if block.kind == .video, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
+               let data = attributes[.blockVideo] as? Data, let video = try? JSONDecoder().decode(NoteVideo.self, from: data), video.isValid {
+                block.video = video
+            } else if block.kind == .audio, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
                let data = attributes[.blockAudio] as? Data, let audio = try? JSONDecoder().decode(NoteAudio.self, from: data), audio.isValid {
                 block.audio = audio
             } else if block.kind == .divider, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil {
@@ -155,6 +160,11 @@ enum BlockTextCodec {
                 let range = NSRange(location: prefixLength + mark.location, length: mark.length)
                 value.addAttributes(inlineAttributes(mark, block: block, color: color), range: range)
             }
+            if let video = block.video {
+                let attachment = VideoTextAttachment(video: video, width: max(80, width - 2))
+                value.setAttributedString(NSAttributedString(attachment: attachment))
+                value.addAttributes(attributes, range: NSRange(location: 0, length: value.length))
+            }
             if let audio = block.audio {
                 let attachment = AudioTextAttachment(audio: audio, width: max(80, width - 2), model: audioModel?(block))
                 value.setAttributedString(NSAttributedString(attachment: attachment))
@@ -162,13 +172,9 @@ enum BlockTextCodec {
             }
             if let asset = block.image {
                 let attachment = NSTextAttachment()
-                attachment.image = image(asset) ?? NSImage(systemSymbolName: "photo", accessibilityDescription: asset.name)
-                let available = max(80, width)
-                let w = min(available, CGFloat(asset.pixelWidth))
-                let h = max(24, w * CGFloat(asset.pixelHeight) / CGFloat(asset.pixelWidth))
-                attachment.bounds = NSRect(x: 0, y: -4, width: w, height: min(h, 600))
-                // Constrain extreme portraits proportionally, without distortion.
-                if h > 600 { attachment.bounds.size.width = w * 600 / h }
+                let layout = ImageBlockLayout(image: asset, availableWidth: width)
+                attachment.image = layout.renderedImage(image(asset), asset: asset, ink: color)
+                attachment.bounds = NSRect(origin: .zero, size: layout.size)
                 value.setAttributedString(NSAttributedString(attachment: attachment))
                 value.addAttributes(attributes, range: NSRange(location: 0, length: value.length))
             }
@@ -211,6 +217,7 @@ enum BlockTextCodec {
         paragraph.paragraphSpacing = block.kind == .code ? 0 : 9
         paragraph.lineSpacing = 3
         paragraph.lineBreakMode = .byWordWrapping
+        if block.kind == .image { paragraph.alignment = .center }
         paragraph.headIndent = CGFloat((prefix(block, ordinal: ordinal) as NSString).length) * 9
         if block.kind == .quote { paragraph.headIndent = 12; paragraph.firstLineHeadIndent = 12 }
         paragraph.tabStops = []

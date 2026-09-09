@@ -17,7 +17,17 @@ enum NoteEditorStatus: Equatable {
 }
 
 final class PaperTextView: NSTextView {
+    private(set) var imageControls: ImageBlockControls?
+    private var imageResize: (block: NoteBlock, width: CGFloat, side: CGFloat, preview: CGFloat)?
+    private var imageCaptionBlock: NoteBlock?
+    private var imageControlsScheduled = false
+    private var updatingImageControls = false
     var onAudioCommit: (() -> Bool)?
+    private var videoModels: [UUID: VideoBlockModel] = [:]
+    private var videoViews: [UUID: VideoBlockView] = [:]
+    private var videoViewsScheduled = false
+    private var updatingVideoViews = false
+    var onVideoCommit: (() -> Bool)?
     private var audioModels: [UUID: AudioBlockModel] = [:]
     private var audioViews: [UUID: NSView] = [:]
     private var audioViewsScheduled = false
@@ -94,6 +104,8 @@ final class PaperTextView: NSTextView {
 
     func configure(content: NoteContent) {
         cancelBlockDrag()
+        endImageResize(cancelled: true)
+        endImageCaption(cancelled: true)
         endTableCellEditing()
         clearBlockSelection()
         blockHandle?.isHidden = true
@@ -144,6 +156,8 @@ final class PaperTextView: NSTextView {
     func updateColors(_ color: NSColor) {
         guard noteColor != color else { return }
         noteColor = color
+        refreshVideoControls()
+        scheduleImageControls()
         for model in audioModels.values { model.objectWillChange.send() }
         blockHandle?.ink = color
         tableControls?.updateColors(color)
@@ -154,6 +168,7 @@ final class PaperTextView: NSTextView {
     func updatePaperBackground(_ color: NSColor) {
         guard paperBackground != color else { return }
         paperBackground = color
+        scheduleImageControls()
         // Only the active cell paints an opaque surface. The rest of the
         // editor is transparent, so recoloring needs no syntax or layout work.
         if noteColor == NotePalette.paperText { tableCellEditor?.backgroundColor = color }
@@ -250,7 +265,7 @@ final class PaperTextView: NSTextView {
             case .task: label = String(localized: "To-do", bundle: bundle)
             case .quote: label = String(localized: "Quote", bundle: bundle)
             case .code: label = String(localized: "Type or paste code", bundle: bundle)
-            case .image, .divider, .table, .audio: return nil
+            case .image, .divider, .table, .audio, .video: return nil
             }
             let paragraph = NSMutableParagraphStyle()
             paragraph.lineBreakMode = .byTruncatingTail
@@ -301,6 +316,7 @@ final class PaperTextView: NSTextView {
     private func invalidateBlockGeometry() { geometryCache = nil }
 
     @objc private func textStorageProcessed(_ notification: Notification) {
+        scheduleImageControls()
         // Includes attribute-only edits, undo and marked text, even while the
         // document model deliberately waits for an editing transaction to end.
         invalidateBlockGeometry()
@@ -310,6 +326,7 @@ final class PaperTextView: NSTextView {
         invalidateBlockGeometry()
         super.layout()
         scheduleAudioViews()
+        scheduleImageControls()
         // TextKit may finalize attachment positions after the edit callback.
         // Reposition the active cell and its controls once that layout settles.
         scheduleTableControlsUpdate()
@@ -330,6 +347,7 @@ final class PaperTextView: NSTextView {
         super.mouseEntered(with: event)
         updateCodeToolbar(at: convert(event.locationInWindow, from: nil))
         updateBlockHandle(at: convert(event.locationInWindow, from: nil))
+        updateImageControls(at: convert(event.locationInWindow, from: nil))
         updateTableControls(at: convert(event.locationInWindow, from: nil))
     }
 
@@ -337,6 +355,7 @@ final class PaperTextView: NSTextView {
         super.mouseMoved(with: event)
         updateCodeToolbar(at: convert(event.locationInWindow, from: nil))
         updateBlockHandle(at: convert(event.locationInWindow, from: nil))
+        updateImageControls(at: convert(event.locationInWindow, from: nil))
         updateTableControls(at: convert(event.locationInWindow, from: nil))
     }
 
@@ -345,6 +364,7 @@ final class PaperTextView: NSTextView {
         // Moving from text into the overlay is still inside the same code block.
         updateCodeToolbar(at: convert(event.locationInWindow, from: nil))
         updateBlockHandle(at: convert(event.locationInWindow, from: nil))
+        updateImageControls(at: convert(event.locationInWindow, from: nil))
         updateTableControls(at: convert(event.locationInWindow, from: nil))
     }
 
@@ -428,13 +448,17 @@ final class PaperTextView: NSTextView {
 
     @objc private func codeViewportChanged(_ notification: Notification) {
         scheduleAudioViews()
+        scheduleImageControls()
         // Coalesce geometry updates while leaving the existing overlay visible.
         // Only a confirmed pointer/block change should hide it.
         scheduleCodeToolbarUpdate()
     }
 
     override func setFrameSize(_ newSize: NSSize) {
-        if frame.size != newSize { invalidateBlockGeometry() }
+        if frame.size != newSize {
+            if frame.width != newSize.width, imageResize != nil { endImageResize(cancelled: true) }
+            invalidateBlockGeometry()
+        }
         super.setFrameSize(newSize)
         if abs(newSize.width - lastImageWidth) > 8 {
             lastImageWidth = newSize.width
@@ -620,6 +644,7 @@ final class PaperTextView: NSTextView {
             for (range, attributes) in updates { storage.setAttributes(attributes, range: range) }
         }
         storage.endEditing()
+        restoreImagePreviewIfNeeded()
         synchronizeTableCellEditor()
         updateTypingStyle()
         needsDisplay = true
@@ -916,6 +941,11 @@ final class PaperTextView: NSTextView {
         clearBlockSelection()
         dismissSlashMenu()
         let point = convert(event.locationInWindow, from: nil)
+        for block in content.blocks where block.image?.caption != nil {
+            if let rect = imageFrame(blockID: block.id), point.y >= rect.maxY - 28, rect.contains(point) {
+                beginImageCaption(blockID: block.id); return
+            }
+        }
         if beginTableCellEditing(at: point) { return }
         endTableCellEditing()
         if event.clickCount == 1, event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
@@ -1038,7 +1068,8 @@ final class PaperTextView: NSTextView {
     }
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
-        if window !== newWindow { cancelBlockDrag() }
+        if window !== newWindow { detachVideoViews() }
+        if window !== newWindow { cancelBlockDrag(); prepareImageEditingForHiding(); imageControls?.removeFromSuperview() }
         if window !== newWindow { dismissSlashMenu(); clearBlockSelection(); codeToolbar?.isHidden = true; blockHandle?.isHidden = true }
         super.viewWillMove(toWindow: newWindow)
     }
@@ -1226,7 +1257,7 @@ final class PaperTextView: NSTextView {
 
     private func makeBlockMenu() -> NSMenu {
         let menu = NSMenu()
-        for kind in NoteBlockKind.allCases where kind != .image && kind != .audio {
+        for kind in NoteBlockKind.allCases where kind != .image && kind != .audio && kind != .video {
             let item = NSMenuItem(title: title(kind), action: #selector(selectKind(_:)), keyEquivalent: "")
             item.representedObject = kind.rawValue
             item.target = self
@@ -1234,6 +1265,7 @@ final class PaperTextView: NSTextView {
             item.image = BlockMenuIcon.image(for: kind)
             menu.addItem(item)
         }
+        add(menu, String(localized: "Import Video…", bundle: bundle), #selector(chooseVideo(_:)))
         add(menu, String(localized: "Record Audio", bundle: bundle), #selector(recordAudio(_:)))
         add(menu, String(localized: "Import Audio…", bundle: bundle), #selector(chooseAudio(_:)))
         add(menu, String(localized: "Insert Image…", bundle: bundle), #selector(chooseImage(_:)), enabled: !importInProgress)
@@ -1284,6 +1316,7 @@ final class PaperTextView: NSTextView {
         case .task: String(localized: "To-do", bundle: bundle)
         case .quote: String(localized: "Quote", bundle: bundle)
         case .code: String(localized: "Code Block", bundle: bundle)
+        case .video: String(localized: "Video", bundle: bundle)
         case .audio: String(localized: "Audio", bundle: bundle)
         case .image: String(localized: "Image", bundle: bundle)
         }
@@ -1295,6 +1328,7 @@ final class PaperTextView: NSTextView {
     }
 
     func changeKind(_ kind: NoteBlockKind) {
+        if kind == .video { chooseVideo(nil); return }
         if kind == .audio { recordAudio(nil); return }
         if let context = slashContext {
             applySlashCommand(NoteBlock(kind: kind), context: context)
@@ -1486,7 +1520,7 @@ final class PaperTextView: NSTextView {
             if !insertPastedBlocks(value) { insertPastedText(value.plainText, interpretingMarkdown: false) }
             return
         }
-        if importAudio(from: board) || importImages(from: board) { return }
+        if importVideo(from: board) || importAudio(from: board) || importImages(from: board) { return }
         if let text = board.string(forType: .string) {
             insertPastedText(text)
         }
@@ -1511,6 +1545,9 @@ final class PaperTextView: NSTextView {
     @discardableResult
     func insertPastedBlocks(_ value: NoteContent) -> Bool {
         guard isEditable, !hasMarkedText(), tableCellEditor == nil, (try? value.validate()) != nil else { return false }
+        for video in value.blocks.compactMap(\.video) {
+            guard let file, FileManager.default.fileExists(atPath: file.videoURL(video).path) else { return false }
+        }
         for audio in value.blocks.compactMap(\.audio) {
             guard let file, FileManager.default.fileExists(atPath: file.audioURL(audio).path) else { return false }
         }
@@ -1582,6 +1619,9 @@ final class PaperTextView: NSTextView {
         if sender.draggingPasteboard.types?.contains(BlockReordering.pasteboardType) == true {
             return updateLocalBlockDrag(sender)
         }
+        if videoURL(from: sender.draggingPasteboard) != nil {
+            return isEditable && !hasMarkedText() && !importInProgress ? .copy : []
+        }
         return super.draggingUpdated(sender)
     }
 
@@ -1597,6 +1637,9 @@ final class PaperTextView: NSTextView {
             guard matchesLocalBlockDrag(sender) else { return false }
             sender.animatesToDestination = false
             return updateBlockDrop(at: convert(sender.draggingLocation, from: nil)) != nil
+        }
+        if videoURL(from: sender.draggingPasteboard) != nil {
+            return isEditable && !hasMarkedText() && !importInProgress && tableCellEditor?.hasMarkedText() != true
         }
         return super.prepareForDragOperation(sender)
     }
@@ -1618,7 +1661,7 @@ final class PaperTextView: NSTextView {
         defer { suppressMarkdownShortcuts = previous }
         let index = characterIndexForInsertion(at: convert(sender.draggingLocation, from: nil))
         setSelectedRange(NSRange(location: index, length: 0))
-        return importAudio(from: sender.draggingPasteboard) || importImages(from: sender.draggingPasteboard) || super.performDragOperation(sender)
+        return importVideo(from: sender.draggingPasteboard) || importAudio(from: sender.draggingPasteboard) || importImages(from: sender.draggingPasteboard) || super.performDragOperation(sender)
     }
 
     private func importImage(url: URL? = nil, data: Data? = nil, target: UUID, command: SlashCommandContext? = nil) {
@@ -1824,6 +1867,9 @@ extension PaperTextView {
 
     @objc private func editorWindowResignedKey(_ notification: Notification) {
         guard notification.object as? NSWindow === window, blockHandle?.isPresentingMenu != true else { return }
+        endImageResize(cancelled: true)
+        endImageCaption(cancelled: false)
+        imageControls?.isHidden = true
         clearBlockSelection()
         blockHandle?.isHidden = true
     }
@@ -1862,6 +1908,13 @@ extension PaperTextView {
             menu.addItem(.separator())
             appendCodeActions(to: menu, blockID: blockID)
         }
+        if block.kind == .image {
+            menu.addItem(item(String(localized: "Edit image caption", bundle: bundle), .imageCaption, symbol: "text.below.photo"))
+            menu.addItem(item(String(localized: "Reset image size", bundle: bundle), .resetImageSize, symbol: "arrow.up.left.and.arrow.down.right"))
+            if block.image?.caption != nil {
+                menu.addItem(item(String(localized: "Remove image caption", bundle: bundle), .removeImageCaption))
+            }
+        }
         if block.kind == .task {
             let completed = item(String(localized: "Toggle Completed", bundle: bundle), .toggleTask, symbol: "checkmark.square")
             completed.state = block.isChecked ? .on : .off
@@ -1890,7 +1943,14 @@ extension PaperTextView {
         }
         menu.addItem(.separator())
         if block.kind == .image {
+            menu.addItem(item(String(localized: "Export Image…", bundle: bundle), .exportMedia, symbol: "square.and.arrow.up"))
             menu.addItem(item(String(localized: "Copy Image", bundle: bundle), .copyImage, symbol: "photo.on.rectangle", key: "c"))
+        }
+        if block.kind == .video {
+            menu.addItem(item(String(localized: "Export Video…", bundle: bundle), .exportMedia, symbol: "square.and.arrow.up"))
+        }
+        if block.kind == .audio {
+            menu.addItem(item(String(localized: "Export Audio…", bundle: bundle), .exportMedia, symbol: "square.and.arrow.up"))
         }
         menu.addItem(item(String(localized: "Copy Block", bundle: bundle), .copy, symbol: "doc.on.clipboard", key: block.kind == .image ? "" : "c"))
         menu.addItem(item(String(localized: "Duplicate Block", bundle: bundle), .duplicate, symbol: "doc.on.doc", key: "d"))
@@ -1936,6 +1996,12 @@ extension PaperTextView {
         var destination = index
         var selectedID: UUID? = blockID
         switch action {
+        case .exportMedia: return exportMedia(blockID: blockID)
+        case .imageCaption: beginImageCaption(blockID: blockID); return true
+        case .resetImageSize: resetImageSize(blockID: blockID); return true
+        case .removeImageCaption:
+            guard var image = next.blocks[index].image else { return false }
+            image.caption = nil; return updateImage(image, blockID: blockID)
         case .copyCode: return copyCode(blockID: blockID)
         case .codeLanguage(let language):
             guard content.blocks[index].kind == .code else { return false }
@@ -1956,10 +2022,14 @@ extension PaperTextView {
                 return false
             }
         case .copy:
-            if content.blocks[index].audio != nil {
+            if content.blocks[index].audio != nil || content.blocks[index].video != nil {
                 guard let file else { return false }
                 do { try NoteClipboard.copy(NoteContent(blocks: [content.blocks[index]]), file: file); return true }
-                catch { audioError(error.localizedDescription); return false }
+                catch {
+                    if content.blocks[index].video != nil { videoError(error.localizedDescription) }
+                    else { audioError(error.localizedDescription) }
+                    return false
+                }
             }
             return writeBlockToPasteboard(NoteContent(blocks: [content.blocks[index]]))
         case .convert(let kind):
@@ -2452,6 +2522,34 @@ extension PaperTextView {
 
 // MARK: - Local audio attachments
 extension PaperTextView {
+    @discardableResult func exportMedia(blockID: UUID) -> Bool {
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+              let file, let window,
+              let block = content.blocks.first(where: { $0.id == blockID }) else { return false }
+        if block.audio?.isDraft == true {
+            guard let model = audioModel(for: block), model.finish() else { return false }
+        }
+        // Finishing a draft updates the document. Re-read this exact block after saving.
+        guard let current = content.blocks.first(where: { $0.id == blockID }) else { return false }
+        do {
+            let export: MediaExport
+            if current.kind == .image, let image = current.image {
+                export = try .image(at: file.imageURL(image.id, original: true), name: image.name,
+                                    fallback: String(localized: "Image", bundle: bundle))
+            } else if current.kind == .video, let video = current.video {
+                export = try .video(at: file.videoURL(video), video: video, fallback: String(localized: "Video", bundle: bundle))
+            } else if current.kind == .audio, let audio = current.audio {
+                export = try .audio(at: file.audioURL(audio), audio: audio,
+                                    fallback: String(localized: "Audio", bundle: bundle))
+            } else { return false }
+            export.present(in: window)
+            return true
+        } catch {
+            MediaExport.showError(error, in: window)
+            return false
+        }
+    }
+
     private func audioModel(for block: NoteBlock) -> AudioBlockModel? {
         guard let audio = block.audio, let file else { return nil }
         if let existing = audioModels[block.id] { existing.update(audio); return existing }
@@ -2460,6 +2558,7 @@ extension PaperTextView {
         return model
     }
     private func synchronizeAudioModels() {
+        synchronizeVideoModels()
         let ids = Set(content.blocks.filter { $0.audio != nil }.map(\.id))
         for id in Array(audioModels.keys) where !ids.contains(id) {
             audioModels.removeValue(forKey: id)?.stop()
@@ -2468,6 +2567,7 @@ extension PaperTextView {
         scheduleAudioViews()
     }
     private func scheduleAudioViews() {
+        scheduleVideoViews()
         guard !audioViewsScheduled, !audioModels.isEmpty || content.blocks.contains(where: { $0.audio != nil }) else { return }
         audioViewsScheduled = true
         DispatchQueue.main.async { [weak self] in
@@ -2507,6 +2607,7 @@ extension PaperTextView {
     }
     func deleteAudioBlock(_ id: UUID) { _ = performBlockAction(.delete, blockID: id) }
     @discardableResult func prepareAudioForHiding() -> Bool {
+        detachVideoViews()
         var saved = true
         for model in Array(audioModels.values) {
             if model.isRecording, !model.finish() { saved = false }
@@ -2514,7 +2615,7 @@ extension PaperTextView {
         }
         return saved
     }
-    func stopAudio() { for model in audioModels.values { model.stop() } }
+    func stopAudio() { detachVideoViews(); for model in audioModels.values { model.stop() } }
 
     private func copyAudioSelection() -> Bool? {
         let range = selectedRange()
@@ -2523,13 +2624,17 @@ extension PaperTextView {
             NoteContent(blocks: BlockTextCodec.read(attributedString().attributedSubstring(from: range), typing: typingAttributes).map(\.block))
         }
         let selected = selectedContent()
-        guard selected.blocks.contains(where: { $0.audio != nil }) else { return nil }
+        guard selected.blocks.contains(where: { $0.audio != nil || $0.video != nil }) else { return nil }
         guard let file, !hasMarkedText() else { return false }
         for block in selected.blocks {
             if let model = audioModels[block.id], model.isRecording, !model.finish() { return false }
         }
         do { try NoteClipboard.copy(selectedContent(), file: file); return true }
-        catch { audioError(error.localizedDescription); return false }
+        catch {
+            if selected.blocks.contains(where: { $0.video != nil }) { videoError(error.localizedDescription) }
+            else { audioError(error.localizedDescription) }
+            return false
+        }
     }
 
     private func audioError(_ message: String) {
@@ -2608,6 +2713,313 @@ extension PaperTextView {
         guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
               let index = content.blocks.firstIndex(of: source) else { return nil }
         let block = NoteBlock(kind: .audio, audio: audio)
+        if let context {
+            guard let insertion = context.inserting(block, in: content), applySlashCommand(block, context: context) else { return nil }
+            return insertion.content.blocks[insertion.index].id
+        }
+        var next = content
+        let destination = source.text.isEmpty && !source.kind.isAttachment ? index : index + 1
+        if destination == index { next.blocks[index] = block } else { next.blocks.insert(block, at: destination) }
+        if destination == next.blocks.count - 1 { next.blocks.append(NoteBlock()) }
+        replaceDocument(next, block: destination + 1)
+        return block.id
+    }
+}
+
+// MARK: - Image display size and captions
+extension PaperTextView {
+    func imageFrame(blockID: UUID) -> NSRect? {
+        guard let span = spans.first(where: { $0.block.id == blockID && $0.block.image != nil }),
+              let manager = textLayoutManager, let source = manager.textContentManager,
+              let location = source.location(source.documentRange.location, offsetBy: span.textRange.location),
+              let end = source.location(location, offsetBy: 1), let range = NSTextRange(location: location, end: end) else { return nil }
+        // Undo invalidates the fragment before the next viewport pass. Ask for
+        // this one attachment so controls work immediately after restoration.
+        manager.ensureLayout(for: range)
+        guard let fragment = manager.textLayoutFragment(for: location) else { return nil }
+        let rect = fragment.frameForTextAttachment(at: location)
+        guard rect.width > 0, rect.height > 0 else { return nil }
+        return rect.offsetBy(dx: textContainerOrigin.x + fragment.layoutFragmentFrame.minX,
+                             dy: textContainerOrigin.y + fragment.layoutFragmentFrame.minY)
+    }
+    private func scheduleImageControls() {
+        guard !imageControlsScheduled, imageControls != nil else { return }
+        imageControlsScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            imageControlsScheduled = false
+            updateImageControls(at: window.map { self.convert($0.mouseLocationOutsideOfEventStream, from: nil) })
+        }
+    }
+    func updateImageControls(at point: NSPoint?) {
+        guard !updatingImageControls, imageControls?.isPresentingMenu != true || imageCaptionBlock != nil else { return }
+        updatingImageControls = true
+        defer { updatingImageControls = false }
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true, !isHiddenOrHasHiddenAncestor,
+              blockDragState == nil else { imageControls?.isHidden = true; return }
+        let heldID = imageResize?.block.id ?? imageCaptionBlock?.id
+            ?? (point.map { imageControls?.containsControls($0) == true } == true ? imageControls?.blockID : nil)
+        let candidate = content.blocks.first { block in
+            guard block.image != nil else { return false }
+            if let heldID { return block.id == heldID }
+            guard let point, visibleRect.contains(point), let rect = imageFrame(blockID: block.id) else { return false }
+            return rect.insetBy(dx: -3, dy: -3).contains(point)
+        }
+        guard let block = candidate, var image = block.image, let rect = imageFrame(blockID: block.id) else {
+            imageControls?.isHidden = true; return
+        }
+        if let resize = imageResize { image.displayWidth = Double(resize.preview) }
+        if imageCaptionBlock != nil, image.caption == nil { image.caption = "" }
+        let controls = imageControls ?? ImageBlockControls(editor: self)
+        imageControls = controls; controls.blockID = block.id
+        let parent: NSView = enclosingScrollView ?? self
+        if controls.superview !== parent { controls.removeFromSuperview(); parent.addSubview(controls, positioned: .above, relativeTo: nil) }
+        if controls.frame != parent.bounds { controls.frame = parent.bounds }
+        controls.isHidden = false
+        controls.update(image: image, frame: rect, viewport: visibleRect, ink: noteColor,
+                        background: noteColor == NotePalette.paperText ? paperBackground : .textBackgroundColor, bundle: bundle)
+    }
+    @discardableResult func updateImage(_ image: NoteImage, blockID: UUID) -> Bool {
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true, image.isValid,
+              let index = content.blocks.firstIndex(where: { $0.id == blockID && $0.image?.id == image.id }) else { return false }
+        if content.blocks[index].image == image { return true }
+        var next = content; next.blocks[index].image = image
+        replaceDocument(next, block: index, preservingSelection: true)
+        return true
+    }
+    func resetImageSize(blockID: UUID) {
+        guard var image = content.blocks.first(where: { $0.id == blockID })?.image else { return }
+        image.displayWidth = nil; _ = updateImage(image, blockID: blockID)
+    }
+    func beginImageResize(blockID: UUID, side: CGFloat) -> Bool {
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true, imageCaptionBlock == nil,
+              let block = content.blocks.first(where: { $0.id == blockID && $0.image != nil }),
+              let rect = imageFrame(blockID: blockID) else { return false }
+        endTableCellEditing(); dismissSlashMenu()
+        imageResize = (block, rect.width, side, rect.width)
+        return true
+    }
+    func previewImageResize(delta: CGFloat) {
+        guard var state = imageResize, content.blocks.contains(state.block), var image = state.block.image else {
+            endImageResize(cancelled: true); return
+        }
+        let available = max(40, bounds.width - 2 * textContainerInset.width)
+        // Image stays centered, so the two edges move symmetrically.
+        state.preview = min(available, max(40, state.width + 2 * delta * state.side))
+        imageResize = state; image.displayWidth = Double(state.preview)
+        previewImage(image, blockID: state.block.id)
+        updateImageControls(at: nil)
+    }
+    /// Change the display attachment only, never the model/metadata/UndoManager.
+    private func previewImage(_ image: NoteImage, blockID: UUID) {
+        guard let span = spans.first(where: { $0.block.id == blockID }), let storage = textStorage,
+              span.textRange.length == 1, NSMaxRange(span.textRange) <= storage.length else { return }
+        var block = span.block; block.image = image
+        let rendered = render(NoteContent(blocks: [block]))
+        guard let attachment = rendered.attribute(.attachment, at: 0, effectiveRange: nil) else { return }
+        applying = true
+        storage.addAttribute(.attachment, value: attachment, range: span.textRange)
+        applying = false
+        invalidateBlockGeometry()
+        if let manager = textLayoutManager, let source = manager.textContentManager {
+            manager.ensureLayout(for: source.documentRange)
+        }
+        needsDisplay = true
+    }
+    private func restoreImagePreviewIfNeeded() {
+        if let state = imageResize, content.blocks.contains(state.block), var image = state.block.image {
+            image.displayWidth = Double(state.preview)
+            previewImage(image, blockID: state.block.id)
+        } else if let block = imageCaptionBlock, content.blocks.contains(block), var image = block.image {
+            image.caption = image.caption ?? ""
+            previewImage(image, blockID: block.id)
+        }
+    }
+    func endImageResize(cancelled: Bool) {
+        guard let state = imageResize else { return }
+        imageResize = nil
+        imageControls?.leftGrip.cancelTracking(); imageControls?.rightGrip.cancelTracking()
+        guard content.blocks.contains(state.block), var image = state.block.image else { scheduleImageControls(); return }
+        previewImage(image, blockID: state.block.id)
+        if !cancelled, abs(state.preview - state.width) > 0.5 {
+            image.displayWidth = Double(state.preview)
+            _ = updateImage(image, blockID: state.block.id)
+            undoManager?.setActionName(String(localized: "Resize image", bundle: bundle))
+        }
+        if window?.firstResponder is ImageResizeGrip { window?.makeFirstResponder(self) }
+        scheduleImageControls()
+    }
+    func beginImageCaption(blockID: UUID) {
+        guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true else { return }
+        endImageResize(cancelled: true)
+        endImageCaption(cancelled: false)
+        guard let block = content.blocks.first(where: { $0.id == blockID }), var image = block.image else { return }
+        endTableCellEditing(); clearBlockSelection(); dismissSlashMenu()
+        imageCaptionBlock = block
+        let controls = imageControls ?? ImageBlockControls(editor: self)
+        imageControls = controls; controls.blockID = blockID; controls.editingCaption = true
+        controls.captionField.stringValue = image.caption ?? ""
+        if image.caption == nil { image.caption = ""; previewImage(image, blockID: blockID) }
+        updateImageControls(at: nil)
+        controls.captionField.isHidden = false
+        controls.captionField.selectText(nil)
+    }
+    func endImageCaption(cancelled: Bool) {
+        guard let original = imageCaptionBlock, let controls = imageControls else { return }
+        // Finish IME before capturing the field. No document changes happen for
+        // intermediate composition strings.
+        let fieldEditor = controls.captionField.currentEditor() as? NSTextView
+        fieldEditor?.unmarkText()
+        let value = controls.captionField.stringValue
+        imageCaptionBlock = nil; controls.editingCaption = false
+        if fieldEditor != nil { window?.makeFirstResponder(self) }
+        controls.captionField.isHidden = true
+        guard content.blocks.contains(original), var image = original.image else { return }
+        previewImage(image, blockID: original.id)
+        if !cancelled {
+            image.caption = String(value.replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: "\r", with: " ").prefix(4096))
+            _ = updateImage(image, blockID: original.id)
+            undoManager?.setActionName(String(localized: "Edit image caption", bundle: bundle))
+        }
+        scheduleImageControls()
+    }
+    func refreshImageLanguage() {
+        refreshStyles(force: true, imagesOnly: true)
+        scheduleImageControls()
+    }
+    func prepareImageEditingForHiding() {
+        endImageResize(cancelled: true)
+        endImageCaption(cancelled: false)
+    }
+}
+
+// MARK: - Local video attachments
+extension PaperTextView {
+    private func synchronizeVideoModels() {
+        let blocks = content.blocks.filter { $0.video != nil }
+        let ids = Set(blocks.map(\.id))
+        for id in Array(videoModels.keys) where !ids.contains(id) {
+            if let view = videoViews.removeValue(forKey: id) { view.detach(); view.removeFromSuperview() }
+            videoModels.removeValue(forKey: id)?.detach()
+        }
+        for block in blocks {
+            guard let video = block.video else { continue }
+            if let existing = videoModels[block.id], existing.video.id != video.id {
+                videoViews.removeValue(forKey: block.id)?.removeFromSuperview()
+                videoModels.removeValue(forKey: block.id)?.detach()
+            }
+            videoModels[block.id]?.video = video
+        }
+        scheduleVideoViews()
+    }
+    private func scheduleVideoViews() {
+        guard !videoViewsScheduled, !videoViews.isEmpty || content.blocks.contains(where: { $0.video != nil }) else { return }
+        videoViewsScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            videoViewsScheduled = false
+            synchronizeVideoViews()
+        }
+    }
+    func synchronizeVideoViews() {
+        guard !updatingVideoViews else { return }
+        updatingVideoViews = true
+        defer { updatingVideoViews = false }
+        guard let file, window != nil, !isHiddenOrHasHiddenAncestor else { detachVideoViews(); return }
+        var visible: Set<UUID> = []
+        let surfaces = Set(blockSurfaces().map(\.blockID))
+        for span in spans where span.block.video != nil && surfaces.contains(span.block.id) {
+            guard let video = span.block.video, let manager = textLayoutManager, let source = manager.textContentManager,
+                  let location = source.location(source.documentRange.location, offsetBy: span.textRange.location),
+                  let fragment = manager.textLayoutFragment(for: location) else { continue }
+            let rect = fragment.frameForTextAttachment(at: location)
+                .offsetBy(dx: textContainerOrigin.x + fragment.layoutFragmentFrame.minX,
+                          dy: textContainerOrigin.y + fragment.layoutFragmentFrame.minY)
+            guard rect.width > 0, rect.height > 0, rect.intersects(visibleRect) else { continue }
+            visible.insert(span.block.id)
+            let view: VideoBlockView
+            if let existing = videoViews[span.block.id] { view = existing }
+            else {
+                let model = videoModels[span.block.id] ?? VideoBlockModel(blockID: span.block.id, video: video, file: file)
+                videoModels[span.block.id] = model
+                view = VideoBlockView(model: model, editor: self)
+                videoViews[span.block.id] = view
+                addSubview(view, positioned: .above, relativeTo: nil)
+            }
+            if view.frame != rect { view.frame = rect }
+            view.refresh()
+        }
+        for id in Array(videoViews.keys) where !visible.contains(id) {
+            if let view = videoViews.removeValue(forKey: id) { view.detach(); view.removeFromSuperview() }
+        }
+    }
+    private func detachVideoViews() {
+        for view in videoViews.values { view.detach(); view.removeFromSuperview() }
+        videoViews.removeAll()
+    }
+    func refreshVideoControls() { for view in videoViews.values { view.refresh() } }
+    private func videoError(_ message: String) {
+        guard let window else { return }
+        let alert = NSAlert(); alert.messageText = String(localized: "Video", bundle: bundle)
+        alert.informativeText = message; alert.beginSheetModal(for: window)
+    }
+    @objc func chooseVideo(_ sender: Any?) {
+        guard !importInProgress, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+              let source = activeSpan?.block, let window else { return }
+        let context = slashContext
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = NoteVideo.extensions.compactMap { UTType(filenameExtension: $0) }
+        panel.allowsMultipleSelection = false
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            self?.importVideo(url: url, source: source, context: context)
+        }
+    }
+    private func videoURL(from board: NSPasteboard) -> URL? {
+        guard let urls = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL],
+              let url = urls.first, url.isFileURL, NoteVideo.extensions.contains(url.pathExtension.lowercased()) else { return nil }
+        return url
+    }
+    private func importVideo(from board: NSPasteboard) -> Bool {
+        guard let source = activeSpan?.block, let url = videoURL(from: board) else { return false }
+        importVideo(url: url, source: source); return true
+    }
+    private func importVideo(url: URL, source: NoteBlock, context: SlashCommandContext? = nil) {
+        guard !importInProgress, let file, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true else { return }
+        importInProgress = true
+        let directory = file.assetsURL
+        Task { [weak self] in
+            do {
+                let video = try await Task.detached(priority: .userInitiated) {
+                    try await NoteVideoImporter.prepare(url: url, directory: directory)
+                }.value
+                guard let self else {
+                    Self.removeUninsertedVideo(video, directory: directory); return
+                }
+                importInProgress = false
+                guard insertVideo(video, source: source, context: context) != nil else {
+                    Self.removeUninsertedVideo(video, directory: directory)
+                    videoError(String(localized: "The insertion block changed. Import the video again; the source file is unchanged.", bundle: bundle)); return
+                }
+                if onVideoCommit?() == false {
+                    videoError(String(localized: "The video could not be saved. Its file is kept; retry saving the note.", bundle: bundle))
+                }
+            } catch {
+                guard let self else { return }
+                importInProgress = false
+                videoError(String(localized: "Could not import video. Choose a playable MP4, MOV, or M4V file under 1 GB.", bundle: bundle))
+            }
+        }
+    }
+    private static func removeUninsertedVideo(_ video: NoteVideo, directory: URL) {
+        for suffix in ["." + video.fileExtension, ".poster.jpg"] {
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent(video.id.uuidString + suffix))
+        }
+    }
+    @discardableResult func insertVideo(_ video: NoteVideo, source: NoteBlock, context: SlashCommandContext? = nil) -> UUID? {
+        guard video.isValid, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+              let index = content.blocks.firstIndex(of: source) else { return nil }
+        let block = NoteBlock(kind: .video, video: video)
         if let context {
             guard let insertion = context.inserting(block, in: content), applySlashCommand(block, context: context) else { return nil }
             return insertion.content.blocks[insertion.index].id

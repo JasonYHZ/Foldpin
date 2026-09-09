@@ -2,9 +2,9 @@ import Foundation
 
 enum NoteBlockKind: String, Codable, CaseIterable, Sendable {
     // Keep the existing H1 / H2 raw values compatible with saved notes.
-    case paragraph, heading, subheading, heading3, heading4, bullet, orderedList, task, quote, divider, table, code, image, audio
+    case paragraph, heading, subheading, heading3, heading4, bullet, orderedList, task, quote, divider, table, code, image, audio, video
 
-    var isAttachment: Bool { [.image, .divider, .table, .audio].contains(self) }
+    var isAttachment: Bool { [.image, .divider, .table, .audio, .video].contains(self) }
 
     var headingLevel: Int? {
         switch self {
@@ -153,6 +153,14 @@ struct NoteImage: Codable, Equatable, Sendable {
     var name: String
     var pixelWidth: Int
     var pixelHeight: Int
+    var displayWidth: Double? = nil
+    var caption: String? = nil
+
+    var isValid: Bool {
+        pixelWidth > 0 && pixelHeight > 0
+            && (displayWidth.map { $0.isFinite && $0 >= 40 && $0 <= 10000 } ?? true)
+            && (caption.map { $0.count <= 4096 && !$0.contains("\n") && !$0.contains("\r") } ?? true)
+    }
 }
 
 /// Rows and cells are document data; grid geometry and colors are only display.
@@ -193,10 +201,11 @@ struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
     var language: CodeLanguage = .plain
     var image: NoteImage?
     var audio: NoteAudio?
+    var video: NoteVideo?
     var table: NoteTable?
 
     init(id: UUID = UUID(), kind: NoteBlockKind = .paragraph, text: String = "", marks: [NoteTextMark] = [],
-         isChecked: Bool = false, language: CodeLanguage? = nil, image: NoteImage? = nil, table: NoteTable? = nil, audio: NoteAudio? = nil) {
+         isChecked: Bool = false, language: CodeLanguage? = nil, image: NoteImage? = nil, table: NoteTable? = nil, audio: NoteAudio? = nil, video: NoteVideo? = nil) {
         self.id = id
         self.kind = kind
         self.text = text
@@ -205,10 +214,20 @@ struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
         self.language = language ?? (kind == .code ? .automatic : .plain)
         self.image = image
         self.audio = audio
+        self.video = video
         self.table = table ?? (kind == .table ? NoteTable() : nil)
     }
 
-    var plainText: String { audio.map { "[\($0.name) · \(NoteAudio.timestamp($0.duration))]" } ?? table?.plainText ?? image.map { "[\($0.name)]" } ?? (kind == .divider ? "---" : text) }
+    var plainText: String {
+        if let video { return "[\(video.name) · \(NoteAudio.timestamp(video.duration))]" }
+        if let audio { return "[\(audio.name) · \(NoteAudio.timestamp(audio.duration))]" }
+        if let table { return table.plainText }
+        if let image {
+            let caption = image.caption.flatMap { $0.isEmpty ? nil : "\n" + $0 } ?? ""
+            return "[\(image.name)]" + caption
+        }
+        return kind == .divider ? "---" : text
+    }
 }
 
 struct NoteContent: Codable, Equatable, Sendable {
@@ -238,6 +257,9 @@ struct NoteContent: Codable, Equatable, Sendable {
             throw NoteFileError.invalidContent
         }
         for block in blocks {
+            if block.kind == .video {
+                guard let video = block.video, video.isValid, block.text.isEmpty, block.marks.isEmpty else { throw NoteFileError.invalidContent }
+            } else if block.video != nil { throw NoteFileError.invalidContent }
             if block.kind == .audio {
                 guard let audio = block.audio, audio.isValid, block.text.isEmpty, block.marks.isEmpty else { throw NoteFileError.invalidContent }
             } else if block.audio != nil { throw NoteFileError.invalidContent }
@@ -254,7 +276,7 @@ struct NoteContent: Codable, Equatable, Sendable {
                 $0.location >= 0 && $0.length > 0 && $0.location <= length && $0.length <= length - $0.location
             }) else { throw NoteFileError.invalidContent }
             if block.kind == .image {
-                guard let image = block.image, image.pixelWidth > 0, image.pixelHeight > 0,
+                guard let image = block.image, image.isValid,
                       block.text.isEmpty, block.marks.isEmpty else { throw NoteFileError.invalidContent }
             } else if block.image != nil {
                 throw NoteFileError.invalidContent
