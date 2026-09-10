@@ -90,7 +90,7 @@ nonisolated enum NoteAction: String, CaseIterable, Identifiable {
         case .undoArrangement: String(localized: "Undo Arrangement", bundle: bundle)
         case .shelveAll: String(localized: "Shelve All Notes", bundle: bundle)
         case .settings: String(localized: "Settings…", bundle: bundle)
-        case .captureShortcut: String(localized: "Show / Shelve Shortcut", bundle: bundle)
+        case .captureShortcut: String(localized: "Shortcut Settings…", bundle: bundle)
         }
     }
 }

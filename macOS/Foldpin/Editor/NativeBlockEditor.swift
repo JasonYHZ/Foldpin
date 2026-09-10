@@ -32,6 +32,7 @@ final class PaperTextView: NSTextView {
     private var audioViews: [UUID: NSView] = [:]
     private var audioViewsScheduled = false
     private var updatingAudioViews = false
+    var shortcuts: ShortcutSettings = .shared
     var onEscape: (() -> Void)?
     var onContentChange: ((NoteContent) -> Void)?
     var onStatusChange: ((NoteEditorStatus?) -> Void)?
@@ -55,7 +56,24 @@ final class PaperTextView: NSTextView {
     var codeThemes = CodeThemeSettings.shared
     var noteColor: NSColor = .labelColor
     private var paperBackground = NotePalette.paperBackground
-    var content = NoteContent()
+    private(set) var findBar: NoteFindBar?
+    private var findTask: Task<Void, Never>?
+    private var findGeneration = 0
+    private(set) var findResult = NoteSearch.Result()
+    private var findHitsByBlock: [UUID: [NoteSearch.Hit]] = [:]
+    private struct FindFieldKey: Hashable { let block: UUID; let field: NoteSearch.Field }
+    private struct FindTextLayout {
+        let storage: NSTextStorage
+        let manager: NSLayoutManager
+        let container: NSTextContainer
+    }
+    private var findAttachmentHits: [UUID: [NoteSearch.Field: [NoteSearch.Hit]]] = [:]
+    private var findTextLayouts: [FindFieldKey: FindTextLayout] = [:]
+    private var findSnapshot: NoteContent?
+    private var findIndex = 0
+    private var findBusy = false
+    private var findHistoryTargetsNote = false
+    var content = NoteContent() { didSet { scheduleNoteSearch() } }
     private var spans: [NoteBlockSpan] = [] { didSet { invalidateBlockGeometry() } }
     private var tableLayouts: [UUID: TableBlockLayout] = [:]
     private var geometryCache: (bounds: NSRect, visible: NSRect, size: NSSize, origin: NSPoint,
@@ -220,6 +238,7 @@ final class PaperTextView: NSTextView {
             path.stroke()
         }
         super.draw(dirtyRect)
+        drawNoteSearch(in: dirtyRect)
         if let selectedBlockID, let surface = blockSurfaces().first(where: { $0.blockID == selectedBlockID }), surface.rect.intersects(dirtyRect) {
             NSColor.controlAccentColor.withAlphaComponent(0.14).setFill()
             NSBezierPath(roundedRect: surface.rect.insetBy(dx: -2, dy: -2), xRadius: 4, yRadius: 4).fill()
@@ -994,6 +1013,7 @@ final class PaperTextView: NSTextView {
 
     override func cancelOperation(_ sender: Any?) {
         if hasMarkedText() { super.cancelOperation(sender) }
+        else if enclosingScrollView?.isFindBarVisible == true { closeNoteFind() }
         else if slashMenu != nil { dismissSlashMenu() }
         else if selectedBlockID != nil { clearBlockSelection() }
         else { onEscape?() }
@@ -1080,19 +1100,18 @@ final class PaperTextView: NSTextView {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if let action = shortcuts.matchingEditor(event) {
+            if !event.isARepeat { performEditorShortcut(action) }
+            return true
+        }
         let flags = event.modifierFlags.intersection([.command, .control, .option, .shift])
-        if let selectedBlockID, !hasMarkedText() {
+        if selectedBlockID != nil, !hasMarkedText() {
             if flags == .command {
                 switch event.charactersIgnoringModifiers {
                 case "c": copy(nil); return true
                 case "x": cut(nil); return true
-                case "d": performBlockAction(.duplicate, blockID: selectedBlockID); return true
                 default: break
                 }
-            }
-            if flags == [.command, .option], event.keyCode == 126 || event.keyCode == 125 {
-                performBlockAction(event.keyCode == 126 ? .moveUp : .moveDown, blockID: selectedBlockID)
-                return true
             }
             if flags == .command, event.keyCode == 36 || event.keyCode == 76 {
                 editSelectedBlock(atEnd: true); return true
@@ -1108,9 +1127,43 @@ final class PaperTextView: NSTextView {
         if flags == .command, event.keyCode == 36 || event.keyCode == 76, leaveCodeBlock(at: activeIndex) {
             return true
         }
-        if flags == [.command, .option], event.keyCode == 126 { moveBlock(-1); return true }
-        if flags == [.command, .option], event.keyCode == 125 { moveBlock(1); return true }
         return super.performKeyEquivalent(with: event)
+    }
+
+    @discardableResult func performEditorShortcut(_ action: EditorShortcutAction) -> Bool {
+        if action.isSearch {
+            guard !hasMarkedText(), tableCellEditor?.hasMarkedText() != true else { return false }
+            switch action {
+            case .find: showNoteFind(replacing: false)
+            case .replace: showNoteFind(replacing: true)
+            case .nextMatch: stepNoteSearch(1)
+            case .previousMatch: stepNoteSearch(-1)
+            default: break
+            }
+            return true
+        }
+        guard isEditable, !hasMarkedText(), tableCellEditor == nil, imageCaptionBlock == nil else { return false }
+        let target = selectedBlockID ?? activeSpan?.block.id
+        if [.record, .image, .audio, .video].contains(action), selectedBlockID != nil { editSelectedBlock(atEnd: true) }
+        switch action {
+        case .find, .replace, .nextMatch, .previousMatch: break
+        case .record: recordAudio(nil)
+        case .image: chooseImage(nil)
+        case .audio: chooseAudio(nil)
+        case .video: chooseVideo(nil)
+        case .blockMenu:
+            guard let target, let menu = makeBlockActionMenu(blockID: target) else { return false }
+            let rect = firstRect(forCharacterRange: selectedRange(), actualRange: nil)
+            let point = window.map { convert($0.convertPoint(fromScreen: rect.origin), from: nil) } ?? .zero
+            menu.popUp(positioning: nil, at: point, in: self)
+        case .duplicateBlock:
+            guard let target else { return false }; return performBlockAction(.duplicate, blockID: target)
+        case .moveUp:
+            guard let target else { return false }; return performBlockAction(.moveUp, blockID: target)
+        case .moveDown:
+            guard let target else { return false }; return performBlockAction(.moveDown, blockID: target)
+        }
+        return true
     }
 
     private var slashContext: SlashCommandContext? {
@@ -1297,6 +1350,13 @@ final class PaperTextView: NSTextView {
 
     private func add(_ menu: NSMenu, _ title: String, _ action: Selector, key: String = "", enabled: Bool = true) {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
+        let editorAction: EditorShortcutAction? = action == #selector(recordAudio(_:)) ? .record
+            : action == #selector(chooseImage(_:)) ? .image : action == #selector(chooseAudio(_:)) ? .audio
+            : action == #selector(chooseVideo(_:)) ? .video : nil
+        if let editorAction {
+            let binding = shortcuts.binding(editorAction)
+            item.keyEquivalent = binding.key; item.keyEquivalentModifierMask = binding.modifiers
+        }
         item.target = self; item.isEnabled = enabled
         menu.autoenablesItems = false
         menu.addItem(item)
@@ -1885,6 +1945,11 @@ extension PaperTextView {
         menu.addItem(header)
         func item(_ label: String, _ action: BlockAction, symbol: String? = nil, key: String = "", enabled: Bool = true) -> NSMenuItem {
             let result = NSMenuItem(title: label, action: #selector(performBlockMenuAction(_:)), keyEquivalent: key)
+            let editorAction: EditorShortcutAction? = action == .duplicate ? .duplicateBlock : action == .moveUp ? .moveUp : action == .moveDown ? .moveDown : nil
+            if let editorAction {
+                let binding = shortcuts.binding(editorAction)
+                result.keyEquivalent = binding.key; result.keyEquivalentModifierMask = binding.modifiers
+            }
             result.target = self
             result.representedObject = BlockMenuCommand(blockID: blockID, action: action)
             result.isEnabled = enabled
@@ -2644,7 +2709,7 @@ extension PaperTextView {
     }
     @objc func recordAudio(_ sender: Any?) {
         guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
-              let source = activeSpan?.block, let file else { return }
+              let source = activeSpan?.block, file != nil else { return }
         guard AudioBlockModel.recording == nil, !AudioBlockModel.requestingRecording else {
             audioError(String(localized: "Finish the current recording before starting another.", bundle: bundle)); return
         }
@@ -2656,6 +2721,14 @@ extension PaperTextView {
             guard let self else { return }
             guard allowed else { audioError(String(localized: "Allow microphone access for Foldpin in System Settings to record audio.", bundle: bundle)); return }
             guard isEditable, !hasMarkedText(), content.blocks.contains(source), window?.isVisible == true else { return }
+            startAuthorizedRecording(source: source, context: context)
+        }
+    }
+    func startAuthorizedRecording(source: NoteBlock? = nil, context: SlashCommandContext? = nil) {
+        guard AVCaptureDevice.authorizationStatus(for: .audio) == .authorized,
+              AudioBlockModel.recording == nil, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+              let source = source ?? activeSpan?.block, content.blocks.contains(source), let file,
+              window?.isVisible == true else { return }
             do {
                 try FileManager.default.createDirectory(at: file.assetsURL, withIntermediateDirectories: true)
                 let draft = NoteAudio(name: String(localized: "Voice Recording", bundle: bundle), fileExtension: "m4a", duration: 0, isDraft: true)
@@ -2667,7 +2740,6 @@ extension PaperTextView {
                 guard onAudioCommit?() != false else { recorder.stop(); model.error = "Audio could not be saved. Your recording file is kept; retry saving."; return }
                 model.start(recorder)
             } catch { audioError(String(localized: "Could not start recording. Your draft is kept.", bundle: bundle)) }
-        }
     }
     @objc func chooseAudio(_ sender: Any?) {
         guard isEditable, !hasMarkedText(), let source = activeSpan?.block, let window else { return }
@@ -2888,6 +2960,7 @@ extension PaperTextView {
         scheduleImageControls()
     }
     func prepareImageEditingForHiding() {
+        if enclosingScrollView?.isFindBarVisible == true { closeNoteFind(restoreFocus: false) }
         endImageResize(cancelled: true)
         endImageCaption(cancelled: false)
     }
@@ -3030,5 +3103,228 @@ extension PaperTextView {
         if destination == next.blocks.count - 1 { next.blocks.append(NoteBlock()) }
         replaceDocument(next, block: destination + 1)
         return block.id
+    }
+}
+
+// MARK: - Per-note find. Query state and highlights never enter the document.
+extension PaperTextView {
+    func showNoteFind(replacing: Bool) {
+        guard !hasMarkedText(), tableCellEditor?.hasMarkedText() != true, let scroll = enclosingScrollView else { return }
+        endTableCellEditing(); endImageCaption(cancelled: false); dismissSlashMenu()
+        let bar: NoteFindBar
+        if let findBar { bar = findBar } else {
+            bar = NoteFindBar(); findBar = bar
+            bar.onQuery = { [weak self] in self?.findIndex = 0; self?.scheduleNoteSearch() }
+            bar.onDraftEdit = { [weak self] in self?.findHistoryTargetsNote = false }
+            bar.onStep = { [weak self] in self?.stepNoteSearch($0) }
+            bar.onReplace = { [weak self] in self?.replaceNoteSearch(all: $0) }
+            bar.onClose = { [weak self] in self?.closeNoteFind() }
+        }
+        bar.refreshLanguage(); bar.replacing = replacing
+        scroll.findBarPosition = .aboveContent
+        scroll.findBarView = bar; scroll.isFindBarVisible = true; scroll.findBarViewDidChangeHeight()
+        window?.makeFirstResponder(bar.query)
+        scheduleNoteSearch()
+    }
+
+    func closeNoteFind(restoreFocus: Bool = true) {
+        findTask?.cancel(); findTask = nil; findGeneration += 1
+        findHistoryTargetsNote = false
+        findResult = .init(); findHitsByBlock = [:]; findAttachmentHits = [:]; findTextLayouts = [:]; findSnapshot = nil; findBusy = false
+        enclosingScrollView?.isFindBarVisible = false
+        needsDisplay = true
+        if restoreFocus { window?.makeFirstResponder(self) }
+    }
+
+    func scheduleNoteSearch() {
+        guard let bar = findBar, enclosingScrollView?.isFindBarVisible == true else { return }
+        findTask?.cancel(); findGeneration += 1
+        let generation = findGeneration
+        findResult = .init(); findHitsByBlock = [:]; findAttachmentHits = [:]; findTextLayouts = [:]; findSnapshot = nil
+        findBusy = !bar.query.stringValue.isEmpty; bar.canReplace = false; needsDisplay = true
+        updateFindStatus()
+        guard findBusy, (bar.query.currentEditor() as? NSTextView)?.hasMarkedText() != true else { return }
+        // Wait before snapshotting the value document. No NSTextStorage work,
+        // syntax parsing, or asset decoding happens on search keystrokes.
+        findTask = Task { [weak self] in
+            do { try await Task.sleep(for: .milliseconds(140)) } catch { return }
+            guard let self, findGeneration == generation, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true else { return }
+            let snapshot = content, query = bar.query.stringValue, sensitive = bar.caseButton.state == .on
+            let worker = Task.detached(priority: .userInitiated) {
+                NoteSearch.find(in: snapshot, query: query, caseSensitive: sensitive, cancelled: { Task.isCancelled })
+            }
+            let result = await withTaskCancellationHandler { await worker.value } onCancel: { worker.cancel() }
+            guard !Task.isCancelled, findGeneration == generation else { return }
+            findSnapshot = snapshot; findResult = result
+            findHitsByBlock = Dictionary(grouping: result.hits, by: \.blockID)
+            findAttachmentHits = findHitsByBlock.compactMapValues { hits in
+                hits.first?.field == .text ? nil : Dictionary(grouping: hits, by: \.field)
+            }
+            findIndex = min(findIndex, max(0, result.hits.count - 1)); findBusy = false
+            updateFindStatus(); needsDisplay = true
+            if bar.query.currentEditor() != nil, result.hits.indices.contains(findIndex) { revealFindHit(result.hits[findIndex]) }
+        }
+    }
+
+    func updateFindStatus() {
+        guard let bar = findBar else { return }
+        bar.refreshLanguage()
+        let count = findResult.hits.count
+        if findBusy { bar.status.stringValue = String(localized: "Searching…", bundle: bundle) }
+        else if bar.query.stringValue.isEmpty { bar.status.stringValue = String(localized: "Text, code, tables, and image captions", bundle: bundle) }
+        else if findResult.truncated { bar.status.stringValue = String(localized: "Too many matches. Refine your search to replace all.", bundle: bundle) }
+        else if count == 0 { bar.status.stringValue = String(localized: "No matches", bundle: bundle) }
+        else { bar.status.stringValue = "\(findIndex + 1) / \(count)" }
+        bar.setSummary(bar.status.stringValue, count: count, index: findIndex, busy: findBusy, showMessage: findResult.truncated)
+        bar.canReplaceAll = !findResult.truncated
+        bar.canReplace = isEditable && !findBusy && count > 0 && !hasMarkedText() && tableCellEditor?.hasMarkedText() != true
+    }
+
+    func stepNoteSearch(_ direction: Int) {
+        guard enclosingScrollView?.isFindBarVisible == true else { showNoteFind(replacing: false); return }
+        guard !findBusy, !findResult.hits.isEmpty else { return }
+        findIndex = (findIndex + direction + findResult.hits.count) % findResult.hits.count
+        revealFindHit(findResult.hits[findIndex]); updateFindStatus(); needsDisplay = true
+    }
+
+    private func revealFindHit(_ hit: NoteSearch.Hit) {
+        guard let span = spans.first(where: { $0.block.id == hit.blockID }) else { return }
+        if hit.field == .text {
+            scrollRangeToVisible(NSRange(location: span.textRange.location + hit.range.location, length: hit.range.length))
+        } else {
+            scrollRangeToVisible(span.textRange)
+            if case .cell(let row, let column) = hit.field,
+               let frame = tableFrame(blockID: hit.blockID) {
+                let rect = tableLayout(for: span.block, width: frame.width).rect(row: row, column: column)
+                scrollToVisible(rect.offsetBy(dx: frame.minX, dy: frame.minY))
+            }
+        }
+    }
+
+    func replaceNoteSearch(all: Bool) {
+        guard let bar = findBar, !findBusy, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+              let snapshot = findSnapshot, snapshot == content, !findResult.hits.isEmpty,
+              !all || !findResult.truncated,
+              (bar.replacement.currentEditor() as? NSTextView)?.hasMarkedText() != true,
+              (bar.query.currentEditor() as? NSTextView)?.hasMarkedText() != true else { return }
+        endTableCellEditing(); endImageCaption(cancelled: false)
+        guard snapshot == content else { scheduleNoteSearch(); return }
+        let hits = all ? findResult.hits : [findResult.hits[findIndex]]
+        let value = bar.replacement.stringValue, generation = findGeneration
+        findBusy = true; updateFindStatus()
+        findTask = Task { [weak self] in
+            let worker = Task.detached(priority: .userInitiated) { NoteSearch.replacing(hits, in: snapshot, with: value, cancelled: { Task.isCancelled }) }
+            let next = await withTaskCancellationHandler { await worker.value } onCancel: { worker.cancel() }
+            guard !Task.isCancelled, let self, findGeneration == generation else { return }
+            guard content == snapshot, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true else { scheduleNoteSearch(); return }
+            guard let next, (try? next.validate()) != nil else {
+                findBusy = false; updateFindStatus()
+                bar.showError(String(localized: "Cannot replace this text. Shorten the replacement and try again.", bundle: bundle))
+                return
+            }
+            guard next != content else { findBusy = false; updateFindStatus(); return }
+            let index = next.blocks.firstIndex(where: { $0.id == hits[0].blockID }) ?? 0
+            let offset = hits[0].field == .text ? hits[0].range.location : 0
+            replaceDocument(next, block: index, offset: offset)
+            findHistoryTargetsNote = true
+            undoManager?.setActionName(all ? String(localized: "Replace All", bundle: bundle) : String(localized: "Replace", bundle: bundle))
+        }
+    }
+
+    /// After replacing from the find bar, Command-Z undoes the note transaction.
+    /// Editing either draft returns undo ownership to the native field editor.
+    func handleFindHistory(_ event: NSEvent) -> Bool {
+        guard findHistoryTargetsNote, enclosingScrollView?.isFindBarVisible == true,
+              let bar = findBar, let responder = window?.firstResponder as? NSTextView,
+              responder === bar.query.currentEditor() || responder === bar.replacement.currentEditor(),
+              !responder.hasMarkedText(), !hasMarkedText(), isEditable else { return false }
+        let flags = event.modifierFlags.intersection(ShortcutBinding.allowedModifiers)
+        guard event.keyCode == 6, flags == .command || flags == [.command, .shift] else { return false }
+        if !event.isARepeat {
+            if flags.contains(.shift) { undoManager?.redo() } else { undoManager?.undo() }
+        }
+        return true
+    }
+
+    private func drawNoteSearch(in dirtyRect: NSRect) {
+        guard !findBusy, !findHitsByBlock.isEmpty, enclosingScrollView?.isFindBarVisible == true,
+              let manager = textLayoutManager, let source = manager.textContentManager else { return }
+        let origin = textContainerOrigin
+        let viewport = manager.textViewportLayoutController.viewportRange
+        let low = viewport.map { source.offset(from: source.documentRange.location, to: $0.location) } ?? 0
+        let high = viewport.map { source.offset(from: source.documentRange.location, to: $0.endLocation) } ?? (string as NSString).length
+        let active = findResult.hits.indices.contains(findIndex) ? findResult.hits[findIndex] : nil
+        func paint(_ rect: NSRect, hit: NoteSearch.Hit) {
+            guard rect.intersects(dirtyRect) else { return }
+            let selected = hit == active
+            (selected ? NSColor.systemOrange : NSColor.systemYellow).withAlphaComponent(selected ? 0.40 : 0.27).setFill()
+            NSBezierPath(roundedRect: rect, xRadius: 2, yRadius: 2).fill()
+            if selected { NSColor.systemOrange.setStroke(); NSBezierPath(rect: rect.insetBy(dx: 0.5, dy: 0.5)).stroke() }
+        }
+        for span in spans where NSMaxRange(span.textRange) >= low && span.textRange.location <= high {
+            guard let hits = findHitsByBlock[span.block.id] else { continue }
+            if !span.block.kind.isAttachment {
+                // Binary search skips offscreen matches in a very large block.
+                var left = 0, right = hits.count
+                while left < right {
+                    let mid = (left + right) / 2
+                    if NSMaxRange(hits[mid].range) + span.textRange.location < low { left = mid + 1 } else { right = mid }
+                }
+                for hit in hits[left...] {
+                    let startOffset = span.textRange.location + hit.range.location
+                    if startOffset > high { break }
+                    guard let start = source.location(source.documentRange.location, offsetBy: max(low, startOffset)),
+                          let end = source.location(source.documentRange.location, offsetBy: min(high, startOffset + hit.range.length)),
+                          let range = NSTextRange(location: start, end: end) else { continue }
+                    manager.enumerateTextSegments(in: range, type: .selection, options: .rangeNotRequired) { _, rect, _, _ in
+                        paint(rect.offsetBy(dx: origin.x, dy: origin.y), hit: hit); return true
+                    }
+                }
+            } else if let frame = (span.block.table != nil ? tableFrame(blockID: span.block.id) : imageFrame(blockID: span.block.id)), frame.intersects(dirtyRect) {
+                for (field, matches) in findAttachmentHits[span.block.id] ?? [:] {
+                    let rect: NSRect, text: String, font: NSFont
+                    switch field {
+                    case .cell(let row, let column):
+                        let layout = tableLayout(for: span.block, width: frame.width)
+                        rect = layout.rect(row: row, column: column).insetBy(dx: TableBlockLayout.padding, dy: TableBlockLayout.padding).offsetBy(dx: frame.minX, dy: frame.minY)
+                        text = layout.table.rows[row][column]
+                        font = layout.table.isHeader(row: row, column: column) ? TableBlockLayout.headerFont : TableBlockLayout.font
+                    case .caption:
+                        rect = NSRect(x: frame.minX, y: frame.maxY - 22, width: frame.width, height: 22)
+                        text = span.block.image?.caption ?? ""; font = .systemFont(ofSize: 12)
+                    case .text: continue
+                    }
+                    guard rect.intersects(dirtyRect) else { continue }
+                    // Only visible attachment text is laid out; no asset decoding.
+                    let key = FindFieldKey(block: span.block.id, field: field)
+                    if findTextLayouts[key]?.container.size != rect.size {
+                        if findTextLayouts.count >= 64 { findTextLayouts.removeAll(keepingCapacity: true) }
+                        let storage = NSTextStorage(string: text, attributes: [.font: font])
+                        let layout = NSLayoutManager(), container = NSTextContainer(size: rect.size)
+                        container.lineFragmentPadding = 0
+                        if field == .caption { container.maximumNumberOfLines = 1; container.lineBreakMode = .byTruncatingTail }
+                        storage.addLayoutManager(layout); layout.addTextContainer(container)
+                        findTextLayouts[key] = FindTextLayout(storage: storage, manager: layout, container: container)
+                    }
+                    guard let cached = findTextLayouts[key] else { continue }
+                    let layout = cached.manager, container = cached.container
+                    let clip = rect.intersection(visibleRect).offsetBy(dx: -rect.minX, dy: -rect.minY)
+                    let visibleGlyphs = layout.glyphRange(forBoundingRect: clip, in: container)
+                    let visibleCharacters = layout.characterRange(forGlyphRange: visibleGlyphs, actualGlyphRange: nil)
+                    var lo = 0, hi = matches.count
+                    while lo < hi {
+                        let mid = (lo + hi) / 2
+                        if NSMaxRange(matches[mid].range) < visibleCharacters.location { lo = mid + 1 } else { hi = mid }
+                    }
+                    for hit in matches[lo...] {
+                        if hit.range.location > NSMaxRange(visibleCharacters) { break }
+                        let glyphs = layout.glyphRange(forCharacterRange: hit.range, actualCharacterRange: nil)
+                        layout.enumerateEnclosingRects(forGlyphRange: glyphs, withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0), in: container) { box, _ in
+                            paint(box.offsetBy(dx: rect.minX, dy: rect.minY).intersection(rect), hit: hit)
+                        }
+                    }
+                }
+            }
+        }
     }
 }

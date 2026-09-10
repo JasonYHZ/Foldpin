@@ -65,6 +65,8 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         paper.onRequestClose = { [weak self] in _ = self?.shelvePaper() }
         paper.onEndResize = { [weak self] in self?.recordGeometry() }
         paper.onBeginMove = { [weak self] in self?.prepareForMove() }
+        paper.onFindHistory = { [weak self] in self?.audioEditor?.handleFindHistory($0) ?? false }
+        paper.onSearch = { [weak self] in self?.search($0) }
         paper.onAction = { [weak self] in self?.performAction($0) }
         paper.onShortcutHints = { [weak state = titlebarState] in state?.setShortcutHints($0) }
         paper.isReleasedWhenClosed = false
@@ -187,8 +189,8 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
                                   action: #selector(changeColor(_:)), keyEquivalent: "")
             item.target = self
             if let action = NoteAction.colors.first(where: { $0.noteColor == color }) {
-                item.keyEquivalent = action.key
-                item.keyEquivalentModifierMask = action.modifiers
+                item.keyEquivalent = action.activeKey
+                item.keyEquivalentModifierMask = action.activeModifiers
             }
             item.representedObject = color.rawValue
             item.state = color == store.document.color ? .on : .off
@@ -205,6 +207,30 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         store.setColor(color)
         // No editor replacement, focus request, geometry change or code parse.
         onStateChange?()
+    }
+
+    func search(_ action: EditorShortcutAction) {
+        guard paper.isKeyWindow else { return }
+        if store.isCollapsed { toggleCollapsed() }
+        audioEditor?.performEditorShortcut(action)
+    }
+
+    func startQuickRecording() async {
+        showPaper(focus: true)
+        paper.contentView?.layoutSubtreeIfNeeded()
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue.main.async { [weak self] in
+                defer { continuation.resume() }
+                guard let self else { return }
+                paper.contentView?.layoutSubtreeIfNeeded()
+                guard let editor = audioEditor else {
+                    let alert = NSAlert()
+                    alert.messageText = String(localized: "The recording editor is not ready. Try Record Audio in this note.", bundle: languageSettings.bundle)
+                    alert.beginSheetModal(for: paper); return
+                }
+                editor.startAuthorizedRecording()
+            }
+        }
     }
 
     func showPaper(focus: Bool) {
@@ -238,7 +264,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
 
     func windowDidBecomeKey(_ notification: Notification) { onActivate?(id) }
 
-    private var audioEditor: PaperTextView? {
+    var audioEditor: PaperTextView? {
         func find(_ view: NSView) -> PaperTextView? {
             if let editor = view as? PaperTextView { return editor }
             for child in view.subviews { if let editor = find(child) { return editor } }
@@ -469,6 +495,8 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         actionsPanel?.close()
         actionsPanel = nil
         paper.cancelShortcutHints()
+        paper.onFindHistory = nil
+        paper.onSearch = nil
         paper.onAction = nil
         paper.onShortcutHints = nil
         onApplicationAction = nil

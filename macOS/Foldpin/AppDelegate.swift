@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Combine
+import AVFoundation
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
@@ -16,8 +17,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
     private let shortcut = GlobalShortcut()
-    private var shortcutStatus: Int32 = 0
-    private(set) var shortcutChoice = UserDefaults.standard.integer(forKey: "captureShortcut")
+    private let shortcutSettings = ShortcutSettings.shared
+    private var localShortcutMonitor: Any?
+    private let quickRecording = QuickRecordingFlow()
+    private var recordingSaveRetryID: UUID?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ThemeSettings.shared.apply()
@@ -34,8 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             for window in windows.values { window.screensChanged() }
             updateEdge()
         }
-        shortcut.onPress = { [weak self] in self?.togglePaper() }
-        configureShortcut(shortcutChoice)
+        configureShortcuts()
         for entry in library.entries where !entry.store.document.isShelved || entry.store.loadError != nil {
             controller(for: entry).showPaper(focus: false)
             lastActiveID = entry.id
@@ -60,8 +62,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     private func controller(for entry: NoteLibrary.Entry, initialFrame: NSRect? = nil) -> PaperWindowController {
         if let existing = windows[entry.id] { return existing }
-        entry.store.shortcutLabel = GlobalShortcut.label(for: shortcutChoice)
-        entry.store.hotKeyStatus = shortcutStatus
+        entry.store.shortcutLabel = shortcutSettings.binding(GlobalShortcutAction.toggleNotes).keycaps.joined()
+        entry.store.hotKeyStatus = shortcutSettings.globalError == nil ? 0 : -1
         let window = PaperWindowController(entry: entry, initialFrame: initialFrame)
         window.onActivate = { [weak self] id in
             guard let self else { return }
@@ -90,9 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             case .shelveAll: shelveAll()
             case .settings: showSettings()
             case .captureShortcut:
-                if let button = statusItem?.button {
-                    makeCaptureShortcutMenu().popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.maxY), in: button)
-                }
+                shortcutSettings.showShortcuts = true; showSettings()
             default: break
             }
         }
@@ -211,37 +211,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         func item(_ title: String, _ action: Selector, key: String = "", command: NoteAction? = nil) -> NSMenuItem {
             let value = NSMenuItem(title: title, action: action, keyEquivalent: key)
             if let command {
-                value.keyEquivalent = command.key
-                value.keyEquivalentModifierMask = command.modifiers
+                value.keyEquivalent = command.activeKey
+                value.keyEquivalentModifierMask = command.activeModifiers
             }
             value.target = self; menu.addItem(value); return value
         }
-        item(String(localized: "New Note", bundle: languageSettings.bundle), #selector(newPaper), key: "n").isEnabled = library.canCreate
+        item(String(localized: "New Note", bundle: languageSettings.bundle), #selector(newPaper), command: .newNote).isEnabled = library.canCreate
         _ = item(String(localized: "Open Shelf", bundle: languageSettings.bundle), #selector(showShelf), command: .shelf)
         menu.addItem(.separator())
-        item(NoteAction.arrange.title(bundle: languageSettings.bundle), #selector(arrangePapers)).isEnabled = windows.values.contains { $0.canArrange }
+        item(NoteAction.arrange.title(bundle: languageSettings.bundle), #selector(arrangePapers), command: .arrange).isEnabled = windows.values.contains { $0.canArrange }
         if !lastArrangement.isEmpty {
-            item(NoteAction.undoArrangement.title(bundle: languageSettings.bundle), #selector(undoArrangement)).isEnabled = canUndoArrangement
+            item(NoteAction.undoArrangement.title(bundle: languageSettings.bundle), #selector(undoArrangement), command: .undoArrangement).isEnabled = canUndoArrangement
         }
         let visiblePapers = windows.values.filter { $0.isVisible && $0.store.loadError == nil }
         item(String(localized: "Collapse All Notes", bundle: languageSettings.bundle), #selector(collapseAll)).isEnabled = visiblePapers.contains { !$0.store.isCollapsed }
         item(String(localized: "Expand All Notes", bundle: languageSettings.bundle), #selector(expandAll)).isEnabled = visiblePapers.contains { $0.store.isCollapsed }
-        item(String(localized: "Shelve All Notes", bundle: languageSettings.bundle), #selector(shelveAll)).isEnabled = windows.values.contains { $0.isVisible }
+        item(String(localized: "Shelve All Notes", bundle: languageSettings.bundle), #selector(shelveAll), command: .shelveAll).isEnabled = windows.values.contains { $0.isVisible }
         menu.addItem(.separator())
         _ = item(String(localized: "Status Menu Settings", bundle: languageSettings.bundle), #selector(showSettings), key: ",")
         _ = item(String(localized: "Quit", bundle: languageSettings.bundle), #selector(quit), key: "q")
         menu.autoenablesItems = false
         statusItem.menu = menu
-    }
-
-    private func makeCaptureShortcutMenu() -> NSMenu {
-        let choices = NSMenu()
-        for choice in 0...1 {
-            let child = NSMenuItem(title: GlobalShortcut.label(for: choice), action: #selector(changeShortcut(_:)), keyEquivalent: "")
-            child.target = self; child.tag = choice; child.state = shortcutChoice == choice ? .on : .off
-            choices.addItem(child)
-        }
-        return choices
     }
 
     private func applyLanguage() {
@@ -273,8 +263,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         for item in menu.items where item.target === self {
             if item.action == #selector(arrangePapers) {
                 item.title = NoteAction.arrange.title(bundle: languageSettings.bundle)
+                item.keyEquivalent = NoteAction.arrange.activeKey; item.keyEquivalentModifierMask = NoteAction.arrange.activeModifiers
             } else if item.action == #selector(undoArrangement) {
                 item.title = NoteAction.undoArrangement.title(bundle: languageSettings.bundle)
+                item.keyEquivalent = NoteAction.undoArrangement.activeKey; item.keyEquivalentModifierMask = NoteAction.undoArrangement.activeModifiers
             }
             item.isEnabled = validateMenuItem(item)
         }
@@ -365,16 +357,88 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         else { previousApplication?.activate() }
     }
 
-    @objc private func changeShortcut(_ sender: NSMenuItem) { configureShortcut(sender.tag) }
-    func configureShortcut(_ choice: Int) {
-        shortcutChoice = choice == 1 ? 1 : 0
-        UserDefaults.standard.set(shortcutChoice, forKey: "captureShortcut")
-        shortcutStatus = shortcut.register(choice: shortcutChoice)
-        for entry in library.entries {
-            entry.store.shortcutLabel = GlobalShortcut.label(for: shortcutChoice)
-            entry.store.hotKeyStatus = shortcutStatus
+    private func configureShortcuts() {
+        shortcutSettings.applyGlobals = { [weak self] bindings in self?.shortcut.register(bindings) ?? -1 }
+        shortcut.capture = { binding in
+            guard let capture = ShortcutSettings.shared.recordingHandler else { return false }
+            capture(binding); return true
         }
-        rebuildMenu()
+        shortcut.onPress = { [weak self] action in
+            guard let self else { return }
+            switch action {
+            case .newNote: newPaper()
+            case .quickRecord: quickRecord()
+            case .toggleNotes: togglePaper()
+            case .shelf: showShelf()
+            }
+        }
+        shortcutSettings.registerGlobals()
+        observe(ShortcutSettings.changed) { [weak self] in
+            guard let self else { return }
+            for entry in library.entries {
+                entry.store.shortcutLabel = shortcutSettings.binding(GlobalShortcutAction.toggleNotes).keycaps.joined()
+                entry.store.hotKeyStatus = shortcutSettings.globalError == nil ? 0 : -1
+            }
+            rebuildMenu(); refreshApplicationMenu()
+        }
+        localShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, shortcutSettings.recordingHandler == nil,
+                  NSApp.modalWindow == nil, event.window?.attachedSheet == nil,
+                  let action = shortcutSettings.matchingNote(event), ShortcutSettings.appActions.contains(action) else { return event }
+            if !event.isARepeat {
+                switch action {
+                case .newNote: newPaper()
+                case .shelf: showShelf()
+                case .arrange: arrangePapers()
+                case .undoArrangement: undoArrangement()
+                case .shelveAll: shelveAll()
+                default: break
+                }
+            }
+            return nil
+        }
+    }
+
+    func searchCurrentNote(_ action: EditorShortcutAction) {
+        guard let controller = currentPaper, controller.paper.isKeyWindow else { return }
+        controller.search(action)
+    }
+
+    private func quickRecord() {
+        quickRecording.trigger(canStart: !AudioBlockModel.requestingRecording && library.canCreate, finishCurrent: { [self] in
+            if let recording = AudioBlockModel.recording {
+                let controller = windows.values.first { $0.audioEditor === recording.editor }
+                NSApp.activate(); recording.editor?.window?.makeKeyAndOrderFront(nil)
+                let saved = recording.finish()
+                recordingSaveRetryID = saved ? nil : controller?.id
+                return saved
+            }
+            if let id = recordingSaveRetryID, let controller = windows[id] {
+                controller.showPaper(focus: true)
+                let saved = controller.prepareToTerminate()
+                if saved { recordingSaveRetryID = nil }
+                return saved
+            }
+            return nil
+        }, permission: {
+            return await AVCaptureDevice.requestAccess(for: .audio)
+        }, start: { [weak self] in
+            guard let self else { return }
+            guard let entry = library.createNote() else { showShelf(); return }
+            popover.close()
+            let controller = controller(for: entry)
+            await controller.startQuickRecording()
+            if entry.store.saveError != nil { recordingSaveRetryID = entry.id }
+            updateEdge(); rebuildMenu()
+        }, denied: { [weak self] in
+            guard let self else { return }
+            NSApp.activate()
+            let alert = NSAlert()
+            alert.messageText = String(localized: "Allow microphone access for Foldpin in System Settings to record audio.", bundle: languageSettings.bundle)
+            alert.runModal()
+        }, finished: { AudioBlockModel.requestingRecording = false })
+        // Reserve capture synchronously before the permission task begins.
+        if quickRecording.isStarting { AudioBlockModel.requestingRecording = true }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -398,6 +462,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         return .terminateNow
     }
     func applicationWillTerminate(_ notification: Notification) {
+        shortcutSettings.applyGlobals = nil
+        if let localShortcutMonitor { NSEvent.removeMonitor(localShortcutMonitor) }
         shortcut.stop()
         for observer in observers { NotificationCenter.default.removeObserver(observer) }
         languageSubscription?.cancel()

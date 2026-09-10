@@ -128,7 +128,7 @@ final class SlashCommandMenu {
         popup.acceptsMouseMovedEvents = true
         popup.collectionBehavior = [.transient, .fullScreenAuxiliary]
         popup.appearance = appearance
-        popup.contentView = view
+        popup.contentView = EditorGlassSurface(content: view, cornerRadius: 12)
         panel = popup
         for name in [NSWindow.didResignKeyNotification, NSWindow.willCloseNotification,
                      NSWindow.didMoveNotification, NSWindow.didResizeNotification] {
@@ -258,8 +258,6 @@ final class SlashMenuContentView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         let outline = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 12, yRadius: 12)
-        EditorMenuPalette.background.setFill()
-        outline.fill()
         EditorMenuPalette.border.setStroke()
         outline.lineWidth = 0.75
         outline.stroke()

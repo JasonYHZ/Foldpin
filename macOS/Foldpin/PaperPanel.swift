@@ -6,6 +6,8 @@ final class PaperPanel: NSPanel {
     var onRequestClose: (() -> Void)?
     var onEndResize: (() -> Void)?
     var onBeginMove: (() -> Void)?
+    var onFindHistory: ((NSEvent) -> Bool)?
+    var onSearch: ((EditorShortcutAction) -> Void)?
     var onAction: ((NoteAction) -> Void)?
     var onShortcutHints: ((Bool) -> Void)?
     private var commandHintWork: DispatchWorkItem?
@@ -132,27 +134,17 @@ final class PaperPanel: NSPanel {
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         cancelShortcutHints()
+        if isKeyWindow, ShortcutSettings.shared.recordingHandler == nil, onFindHistory?(event) == true { return true }
+        if isKeyWindow, let action = ShortcutSettings.shared.matchingEditor(event), action.isSearch, let onSearch {
+            if !event.isARepeat { onSearch(action) }
+            return true
+        }
         if isKeyWindow, event.type == .keyDown, let onAction,
-           let action = NoteAction.matching(key: event.charactersIgnoringModifiers, modifiers: event.modifierFlags) {
+           let action = ShortcutSettings.shared.matchingNote(event) {
             if !event.isARepeat { onAction(action) }
             return true
         }
-        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
-        guard isKeyWindow, event.type == .keyDown, modifiers == .command else {
-            return super.performKeyEquivalent(with: event)
-        }
-        // Route shortcuts only in this focused paper, including its collapsed
-        // strip. Settings and other apps keep their native window commands.
-        switch event.charactersIgnoringModifiers?.lowercased() {
-        case "m" where onToggleCollapsed != nil:
-            if !event.isARepeat { onToggleCollapsed?() }
-            return true
-        case "w" where onRequestClose != nil:
-            if !event.isARepeat { performClose(nil) }
-            return true
-        default:
-            return super.performKeyEquivalent(with: event)
-        }
+        return super.performKeyEquivalent(with: event)
     }
 
     override func performClose(_ sender: Any?) {

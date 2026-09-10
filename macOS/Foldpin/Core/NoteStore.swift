@@ -159,7 +159,7 @@ final class NoteStore: ObservableObject {
         guard hotKeyStatus != 0 else { return nil }
         // An OSStatus is an identifier, not a quantity to group for the locale.
         let code = String(hotKeyStatus)
-        return String(localized: "Could not register the shortcut (\(code)). Choose another in the menu bar.", bundle: localizationBundle)
+        return String(localized: "Could not register the shortcut (\(code)). Choose another in Settings → Shortcuts.", bundle: localizationBundle)
     }
 
     private func description(of error: Error) -> String {

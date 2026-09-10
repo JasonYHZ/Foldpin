@@ -118,6 +118,7 @@ final class NativeEditorHost: NSView {
         displayedLanguage = bundle.bundleURL
         if languageChanged { editor.refreshImageLanguage(); editor.refreshVideoControls() }
         displayedEditable = editor.isEditable
+        editor.updateFindStatus()
         editor.scheduleCodeToolbarUpdate()
         editor.needsDisplay = true // Localized placeholders live in the editor.
         editor.setAccessibilityLabel(String(localized: "Note text", bundle: bundle))

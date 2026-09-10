@@ -86,6 +86,7 @@ final class NoteTitlebarState: ObservableObject {
 
 /// Only the header observes hover changes; the native editor is not rebuilt.
 private struct NoteTitlebar: View {
+    @ObservedObject private var shortcuts = ShortcutSettings.shared
     @ObservedObject private var languageSettings = LanguageSettings.shared
     @ObservedObject var store: NoteStore
     @ObservedObject var state: NoteTitlebarState
@@ -128,7 +129,7 @@ private struct NoteTitlebar: View {
                             .allowsHitTesting(false)
                     }
                 }
-                .help((store.isCollapsed ? String(localized: "\(collapsedTitle)\nDrag to move; double-click or press ⌘M to expand", bundle: languageSettings.bundle) : String(localized: "Drag to move; double-click or press ⌘M to collapse", bundle: languageSettings.bundle))
+                .help((store.isCollapsed ? collapsedTitle + "\n" + String(localized: "Drag to move; double-click to expand", bundle: languageSettings.bundle) : String(localized: "Drag to move; double-click to collapse", bundle: languageSettings.bundle))
                       + "\n" + String(localized: "Right-click to change this note’s color", bundle: languageSettings.bundle))
             HStack(spacing: 0) {
                 NoteTitlebarButton(symbol: store.document.isPinned ? "pin.fill" : "pin",
@@ -139,7 +140,7 @@ private struct NoteTitlebar: View {
                     .focused($focusedAction, equals: .pin)
                 NoteTitlebarButton(symbol: store.isCollapsed ? "chevron.down" : "chevron.up",
                                    label: store.isCollapsed ? String(localized: "Expand Note", bundle: languageSettings.bundle) : String(localized: "Collapse Note", bundle: languageSettings.bundle),
-                                   help: store.isCollapsed ? String(localized: "Restore the original size (⌘M)", bundle: languageSettings.bundle) : String(localized: "Collapse to one line on the desktop (⌘M)", bundle: languageSettings.bundle),
+                                   help: store.isCollapsed ? String(localized: "Restore the original size", bundle: languageSettings.bundle) : String(localized: "Collapse to one line on the desktop", bundle: languageSettings.bundle),
                                    buttonSize: buttonSize, symbolSize: 16, ink: ink, shortcut: .collapse, showsHint: state.showsShortcutHints, action: onCollapse)
                     .disabled(store.loadError != nil)
                     .focused($focusedAction, equals: .collapse)
@@ -219,6 +220,7 @@ private struct NoteTitlebar: View {
 }
 
 private struct NoteTitlebarButton: View {
+    @ObservedObject private var shortcuts = ShortcutSettings.shared
     var symbol: String
     var label: String
     var help: String
@@ -236,7 +238,7 @@ private struct NoteTitlebarButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                if showsHint, isEnabled, let shortcut {
+                if showsHint, isEnabled, let shortcut, !shortcut.activeKeycaps.isEmpty {
                     TitlebarShortcutHint(action: shortcut, ink: ink)
                 } else if isClose {
                     Circle().fill(Color(red: 1, green: 0.37, blue: 0.35)).frame(width: 14, height: 14)
@@ -256,16 +258,18 @@ private struct NoteTitlebarButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
-        .help(help + (shortcut.flatMap { help.contains($0.keycaps.joined()) ? nil : " (" + $0.keycaps.joined() + ")" } ?? ""))
+        .help(help + (shortcut.flatMap { help.contains($0.activeKeycaps.joined()) ? nil : " (" + $0.activeKeycaps.joined() + ")" } ?? ""))
         .accessibilityLabel(label)
     }
 }
 
 private struct TitlebarShortcutHint: View {
+    @ObservedObject private var shortcuts = ShortcutSettings.shared
     let action: NoteAction
     let ink: Color
     var body: some View {
-        Text(action.heldHint).font(.system(size: 11, weight: .semibold, design: .rounded))
+        Text(action.activeHeldHint).font(.system(size: 11, weight: .semibold, design: .rounded))
+            .lineLimit(1).minimumScaleFactor(0.5).frame(width: 22)
             .foregroundStyle(ink).frame(minWidth: 20, minHeight: 21)
             .background(ink.opacity(0.05), in: .rect(cornerRadius: 4))
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(ink.opacity(0.25), lineWidth: 0.7))
@@ -274,6 +278,7 @@ private struct TitlebarShortcutHint: View {
 }
 
 private struct NoteActionsButton: View {
+    @ObservedObject private var shortcuts = ShortcutSettings.shared
     @ObservedObject private var language = LanguageSettings.shared
     @ObservedObject var state: NoteTitlebarState
     let appearance: NoteAppearance
@@ -284,7 +289,7 @@ private struct NoteActionsButton: View {
         Button(action: onActions) {
             HStack(spacing: 7) {
                 Text(String(localized: "Actions", bundle: language.bundle)).font(.system(size: 11, weight: .medium))
-                ShortcutKeycaps(keys: NoteAction.actions.keycaps)
+                ShortcutKeycaps(keys: NoteAction.actions.activeKeycaps)
             }
             .padding(.horizontal, 9).frame(height: 29)
             .background(ink.opacity(hovered ? 0.09 : 0.045), in: Capsule())
@@ -293,8 +298,8 @@ private struct NoteActionsButton: View {
         }
         .buttonStyle(.plain).onHover { hovered = $0 }
         .background(NoteActionsAnchor(state: state))
-        .help(String(localized: "Paper and app actions (⌘K). Hold ⌘ to reveal button shortcuts.", bundle: language.bundle))
-        .accessibilityLabel(String(localized: "Actions", bundle: language.bundle) + " ⌘K")
+        .help(String(localized: "Paper and app actions. Hold Command to reveal button shortcuts.", bundle: language.bundle))
+        .accessibilityLabel(String(localized: "Actions", bundle: language.bundle) + " " + NoteAction.actions.activeKeycaps.joined())
         .foregroundStyle(ink)
     }
 }

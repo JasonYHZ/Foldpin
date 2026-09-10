@@ -74,6 +74,7 @@ private struct ActionSearchField: NSViewRepresentable {
 }
 
 struct NoteActionsView: View {
+    @ObservedObject private var shortcuts = ShortcutSettings.shared
     @ObservedObject private var language = LanguageSettings.shared
     @ObservedObject var store: NoteStore
     let width: CGFloat
@@ -98,7 +99,7 @@ struct NoteActionsView: View {
     }
     private func matches(_ action: NoteAction) -> Bool {
         let terms = query.split(whereSeparator: \.isWhitespace)
-        let haystack = title(action) + " " + action.rawValue + " " + action.keycaps.joined()
+        let haystack = title(action) + " " + action.rawValue + " " + action.activeKeycaps.joined()
         return terms.allSatisfy { haystack.localizedStandardContains(String($0)) }
     }
     private var displayedSections: [[NoteAction]] {
@@ -152,7 +153,6 @@ struct NoteActionsView: View {
             }.padding(12)
         }
         .frame(width: width, height: height)
-        .background(Color(nsColor: EditorMenuPalette.background), in: .rect(cornerRadius: 15))
         .overlay(RoundedRectangle(cornerRadius: 15).strokeBorder(Color(nsColor: EditorMenuPalette.border), lineWidth: 0.75))
         .clipShape(.rect(cornerRadius: 15))
         .onAppear { selected = selectable.first }
@@ -183,7 +183,7 @@ struct NoteActionsView: View {
                 Text(title(action)).font(.system(size: 13)).lineLimit(1)
                 Spacer(minLength: 4)
                 if action.noteColor == store.document.color { Image(systemName: "checkmark").font(.system(size: 10)) }
-                ShortcutKeycaps(keys: action.keycaps).foregroundStyle(.secondary)
+                ShortcutKeycaps(keys: action.activeKeycaps).foregroundStyle(.secondary)
                 if action == .color { Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(.secondary) }
             }
             .padding(.horizontal, 10).frame(height: 37)
@@ -192,7 +192,7 @@ struct NoteActionsView: View {
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor, lineWidth: selected == action ? 2 : 0))
         }
         .buttonStyle(.plain).foregroundStyle(action == .deleteNote ? Color.red : Color.primary).disabled(!isEnabled(action))
-        .accessibilityLabel(title(action) + " " + action.keycaps.joined())
+        .accessibilityLabel(title(action) + " " + action.activeKeycaps.joined())
         .accessibilityAddTraits(selected == action ? .isSelected : [])
         .background {
             if action == .color { ActionMenuAnchor(reference: colorAnchor) }
@@ -280,7 +280,8 @@ final class NoteActionsPanel: NSObject {
                 self?.showColors(at: view, store: store, isEnabled: isEnabled, perform: perform)
             }))
         hosting.sizingOptions = []
-        panel.contentView = hosting
+        hosting.frame = NSRect(origin: .zero, size: frame.size)
+        panel.contentView = EditorGlassSurface(content: hosting, cornerRadius: 15)
         self.panel = panel
         panel.onResign = { [weak self] in self?.close() }
         paper.addChildWindow(panel, ordered: .above)
@@ -310,7 +311,7 @@ final class NoteActionsPanel: NSObject {
                 }
                 return nil
             }
-            guard let action = NoteAction.matching(key: event.charactersIgnoringModifiers, modifiers: event.modifierFlags) else {
+            guard let action = ShortcutSettings.shared.matchingNote(event) else {
                 self.closeColors()
                 return event
             }
@@ -357,7 +358,7 @@ final class NoteActionsPanel: NSObject {
         child.title = String(localized: "Note Color", bundle: LanguageSettings.shared.bundle)
         let list = ActionColorsView(frame: NSRect(origin: .zero, size: frame.size), color: store.document.color,
                                     bundle: LanguageSettings.shared.bundle, isEnabled: isEnabled)
-        child.contentView = list
+        child.contentView = EditorGlassSurface(content: list, cornerRadius: 12)
         colorPanel = child; colorList = list
         colorAction = { [weak self] action in
             guard isEnabled(action) else { return }
@@ -397,7 +398,7 @@ private final class ActionColorsView: NSView {
             let row = SlashSuggestionButton(frame: NSRect(x: 0, y: CGFloat(index) * 36, width: list.bounds.width, height: 36))
             row.title = action.title(bundle: bundle)
             row.image = NotePalette.colorSwatch(for: action.noteColor!)
-            row.shortcutHint = (action.noteColor == color ? "✓  " : "") + action.keycaps.joined()
+            row.shortcutHint = (action.noteColor == color ? "✓  " : "") + action.activeKeycaps.joined()
             row.setAccessibilityLabel(row.title + " " + row.shortcutHint)
             row.isEnabled = isEnabled(action)
             row.tag = index; row.target = self; row.action = #selector(choose(_:))
@@ -419,7 +420,6 @@ private final class ActionColorsView: NSView {
     @objc private func choose(_ sender: NSButton) { onChoose?(NoteAction.colors[sender.tag]) }
     override func draw(_ dirtyRect: NSRect) {
         let outline = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 12, yRadius: 12)
-        EditorMenuPalette.background.setFill(); outline.fill()
         EditorMenuPalette.border.setStroke(); outline.lineWidth = 0.75; outline.stroke()
     }
     private final class FlippedList: NSView { override var isFlipped: Bool { true } }
