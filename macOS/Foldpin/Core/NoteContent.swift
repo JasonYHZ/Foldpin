@@ -256,6 +256,16 @@ struct NoteContent: Codable, Equatable, Sendable {
     var plainText: String { blocks.map(\.plainText).joined(separator: "\n") }
     var isEmpty: Bool { blocks.allSatisfy { $0.text.isEmpty && !$0.kind.isAttachment } }
 
+    /// Used only for explicit window closing, never to prune the library on load.
+    /// Attachment placeholders and intentional non-text structure remain recoverable.
+    var isBlankForClosing: Bool {
+        blocks.allSatisfy { block in
+            !block.kind.isAttachment && !block.isChecked
+                && block.image == nil && block.audio == nil && block.video == nil && block.table == nil
+                && block.text.unicodeScalars.allSatisfy { $0.properties.isWhitespace }
+        }
+    }
+
     func listOrdinal(at index: Int) -> Int {
         guard blocks.indices.contains(index), blocks[index].kind == .orderedList else { return 1 }
         var first = index

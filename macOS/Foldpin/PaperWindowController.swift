@@ -62,7 +62,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         paper.setAccessibilitySubrole(.standardWindow)
         paper.onActivate = { [weak self] in self?.activatePaper() }
         paper.onToggleCollapsed = { [weak self] in self?.toggleCollapsed() }
-        paper.onRequestClose = { [weak self] in _ = self?.shelvePaper() }
+        paper.onRequestClose = { [weak self] in self?.closePaper() }
         paper.onEndResize = { [weak self] in self?.recordGeometry() }
         paper.onBeginMove = { [weak self] in self?.prepareForMove() }
         paper.onFindHistory = { [weak self] in self?.audioEditor?.handleFindHistory($0) ?? false }
@@ -88,6 +88,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         let hosting = TransparentNoteHostingView(rootView: ContentView(store: store, titlebarState: titlebarState,
             onPin: { [weak self] in self?.togglePin() },
             onCollapse: { [weak self] in self?.toggleCollapsed() },
+            onClose: { [weak self] in self?.closePaper() },
             onShelve: { [weak self] in _ = self?.shelvePaper() },
             onRetryLoad: { [weak self] in self?.retryLoad() },
             onRevealError: { [weak self] in self?.revealError() },
@@ -313,6 +314,21 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         onStateChange?()
     }
 
+    private func closePaper() {
+        guard store.loadError == nil else { return }
+        if actionsPanel?.isShown == true { actionsPanel?.close(restoringFocus: true) }
+        // Finish composition and media edits before deciding whether this is blank.
+        commitMarkedText()
+        guard audioEditor?.prepareAudioForHiding() != false else { return }
+        if store.document.content.isBlankForClosing {
+            // The existing delete path saves first, keeps the controller/undo history,
+            // and only hides the window after a successful recoverable deletion.
+            onDelete?()
+        } else {
+            shelvePaper()
+        }
+    }
+
     @discardableResult func shelvePaper(restoringFocus: Bool = true) -> Bool {
         guard store.loadError == nil else { return false }
         if actionsPanel?.isShown == true { actionsPanel?.close(restoringFocus: true) }
@@ -434,7 +450,10 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     }
     func windowDidEndLiveResize(_ notification: Notification) { recordGeometry() }
 
-    func windowDidChangeScreen(_ notification: Notification) { traceGeometry("screen-changed") }
+    func windowDidChangeScreen(_ notification: Notification) {
+        traceGeometry("screen-changed")
+        scheduleGeometryRecording()
+    }
 
     private func traceGeometry(_ event: String, proposed: CGRect? = nil) {
         #if DEBUG
@@ -444,6 +463,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
             + "min=\(NSStringFromSize(paper.contentMinSize)) max=\(NSStringFromSize(paper.contentMaxSize)) "
             + "collapsed=\(paperIsCollapsed) restoring=\(restoringFrame) "
             + "screen=\(paper.screen.map { NSStringFromRect($0.visibleFrame) } ?? "none") "
+            + "shadow=\(paperShadow.map { NSStringFromRect($0.frame) } ?? "none") "
             + "scale=\(paper.backingScaleFactor) proposed=\(proposed.map(NSStringFromRect) ?? "none")"
         Self.geometryLog.notice("\(details, privacy: .public)")
         #endif
@@ -465,11 +485,15 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         pendingGeometryUpdate?.cancel()
         pendingGeometryUpdate = nil
         guard paper != nil, !restoringFrame else { return }
+        // Native dragging moves the child through WindowServer. Correct any
+        // cross-screen drift only after coalesced movement, not in didMove
+        // where AppKit may still be applying the parent's delta to children.
+        paperShadow?.updateFrame(for: paper)
         store.recordWindowFrame(paper.frame, collapsed: paperIsCollapsed)
     }
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard sender === paper else { return true }
-        shelvePaper()
+        closePaper()
         return false
     }
 

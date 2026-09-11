@@ -347,6 +347,14 @@ Debug 构建通过；Xcode 实例中点击折叠后显示「第一张 Foldpin �
 - Debug 构建通过（`/private/tmp/Foldpin-context-menus-final-build.log`）。8 项定向检查通过：4 项新增上下文操作检查（格式 / 选区 / Undo、指针目标和代码 / 表格菜单、行列修改 / 最后一行列保护、副本独立保存 / 重启 / 图像缺失失败）；3 项既有块菜单、表格和图片复制回归；1 项负坐标显示器 / 左右子菜单 / 小屏幕定位检查。日志为 `/private/tmp/Foldpin-context-menus-tests.log` 和 `/private/tmp/Foldpin-context-menu-layout-test.log`。
 - 本轮没有启动 Foldpin、创建可见测试窗口或改动真实纸片 / 通用剪贴板。实际颜色观感、连续菜单键盘操作、中文 IME、跨屏和 VoiceOver 仍待当前 Xcode 构建使用确认；几何与编辑器测试不代替这些人工交互结论。
 
+## 2026-09-12 跨屏后的阴影与窗口总览
+
+- 用户截图显示巨大蓝色窗口预览框，左上小块与右下正文分离；是否为 Mission Control / App Exposé 及退出后的状态仍待用户确认，不能仅据截图认定根因。
+- 阴影原先完整继承正文的 collectionBehavior。现在保留 Spaces / 全屏资格，去除 managed / stationary / participatesInCycle，加入 transient / ignoresCycle；依据 [Apple 的 transient 文档](https://developer.apple.com/documentation/appkit/nswindow/collectionbehavior-swift.struct/transient) 将装饰标记为窗口总览中隐藏的浮动窗口。真实合成效果仍待确认。
+- 原生窗口移动继续使用 performDrag；在既有 150 ms 合并几何记录时校准阴影位置，跨屏事件也触发此路径。避免在 didMove 内同步修改阴影，与 AppKit 的子窗口移动叠加；正文大小、编辑器与撤销保持原路径。Debug 日志增加阴影 frame 以供后续定位。
+- 2 项定向检查通过：行为标记兼容性，以及负坐标 / 上下位置 / 折叠尺寸下修复错位且不改变正文 frame，保留阴影越界与不接收焦点 / 鼠标。测试创建不可见 NSPanel，没有操作真实纸片。日志 `/private/tmp/foldpin-cross-screen-shadow-tests.log`。
+- Debug 构建通过，日志 `/private/tmp/foldpin-cross-screen-shadow-build.log`。没有启动另一份应用、切换系统总览或复现真实跨屏事件；这次修复针对可确认的实现隐患，不代表已证实全部根因或完成实机验收。
+
 ## 2026-09-09 桌面排列与通透选色
 
 - 菜单栏 / 纸片操作面板增加排列与单次撤销；每屏保留尺寸、折叠、置顶和原编辑器，保存成功才移动，失败保留旧位置与错误。

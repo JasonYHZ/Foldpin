@@ -8,6 +8,7 @@ struct ContentView: View {
     var titlebarState = NoteTitlebarState()
     var onPin: () -> Void
     var onCollapse: () -> Void
+    var onClose: () -> Void
     var onShelve: () -> Void
     var onRetryLoad: () -> Void
     var onRevealError: () -> Void
@@ -20,7 +21,7 @@ struct ContentView: View {
             let bodyHeight = max(expandedHeight - NoteLayout.headerHeight,
                                  NoteLayout.minimumExpandedHeight - NoteLayout.headerHeight)
             VStack(spacing: 0) {
-                NoteTitlebar(store: store, state: titlebarState, ink: Color(nsColor: appearance.textColor), onPin: onPin, onCollapse: onCollapse, onShelve: onShelve, onColorMenu: onColorMenu)
+                NoteTitlebar(store: store, state: titlebarState, ink: Color(nsColor: appearance.textColor), onPin: onPin, onCollapse: onCollapse, onClose: onClose, onShelve: onShelve, onColorMenu: onColorMenu)
                 // Keep the same NSTextView at a usable height; only its visible
                 // container collapses, preserving selection and the undo stack.
                 noteBody
@@ -99,6 +100,7 @@ private struct NoteTitlebar: View {
     private enum Action: Hashable { case close, icon, pin, collapse, shelve }
     var onPin: () -> Void
     var onCollapse: () -> Void
+    var onClose: () -> Void
     var onShelve: () -> Void
     var onColorMenu: (() -> NSMenu?)?
     private let closeButtonSize: CGFloat = 26
@@ -107,7 +109,7 @@ private struct NoteTitlebar: View {
 
     var body: some View {
         HStack(spacing: 3) {
-            NoteTitlebarButton(symbol: "xmark", label: String(localized: "Close Note", bundle: languageSettings.bundle), help: String(localized: "Close the note and keep it on the shelf (⌘W)", bundle: languageSettings.bundle), isClose: true, buttonSize: closeButtonSize, ink: ink, shortcut: .shelve, showsHint: state.showsShortcutHints, action: onShelve)
+            NoteTitlebarButton(symbol: "xmark", label: String(localized: "Close Note", bundle: languageSettings.bundle), help: String(localized: "Close the note (⌘W)", bundle: languageSettings.bundle), isClose: true, buttonSize: closeButtonSize, ink: ink, shortcut: .shelve, showsHint: state.showsShortcutHints, action: onClose)
                 .disabled(store.loadError != nil)
                 .focused($focusedAction, equals: .close)
                 .opacity(controlsVisible ? 1 : 0)

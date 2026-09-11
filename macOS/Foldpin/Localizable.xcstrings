@@ -851,19 +851,19 @@
         }
       }
     },
-    "Close the note and keep it on the shelf (⌘W)": {
+    "Close the note (⌘W)": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Close the note and keep it on the shelf (⌘W)"
+            "value": "Close the note (⌘W)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "关闭纸片，内容保留在收纳中（⌘W）"
+            "value": "关闭纸片（⌘W）"
           }
         }
       }

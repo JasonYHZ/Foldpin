@@ -81,8 +81,15 @@ final class NoteShadowWindow: NSPanel {
         frameRect
     }
 
+    static func behavior(for paperBehavior: NSWindow.CollectionBehavior) -> NSWindow.CollectionBehavior {
+        // Decoration must share the paper's Spaces/full-screen eligibility,
+        // but must not become a separate Mission Control or window-cycle item.
+        paperBehavior.subtracting([.managed, .stationary, .participatesInCycle])
+            .union([.transient, .ignoresCycle])
+    }
+
     func show(below paper: NSWindow) {
-        collectionBehavior = paper.collectionBehavior
+        collectionBehavior = Self.behavior(for: paper.collectionBehavior)
         level = paper.level
         updateFrame(for: paper)
         if parent !== paper { paper.addChildWindow(self, ordered: .below) }

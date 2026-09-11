@@ -141,7 +141,12 @@ final class PaperPanel: NSPanel {
         }
         if isKeyWindow, event.type == .keyDown, let onAction,
            let action = ShortcutSettings.shared.matchingNote(event) {
-            if !event.isARepeat { onAction(action) }
+            if !event.isARepeat {
+                // The fixed ⌘W binding is a window close. Explicit shelf buttons
+                // still dispatch .shelve and can keep an intentionally blank note.
+                if action == .shelve { performClose(nil) }
+                else { onAction(action) }
+            }
             return true
         }
         return super.performKeyEquivalent(with: event)
@@ -149,7 +154,7 @@ final class PaperPanel: NSPanel {
 
     override func performClose(_ sender: Any?) {
         // A borderless paper has no native close button. Use the same guarded
-        // save-and-shelve path as its custom close button and never delete data.
+        // close path as its custom close button, retaining recovery data.
         if let onRequestClose { onRequestClose() }
         else { super.performClose(sender) }
     }
