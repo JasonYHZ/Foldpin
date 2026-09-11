@@ -169,12 +169,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     private func updateEdge() {
-        guard edge != nil else { return }
-        let visible = workingScreen.visibleFrame
-        edge.setFrameOrigin(NSPoint(x: visible.maxX - 34, y: visible.midY - 42))
-        if library.failure != nil || library.entries.contains(where: { $0.store.document.isShelved }) || windows.values.allSatisfy({ !$0.isVisible }) {
-            edge.orderFrontRegardless()
-        } else { edge.orderOut(nil) }
+        // Temporarily hidden while the shelf is being redesigned. Keep every
+        // lifecycle update from revealing it; menu and shortcut access remain.
+        edge?.orderOut(nil)
     }
 
     private func toggleShelf() {

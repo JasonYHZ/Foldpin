@@ -9,8 +9,11 @@ nonisolated struct MediaExport: Sendable {
     let filename: String
     let contentType: UTType
 
-    static func image(at url: URL, name: String, fallback: String) throws -> Self {
+    static func image(at url: URL, name: String, fallback: String, isSVG: Bool = false) throws -> Self {
         try requireFile(url)
+        if isSVG {
+            return Self(sourceURL: url, filename: filename(name, extension: "svg", fallback: fallback), contentType: .svg)
+        }
         guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),
               CGImageSourceGetCount(source) > 0,
               let identifier = CGImageSourceGetType(source),

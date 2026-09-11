@@ -95,7 +95,7 @@ import Testing
         #expect(!editor.hasSlashSuggestions)
     }
     for literal in ["![图片](https://example.com/a.png)", "<script>alert(1)</script>", "##### H5", "[run](javascript:alert)"] {
-        let parsed = try #require(MarkdownPasteParser.parse("# 标题\n\n" + literal))
+        let parsed = try #require(MarkdownPasteParser.parse("# 标题\n\n" + literal, importingRemoteImages: false))
         #expect(parsed.blocks.first?.kind == .heading)
         #expect(parsed.blocks.last?.text == literal)
         #expect(parsed.blocks.last?.marks.isEmpty == true)

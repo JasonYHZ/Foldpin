@@ -64,7 +64,7 @@ struct NoteFile {
             if let video = block.video, !FileManager.default.fileExists(atPath: videoURL(video).path) { throw NoteFileError.missingVideo }
             if let audio = block.audio, !FileManager.default.fileExists(atPath: audioURL(audio).path) { throw NoteFileError.missingAudio }
         }
-        for block in document.content.blocks where block.image != nil {
+        for block in document.content.blocks where block.image != nil && block.image?.isRemotePlaceholder != true {
             let id = block.image!.id
             guard FileManager.default.fileExists(atPath: imageURL(id).path),
                   FileManager.default.fileExists(atPath: imageURL(id, original: true).path) else {

@@ -74,13 +74,20 @@ enum NoteClipboard {
         }
         var imageData: [UUID: Data] = [:]
         for block in content.blocks {
-            guard let image = block.image else { continue }
+            guard let image = block.image, !image.isRemotePlaceholder else { continue }
             let data = try Data(contentsOf: file.imageURL(image.id))
             guard NSImage(data: data) != nil else { throw NoteFileError.missingImage }
             imageData[image.id] = data
         }
+        var portableContent = content
+        for index in portableContent.blocks.indices {
+            let block = portableContent.blocks[index]
+            if block.image?.isRemotePlaceholder == true {
+                portableContent.blocks[index] = NoteBlock(id: block.id, text: block.plainText)
+            }
+        }
         let rendered = NSMutableAttributedString(attributedString: BlockTextCodec.render(
-            content, color: .black, width: 640, theme: .github, cachedSyntaxOnly: true,
+            portableContent, color: .black, width: 640, theme: .github, cachedSyntaxOnly: true,
             image: { imageData[$0.id].flatMap(NSImage.init(data:)) }))
         let fullRange = NSRange(location: 0, length: rendered.length)
         var captions: [(Int, String)] = []
@@ -107,6 +114,7 @@ enum NoteClipboard {
                 let portable = NSTextAttachment(fileWrapper: wrapper)
                 portable.bounds = NSRect(origin: .zero, size: ImageBlockLayout(image: asset, availableWidth: 640).imageSize)
                 rendered.addAttribute(.attachment, value: portable, range: range)
+                if let link = asset.clickableLink { rendered.addAttribute(.link, value: link, range: range) }
                 if let caption = asset.caption, !caption.isEmpty { captions.append((NSMaxRange(range), caption)) }
                 return
             }
@@ -166,9 +174,14 @@ enum NoteClipboard {
                 if let nextList { result += "<\(nextList)>" }
                 list = nextList
             }
-            if let image = block.image, let data = imageData[image.id] {
+            if block.image?.isRemotePlaceholder == true {
+                result += "<p>\(escape(block.plainText))</p>"
+            } else if let image = block.image, let data = imageData[image.id] {
                 let width = Int(ImageBlockLayout(image: image, availableWidth: 640).imageSize.width)
-                result += "<figure><img src=\"data:image/png;base64,\(data.base64EncodedString())\" alt=\"\(escape(image.name))\" width=\"\(width)\">"
+                result += "<figure>"
+                if let link = image.clickableLink { result += "<a href=\"\(escape(link.absoluteString))\">" }
+                result += "<img src=\"data:image/png;base64,\(data.base64EncodedString())\" alt=\"\(escape(image.name))\" width=\"\(width)\">"
+                if image.clickableLink != nil { result += "</a>" }
                 if let caption = image.caption, !caption.isEmpty { result += "<figcaption>\(escape(caption))</figcaption>" }
                 result += "</figure>"
             } else if let video = block.video, let data = videoData[video.id] {

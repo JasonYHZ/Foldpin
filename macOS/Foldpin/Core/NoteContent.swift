@@ -155,9 +155,20 @@ struct NoteImage: Codable, Equatable, Sendable {
     var pixelHeight: Int
     var displayWidth: Double? = nil
     var caption: String? = nil
+    var remoteSource: String? = nil
+    var remoteState: RemoteImageState? = nil
+    var sourceMarkdown: String? = nil
+    var link: String? = nil
+    var isSVG: Bool? = nil
+
+    var isRemotePlaceholder: Bool { remoteState != nil }
+    var clickableLink: URL? { RemoteImageReference.linkURL(link) }
 
     var isValid: Bool {
         pixelWidth > 0 && pixelHeight > 0
+            && (remoteSource.map { RemoteImageReference.downloadURL($0) != nil } ?? (remoteState == nil))
+            && (link.map { $0.utf8.count <= 8192 && !$0.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) } ?? true)
+            && (sourceMarkdown.map { $0.utf8.count <= 65536 } ?? true)
             && (displayWidth.map { $0.isFinite && $0 >= 40 && $0 <= 10000 } ?? true)
             && (caption.map { $0.count <= 4096 && !$0.contains("\n") && !$0.contains("\r") } ?? true)
     }
@@ -223,6 +234,7 @@ struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
         if let audio { return "[\(audio.name) · \(NoteAudio.timestamp(audio.duration))]" }
         if let table { return table.plainText }
         if let image {
+            if image.isRemotePlaceholder, let markdown = image.sourceMarkdown { return markdown }
             let caption = image.caption.flatMap { $0.isEmpty ? nil : "\n" + $0 } ?? ""
             return "[\(image.name)]" + caption
         }

@@ -22,6 +22,10 @@ final class PaperTextView: NSTextView {
     private var imageCaptionBlock: NoteBlock?
     private var imageControlsScheduled = false
     private var updatingImageControls = false
+    var fetchRemoteImage: @Sendable (URL) async throws -> Data = RemoteImageImporter.fetch
+    var onRemoteImageCommit: (() -> Bool)?
+    private var remoteImageQueue: [UUID] = []
+    private var remoteImageTasks: [UUID: (token: UUID, image: UUID, source: String, task: Task<Void, Never>)] = [:]
     var onAudioCommit: (() -> Bool)?
     private var videoModels: [UUID: VideoBlockModel] = [:]
     private var videoViews: [UUID: VideoBlockView] = [:]
@@ -73,7 +77,7 @@ final class PaperTextView: NSTextView {
     private var findIndex = 0
     private var findBusy = false
     private var findHistoryTargetsNote = false
-    var content = NoteContent() { didSet { scheduleNoteSearch() } }
+    var content = NoteContent() { didSet { scheduleNoteSearch(); reconcileRemoteImages() } }
     private var spans: [NoteBlockSpan] = [] { didSet { invalidateBlockGeometry() } }
     private var tableLayouts: [UUID: TableBlockLayout] = [:]
     private var geometryCache: (bounds: NSRect, visible: NSRect, size: NSSize, origin: NSPoint,
@@ -960,6 +964,12 @@ final class PaperTextView: NSTextView {
         clearBlockSelection()
         dismissSlashMenu()
         let point = convert(event.locationInWindow, from: nil)
+        let hitIDs = Set(blockSurfaces().filter { $0.rect.contains(point) }.map(\.blockID))
+        for block in content.blocks where hitIDs.contains(block.id) {
+            guard !hasMarkedText(), let image = block.image, let rect = imageFrame(blockID: block.id), rect.contains(point) else { continue }
+            if image.isRemotePlaceholder { enqueueRemoteImages([block.id]); return }
+            if event.clickCount == 2, (image.caption == nil || point.y < rect.maxY - 28), let link = image.clickableLink { NSWorkspace.shared.open(link); return }
+        }
         for block in content.blocks where block.image?.caption != nil {
             if let rect = imageFrame(blockID: block.id), point.y >= rect.maxY - 28, rect.contains(point) {
                 beginImageCaption(blockID: block.id); return
@@ -1088,7 +1098,12 @@ final class PaperTextView: NSTextView {
     }
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
-        if window !== newWindow { detachVideoViews() }
+        if window !== newWindow {
+            remoteImageQueue.removeAll()
+            for entry in remoteImageTasks.values { entry.task.cancel() }
+            remoteImageTasks.removeAll()
+            detachVideoViews()
+        }
         if window !== newWindow { cancelBlockDrag(); prepareImageEditingForHiding(); imageControls?.removeFromSuperview() }
         if window !== newWindow { dismissSlashMenu(); clearBlockSelection(); codeToolbar?.isHidden = true; blockHandle?.isHidden = true }
         super.viewWillMove(toWindow: newWindow)
@@ -1278,6 +1293,9 @@ final class PaperTextView: NSTextView {
         if let conversion = blockMenu.items.first(where: { $0.submenu != nil }) {
             blockMenu.removeItem(conversion)
             menu.addItem(conversion)
+        }
+        if let links = blockMenu.items.first(where: { ($0.representedObject as? BlockMenuCommand)?.action == .renderTextLinks }) {
+            blockMenu.removeItem(links); menu.addItem(links)
         }
         if canFormatSelection {
             for (label, selector, key, symbol, mark) in [
@@ -1596,7 +1614,14 @@ final class PaperTextView: NSTextView {
         suppressMarkdownShortcuts = true
         defer { suppressMarkdownShortcuts = previous }
         if interpretingMarkdown, !hasMarkedText(), activeSpan?.block.kind != .code,
-           let parsed = MarkdownPasteParser.parse(text), insertPastedBlocks(parsed) { return }
+           let parsed = MarkdownPasteParser.parse(text) {
+            let previousIDs = Set(content.blocks.map(\.id))
+            if insertPastedBlocks(parsed) {
+                let added = content.blocks.filter { !previousIDs.contains($0.id) && $0.image?.isRemotePlaceholder == true }.map(\.id)
+                if onRemoteImageCommit?() != false { enqueueRemoteImages(added) }
+                return
+            }
+        }
         if !hasMarkedText() { updateTypingStyle(preservingInlineFormat: true) }
         // Ordinary text and the explicit plain-text command remain literal.
         insertText(NSAttributedString(string: text, attributes: typingAttributes), replacementRange: selectedRange())
@@ -1969,11 +1994,22 @@ extension PaperTextView {
         convert.submenu = kinds
         convert.isEnabled = !block.kind.isAttachment
         if !block.kind.isAttachment { menu.addItem(convert) }
+        if MarkdownTextLinks.render(block) != nil {
+            menu.addItem(item(String(localized: "Render Text Links", bundle: bundle), .renderTextLinks, symbol: "link"))
+        }
         if block.kind == .code {
             menu.addItem(.separator())
             appendCodeActions(to: menu, blockID: blockID)
         }
         if block.kind == .image {
+            if block.image?.isRemotePlaceholder == true {
+                menu.addItem(item(String(localized: "Retry image download", bundle: bundle), .retryRemoteImage, symbol: "arrow.clockwise", enabled: remoteImageTasks[blockID] == nil))
+                menu.addItem(item(String(localized: "Restore image Markdown", bundle: bundle), .restoreImageMarkdown, symbol: "text.alignleft"))
+            }
+            if let link = block.image?.link {
+                let entry = item(String(localized: "Open image link", bundle: bundle), .openImageLink, symbol: "arrow.up.right.square", enabled: block.image?.clickableLink != nil)
+                entry.toolTip = link; menu.addItem(entry)
+            }
             menu.addItem(item(String(localized: "Edit image caption", bundle: bundle), .imageCaption, symbol: "text.below.photo"))
             menu.addItem(item(String(localized: "Reset image size", bundle: bundle), .resetImageSize, symbol: "arrow.up.left.and.arrow.down.right"))
             if block.image?.caption != nil {
@@ -2008,8 +2044,8 @@ extension PaperTextView {
         }
         menu.addItem(.separator())
         if block.kind == .image {
-            menu.addItem(item(String(localized: "Export Image…", bundle: bundle), .exportMedia, symbol: "square.and.arrow.up"))
-            menu.addItem(item(String(localized: "Copy Image", bundle: bundle), .copyImage, symbol: "photo.on.rectangle", key: "c"))
+            menu.addItem(item(String(localized: "Export Image…", bundle: bundle), .exportMedia, symbol: "square.and.arrow.up", enabled: block.image?.isRemotePlaceholder != true))
+            menu.addItem(item(String(localized: "Copy Image", bundle: bundle), .copyImage, symbol: "photo.on.rectangle", key: "c", enabled: block.image?.isRemotePlaceholder != true))
         }
         if block.kind == .video {
             menu.addItem(item(String(localized: "Export Video…", bundle: bundle), .exportMedia, symbol: "square.and.arrow.up"))
@@ -2061,6 +2097,20 @@ extension PaperTextView {
         var destination = index
         var selectedID: UUID? = blockID
         switch action {
+        case .renderTextLinks:
+            guard let converted = MarkdownTextLinks.render(next.blocks[index]) else { return false }
+            let oldOffset = max(0, selectedRange().location - spans[index].textRange.location)
+            next.blocks[index] = converted.block
+            replaceDocument(next, block: index, offset: converted.offset(oldOffset))
+            undoManager?.setActionName(String(localized: "Render Text Links", bundle: bundle))
+            return true
+        case .retryRemoteImage: enqueueRemoteImages([blockID]); return true
+        case .openImageLink:
+            guard let link = next.blocks[index].image?.clickableLink else { return false }
+            return NSWorkspace.shared.open(link)
+        case .restoreImageMarkdown:
+            guard let text = next.blocks[index].image?.sourceMarkdown else { return false }
+            next.blocks[index] = NoteBlock(id: blockID, text: text)
         case .exportMedia: return exportMedia(blockID: blockID)
         case .imageCaption: beginImageCaption(blockID: blockID); return true
         case .resetImageSize: resetImageSize(blockID: blockID); return true
@@ -2600,7 +2650,7 @@ extension PaperTextView {
             let export: MediaExport
             if current.kind == .image, let image = current.image {
                 export = try .image(at: file.imageURL(image.id, original: true), name: image.name,
-                                    fallback: String(localized: "Image", bundle: bundle))
+                                    fallback: String(localized: "Image", bundle: bundle), isSVG: image.isSVG == true)
             } else if current.kind == .video, let video = current.video {
                 export = try .video(at: file.videoURL(video), video: video, fallback: String(localized: "Video", bundle: bundle))
             } else if current.kind == .audio, let audio = current.audio {
@@ -3325,6 +3375,68 @@ extension PaperTextView {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - Explicit Markdown image imports, at most three downloads per editor.
+extension PaperTextView {
+    func enqueueRemoteImages(_ ids: [UUID]) {
+        guard isEditable, !hasMarkedText(), file != nil else { return }
+        for id in ids.prefix(32) where remoteImageTasks[id] == nil && !remoteImageQueue.contains(id) {
+            remoteImageQueue.append(id)
+        }
+        startRemoteImageQueue()
+    }
+    private func reconcileRemoteImages() {
+        guard !remoteImageTasks.isEmpty else { return }
+        for (id, entry) in remoteImageTasks {
+            if !content.blocks.contains(where: { $0.id == id && $0.image?.id == entry.image && $0.image?.remoteSource == entry.source && $0.image?.isRemotePlaceholder == true }) {
+                entry.task.cancel(); remoteImageTasks.removeValue(forKey: id)
+            }
+        }
+    }
+    private func startRemoteImageQueue() {
+        guard let file, isEditable else { return }
+        while remoteImageTasks.count < 3, !remoteImageQueue.isEmpty {
+            let id = remoteImageQueue.removeFirst()
+            guard let image = content.blocks.first(where: { $0.id == id })?.image, image.isRemotePlaceholder,
+                  let source = image.remoteSource, let url = RemoteImageReference.downloadURL(source) else { continue }
+            let fetch = fetchRemoteImage, directory = file.assetsURL, token = UUID()
+            let task = Task { [weak self] in
+                defer {
+                    if self?.remoteImageTasks[id]?.token == token { self?.remoteImageTasks.removeValue(forKey: id) }
+                    self?.startRemoteImageQueue()
+                }
+                let result: NoteImage?
+                do {
+                    let bytes = try await fetch(url)
+                    try Task.checkCancellation()
+                    result = try await RemoteImageImporter.prepare(bytes, name: image.name, directory: directory)
+                } catch is CancellationError { return }
+                catch { result = nil }
+                guard !Task.isCancelled else { return }
+                // Composition owns the editor until committed. Do not replace
+                // its storage while a network request happens to finish.
+                while self?.hasMarkedText() == true || self?.tableCellEditor?.hasMarkedText() == true || self?.imageCaptionBlock != nil || self?.imageResize != nil {
+                    do { try await Task.sleep(for: .milliseconds(120)) } catch { return }
+                }
+                guard let self, !Task.isCancelled, isEditable,
+                      let index = content.blocks.firstIndex(where: { $0.id == id }),
+                      var current = content.blocks[index].image,
+                      current.id == image.id, current.remoteSource == source, current.isRemotePlaceholder else { return }
+                if let result {
+                    current.id = result.id; current.pixelWidth = result.pixelWidth; current.pixelHeight = result.pixelHeight
+                    current.isSVG = result.isSVG; current.remoteState = nil
+                    current.displayWidth = current.displayWidth ?? result.displayWidth
+                } else { current.remoteState = .failed }
+                var next = content; next.blocks[index].image = current
+                guard next != content else { return }
+                replaceDocument(next, block: index, preservingSelection: true)
+                undoManager?.setActionName(String(localized: "Load remote image", bundle: bundle))
+                _ = onRemoteImageCommit?()
+            }
+            remoteImageTasks[id] = (token, image.id, source, task)
         }
     }
 }

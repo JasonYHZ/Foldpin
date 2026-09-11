@@ -18,8 +18,19 @@ struct ImageBlockLayout {
     func renderedImage(_ original: NSImage?, asset: NoteImage, ink: NSColor) -> NSImage {
         NSImage(size: size, flipped: true) { _ in
             let target = NSRect(origin: .zero, size: imageSize)
+            if asset.isRemotePlaceholder {
+                ink.withAlphaComponent(0.06).setFill()
+                NSBezierPath(roundedRect: target, xRadius: 6, yRadius: 6).fill()
+                let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
+                let label = asset.remoteState == .failed
+                    ? String(localized: "Image unavailable · Click to retry", bundle: LanguageSettings.shared.bundle)
+                    : String(localized: "Remote image · Click to load", bundle: LanguageSettings.shared.bundle)
+                (asset.name as NSString).draw(in: NSRect(x: 10, y: 8, width: target.width - 20, height: 20), withAttributes: [.font: NSFont.systemFont(ofSize: 13, weight: .medium), .foregroundColor: ink, .paragraphStyle: style])
+                (label as NSString).draw(in: NSRect(x: 10, y: 33, width: target.width - 20, height: 20), withAttributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: ink.withAlphaComponent(0.7), .paragraphStyle: style])
+            } else {
             (original ?? NSImage(systemSymbolName: "photo", accessibilityDescription: asset.name))?
                 .draw(in: target, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high])
+            }
             if let rect = captionRect, let caption = asset.caption {
                 let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
                 let placeholder = String(localized: "Image caption", bundle: LanguageSettings.shared.bundle)

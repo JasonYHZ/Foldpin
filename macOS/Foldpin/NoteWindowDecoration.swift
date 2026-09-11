@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 
 enum NoteWindowStyle {
-    static let cornerRadius: CGFloat = 28
+    static let cornerRadius: CGFloat = 16
     static let shadowPadding: CGFloat = 36
 
     static func resolvedCornerRadius(for size: CGSize) -> CGFloat {

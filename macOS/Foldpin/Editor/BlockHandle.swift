@@ -3,6 +3,8 @@ import AppKit
 enum BlockAction: Equatable {
     case convert(NoteBlockKind), copy, copyImage, duplicate, moveUp, moveDown, delete, addTableRow, addTableColumn, toggleHeaderRow, toggleHeaderColumn
     case insertTableRow(Int), insertTableColumn(Int), deleteTableRow(Int), deleteTableColumn(Int)
+    case renderTextLinks
+    case retryRemoteImage, openImageLink, restoreImageMarkdown
     case imageCaption, resetImageSize, removeImageCaption, exportMedia
     case copyCode, codeLanguage(CodeLanguage), toggleTask
 }

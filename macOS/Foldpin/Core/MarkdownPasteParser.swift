@@ -20,20 +20,31 @@ enum MarkdownPasteParser {
         var intents: [PresentationIntent.IntentType] { pieces[0].intents }
     }
 
-    static func parse(_ source: String) -> NoteContent? {
+    static func parse(_ source: String, importingRemoteImages: Bool = true) -> NoteContent? {
+        // Empty image labels have no source position (and linked ones emit no
+        // run at all). A temporary label makes them observable; strip it from
+        // every parsed value, including literal code, before building blocks.
+        let emptyLabel = "foldpin-empty-image-" + UUID().uuidString
+        let parsedSource = source.replacingOccurrences(of: "![]", with: "![" + emptyLabel + "]")
         guard !source.isEmpty,
-              let attributed = try? AttributedString(markdown: source,
+              let attributed = try? AttributedString(markdown: parsedSource,
                 options: .init(allowsExtendedAttributes: false, interpretedSyntax: .full,
                                failurePolicy: .throwError, appliesSourcePositionAttributes: true)) else { return nil }
         let lines = source.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
             .components(separatedBy: "\n")
+        let parsedLines = parsedSource.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n").components(separatedBy: "\n")
+        let parsedLineBytes = parsedLines.map { Array($0.utf8) }
+        let references = parsedLines.filter { $0.range(of: #"^ {0,3}\[[^\]]+\]:"#, options: .regularExpression) != nil }.joined(separator: "\n")
+        func cleanedURL(_ url: URL?) -> URL? {
+            url.flatMap { URL(string: $0.absoluteString.replacingOccurrences(of: emptyLabel, with: "")) }
+        }
         var groups: [Group] = []
         for run in attributed.runs {
             let intents = run.presentationIntent?.components ?? []
             let table = intents.first { if case .table = $0.kind { return true }; return false }
             let identity = table?.identity ?? intents.first?.identity ?? -(groups.count + 1)
-            let piece = Piece(text: String(attributed[run.range].characters), intents: intents,
-                              inline: run.inlinePresentationIntent ?? [], link: run.link, image: run.imageURL,
+            let piece = Piece(text: String(attributed[run.range].characters).replacingOccurrences(of: emptyLabel, with: ""), intents: intents,
+                              inline: run.inlinePresentationIntent ?? [], link: cleanedURL(run.link), image: cleanedURL(run.imageURL ?? linkedImageURL(link: run.link, position: run.markdownSourcePosition, lines: parsedLineBytes, references: references)),
                               position: run.markdownSourcePosition)
             if groups.last?.identity != identity {
                 groups.append(Group(identity: identity, pieces: [], start: nil, end: nil))
@@ -72,7 +83,9 @@ enum MarkdownPasteParser {
             }
             appendUnrepresented(lines: lines, range: cursor..<start, to: &blocks, formatted: &formatted)
             let raw = lines[start...end].joined(separator: "\u{2028}")
-            if let block = convert(group, sourceLines: Array(lines[start...end])) {
+            if importingRemoteImages, let images = remoteBlocks(group) {
+                blocks.append(contentsOf: images); formatted = true
+            } else if let block = convert(group, sourceLines: Array(lines[start...end])) {
                 blocks.append(block)
                 formatted = formatted || block.kind != .paragraph || !block.marks.isEmpty
             } else { blocks.append(NoteBlock(text: raw)) }
@@ -81,6 +94,56 @@ enum MarkdownPasteParser {
         appendUnrepresented(lines: lines, range: cursor..<lines.count, to: &blocks, formatted: &formatted)
         let result = NoteContent(blocks: blocks)
         guard formatted, (try? result.validate()) != nil else { return nil }
+        return result
+    }
+
+    // Foundation emits only `.link` for an image wrapped in a link. Its
+    // source position still spans the inner image syntax: parse that fragment
+    // independently to recover the image without rewriting the user's source.
+    private static func linkedImageURL(link: URL?, position: AttributedString.MarkdownSourcePosition?, lines: [[UInt8]], references: String) -> URL? {
+        guard link != nil, let position,
+              lines.indices.contains(position.startLine - 1), lines.indices.contains(position.endLine - 1),
+              position.endLine >= position.startLine else { return nil }
+        var bytes: [UInt8] = []
+        for line in (position.startLine - 1)...(position.endLine - 1) {
+            let start = line == position.startLine - 1 ? position.startColumn - 1 : 0
+            let end = line == position.endLine - 1 ? min(lines[line].count, position.endColumn) : lines[line].count
+            guard start >= 0, end >= start, end <= lines[line].count else { return nil }
+            if !bytes.isEmpty { bytes.append(10) }
+            bytes.append(contentsOf: lines[line][start..<end])
+        }
+        guard let fragment = String(bytes: bytes, encoding: .utf8), fragment.hasPrefix("!["),
+              let parsed = try? AttributedString(markdown: fragment + "\n\n" + references) else { return nil }
+        return parsed.runs.compactMap(\.imageURL).first
+    }
+
+    private static func remoteBlocks(_ group: Group) -> [NoteBlock]? {
+        guard group.pieces.contains(where: { $0.image != nil }),
+              !group.pieces.contains(where: { $0.inline.contains(.inlineHTML) || $0.inline.contains(.blockHTML) }),
+              !group.intents.contains(where: { if case .table = $0.kind { return true }; return false }),
+              group.pieces.allSatisfy({ $0.image.map { RemoteImageReference.downloadURL($0.absoluteString) != nil } ?? true }) else { return nil }
+        var result: [NoteBlock] = [], textPieces: [Piece] = []
+        func flushText() {
+            guard !textPieces.isEmpty else { return }
+            var textGroup = group; textGroup.pieces = textPieces
+            if let block = convert(textGroup, sourceLines: []), !block.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                result.append(block)
+            }
+            textPieces.removeAll(keepingCapacity: true)
+        }
+        for piece in group.pieces {
+            guard let url = piece.image else { textPieces.append(piece); continue }
+            flushText()
+            let name = piece.text.isEmpty ? url.lastPathComponent : piece.text
+            let escaped = name.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "]", with: "\\]")
+            var markdown = "![" + escaped + "](<" + url.absoluteString + ">)"
+            if let link = piece.link { markdown = "[" + markdown + "](<" + link.absoluteString + ">)" }
+            var image = NoteImage(id: UUID(), name: name, pixelWidth: 260, pixelHeight: 64)
+            image.remoteSource = url.absoluteString; image.remoteState = .pending
+            image.sourceMarkdown = markdown; image.link = piece.link?.absoluteString
+            result.append(NoteBlock(kind: .image, image: image))
+        }
+        flushText()
         return result
     }
 
@@ -115,6 +178,7 @@ enum MarkdownPasteParser {
             return NoteBlock(kind: .code, text: group.pieces.map(\.text).joined(), language: language(hint))
         }
         var block = NoteBlock()
+        var hasUnsupportedLink = false
         if let heading = intents.first(where: { if case .header = $0.kind { return true }; return false }),
            case .header(let level) = heading.kind {
             guard (1...4).contains(level) else { return nil }
@@ -123,13 +187,19 @@ enum MarkdownPasteParser {
         else if intents.contains(where: { $0.kind == .unorderedList }) { block.kind = .bullet }
         else if intents.contains(where: { $0.kind == .blockQuote }) { block.kind = .quote }
         for piece in group.pieces {
-            let text = piece.inline.contains(.softBreak) || piece.inline.contains(.lineBreak)
+            var text = piece.inline.contains(.softBreak) || piece.inline.contains(.lineBreak)
                 ? "\u{2028}" : piece.text.replacingOccurrences(of: "\n", with: "\u{2028}")
-            let mark = NoteTextMark(location: (block.text as NSString).length, length: (text as NSString).length,
+            var mark = NoteTextMark(location: (block.text as NSString).length, length: (text as NSString).length,
                 bold: piece.inline.contains(.stronglyEmphasized), italic: piece.inline.contains(.emphasized),
                 code: piece.inline.contains(.code), strikethrough: piece.inline.contains(.strikethrough),
                 link: piece.link?.absoluteString)
-            if piece.link != nil && mark.clickableURL == nil { return nil }
+            if let link = piece.link, mark.clickableURL == nil {
+                // A relative/unsupported link must not make valid neighboring
+                // links lose their rendering. Keep this destination as text.
+                hasUnsupportedLink = true
+                text = "[" + text + "](" + link.absoluteString + ")"
+                mark.link = nil; mark.length = text.utf16.count
+            }
             block.text += text
             if mark.hasStyle && mark.length > 0 { block.marks.append(mark) }
         }
@@ -141,7 +211,9 @@ enum MarkdownPasteParser {
             block.marks = block.marks.compactMap { $0.clipped(to: range) }
             block.text = (block.text as NSString).substring(from: length)
         }
-        return block
+        let rendered = MarkdownTextLinks.render(block)?.block ?? block
+        if hasUnsupportedLink, !rendered.marks.contains(where: { $0.clickableURL != nil }) { return nil }
+        return rendered
     }
 
     private static func language(_ hint: String?) -> CodeLanguage {

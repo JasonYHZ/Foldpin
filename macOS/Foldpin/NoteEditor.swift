@@ -16,6 +16,7 @@ struct NoteEditor: NSViewRepresentable {
         editor.noteColor = textColor
         editor.updatePaperBackground(NotePalette.paperBackground(for: store.document.color))
         host.updateColors(textColor)
+        editor.onRemoteImageCommit = { [weak store] in store?.flush() ?? false }
         editor.onVideoCommit = { [weak store] in store?.flush() ?? false }
         editor.onAudioCommit = { [weak store] in store?.flush() ?? false }
         editor.onContentChange = { [weak store] in store?.edit($0) }
