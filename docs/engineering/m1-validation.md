@@ -378,3 +378,10 @@ Debug 构建通过；Xcode 实例中点击折叠后显示「第一张 Foldpin �
 - 新增坐标批次无同步选区发布、相同选区去重、松手丢弃排队更新、脏纸片在视图创建后再提交保存和失效挂载取消检查。旧实现对新的挂载回归产生 3 项预期失败，修复版通过。
 - 日志：`/private/tmp/Foldpin-UpdateWarnings-After/native-check.log`、`/private/tmp/Foldpin-UpdateWarnings-negative.log`、`/private/tmp/Foldpin-UpdateWarnings-build.log`。临时日志不是永久资产。
 - 此测试不等同于 Xcode 调试器下的全部 Runtime Issue 验收；用户实际运行控制台、窗口恢复类缺失和 task name port 日志仍需区分处理。实现见 library-window-native.md。
+
+
+## 2026-09-14 资料库位置与文件同步基础
+
+main 开发版新增目录位置、书签、完整迁移与恢复日志、共享修订/冲突副本和本机桌面状态。254 项 Core/编辑器回归、7 项不可见原生检查及 Debug 构建通过；签名核对保留原权限并增加 app-scope bookmark。1,000 张文字/代码合成纸片及一个共享 64 MiB 附件的后台迁移约 8.8 秒，目标摘要一致，主队列在等待期间执行。原生检查验证迁移保留编辑器和两级撤销，以及书签打开、目录互斥、缓存切回。临时日志及完整边界见 [资料库说明](library-storage.md)。
+
+真实双机 iCloud、沙盒重启授权、账号退出、断盘/磁盘满和进程崩溃注入未验收；未操作用户真实资料库、iCloud 账号或通用剪贴板，未启动已安装应用。不要把这些本机结果写成所有 18 项正式验收已经完成。

@@ -679,3 +679,161 @@ import Combine
     try await Task.sleep(for: .milliseconds(100))
     #expect(!session.inPreview && session.host.superview === desktop)
 }
+
+@Test @MainActor func libraryWindowStorageRetainsEditorAndUndo() throws {
+    let root = URL(fileURLWithPath: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_DATA"]!).appendingPathComponent(UUID().uuidString)
+    let library = NoteLibrary(directory: root.appendingPathComponent("source"), localDirectory: root.appendingPathComponent("local"))
+    let entry = try #require(library.entries.first)
+    entry.store.edit("Original"); #expect(entry.store.flush())
+    let session = NoteEditingSession(store: entry.store), editor = session.host.editor
+    let history = try #require(editor.undoManager)
+    history.groupsByEvent = false
+    history.beginUndoGrouping()
+    editor.insertText(" + local", replacementRange: NSRange(location: editor.string.utf16.count, length: 0))
+    history.endUndoGrouping()
+    #expect(session.prepareToLeave())
+    let before = editor.content, selection = editor.selectedRanges
+    let prepared = try LibraryRelocation.copy(source: library.directory, destination: root.appendingPathComponent("shared"), journalURL: root.appendingPathComponent("journal"))
+    for note in prepared.desktops { try LibraryDisk.desktop(note, at: LibraryPath(prepared.root, manifest: prepared.manifest, localDirectory: root.appendingPathComponent("local"))) }
+    library.relocate(to: prepared.root, manifest: prepared.manifest, snapshot: prepared.snapshot)
+    session.synchronizeContentFromStore()
+    #expect(session.host.editor === editor && editor.undoManager === history)
+    #expect(editor.selectedRanges == selection && editor.content == before)
+    let remote = NoteLibrary(directory: prepared.root, manifest: prepared.manifest, snapshot: prepared.snapshot, localDirectory: root.appendingPathComponent("remote"))
+    let remoteStore = try #require(remote.entries.first?.store)
+    remoteStore.edit("Remote change"); #expect(remoteStore.flush())
+    library.apply(try LibraryDisk.snapshot(prepared.root))
+    history.beginUndoGrouping()
+    session.synchronizeContentFromStore()
+    history.endUndoGrouping()
+    #expect(editor.string == "Remote change" && !entry.store.isDirty)
+    #expect(editor.undoManager === history)
+    history.undo()
+    #expect(editor.content == before)
+    history.undo()
+    #expect(editor.string == "Original")
+    #expect(entry.store.flush())
+    #expect(try LibraryDisk.snapshot(prepared.root).notes.count == 1)
+}
+
+@Test @MainActor func libraryWindowStorageSettingsAndDirectoryLock() async throws {
+    let root = URL(fileURLWithPath: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_DATA"]!).appendingPathComponent(UUID().uuidString)
+    let controller = LibraryLocationController(privateDirectory: root.appendingPathComponent("state"), defaultDirectory: root.appendingPathComponent("library"))
+    #expect(controller.library.canCreate)
+    #expect(throws: LibraryStorageError.self) {
+        _ = try LibraryFolderAccess(url: controller.library.directory, lockDirectory: root.appendingPathComponent("state/locks"))
+    }
+    let host = NSHostingView(rootView: LibraryStorageSettingsView(storage: controller))
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 608, height: 508), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+    window.isReleasedWhenClosed = false; window.isRestorable = false
+    defer { window.contentView = nil; window.close() }
+    window.contentView = host; host.layoutSubtreeIfNeeded()
+    try await Task.sleep(for: .milliseconds(150))
+    host.layoutSubtreeIfNeeded()
+    let bitmap = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+    host.cacheDisplay(in: host.bounds, to: bitmap)
+    let output = URL(fileURLWithPath: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_OUTPUT"]!).appendingPathComponent("storage-settings.png")
+    try #require(bitmap.representation(using: .png, properties: [:])).write(to: output)
+    #expect(!controller.isBusy && controller.library.entries.count == 1)
+}
+
+@Test @MainActor func libraryWindowStorageBookmarkOpenAndCachedReturn() async throws {
+    let root = URL(fileURLWithPath: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_DATA"]!).appendingPathComponent(UUID().uuidString)
+    let controller = LibraryLocationController(privateDirectory: root.appendingPathComponent("state"), defaultDirectory: root.appendingPathComponent("legacy"))
+    let legacy = controller.library
+    let first = try LibraryRelocation.copy(source: legacy.directory, destination: root.appendingPathComponent("first"), journalURL: root.appendingPathComponent("journal-first"))
+    let second = try LibraryRelocation.copy(source: legacy.directory, destination: root.appendingPathComponent("second"), journalURL: root.appendingPathComponent("journal-second"))
+    func open(_ url: URL) async throws {
+        controller.open(url)
+        for _ in 0..<100 where controller.isBusy { try await Task.sleep(for: .milliseconds(20)) }
+        #expect(!controller.isBusy)
+        #expect(controller.failure == nil)
+        #expect(controller.library.directory.resolvingSymlinksInPath().path == url.resolvingSymlinksInPath().path)
+    }
+    try await open(first.root)
+    let firstLibrary = controller.library
+    let store = try #require(firstLibrary.entries.first?.store)
+    store.edit("Saved on first library"); #expect(store.flush())
+    try await open(second.root)
+    #expect(controller.library !== firstLibrary)
+    #expect(firstLibrary.path.writable == false)
+    try await open(first.root)
+    #expect(controller.library === firstLibrary)
+    #expect(controller.library.entries.first?.store === store)
+    #expect(store.document.text == "Saved on first library" && firstLibrary.path.writable)
+    #expect(FileManager.default.fileExists(atPath: root.appendingPathComponent("state/location.json").path))
+}
+
+@Test @MainActor func libraryWindowStorageThousandNoteMigration() async throws {
+    let root = URL(fileURLWithPath: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_DATA"]!).appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let source = root.appendingPathComponent("source")
+    try FileManager.default.createDirectory(at: source.appendingPathComponent("notes"), withIntermediateDirectories: true)
+    let attachment = NoteAttachment(name: "sample.bin", byteCount: 64 * 1024 * 1024)
+    let asset = attachment.url(in: source.appendingPathComponent("assets/files"))
+    try FileManager.default.createDirectory(at: asset.deletingLastPathComponent(), withIntermediateDirectories: true)
+    FileManager.default.createFile(atPath: asset.path, contents: nil)
+    let output = try FileHandle(forWritingTo: asset)
+    for _ in 0..<64 { try output.write(contentsOf: Data(repeating: 42, count: 1024 * 1024)) }
+    try output.close()
+    for index in 0..<1000 {
+        var note = NoteDocument()
+        note.content = NoteContent(blocks: [NoteBlock(kind: index % 2 == 0 ? .paragraph : .code, text: "Synthetic note \(index)"), NoteBlock(kind: .file, attachment: attachment)])
+        try LibraryDisk.encode(note).write(to: source.appendingPathComponent("notes/" + note.id.uuidString + ".json"))
+    }
+    let started = Date()
+    let worker = Task.detached { try LibraryRelocation.copy(source: source, destination: root.appendingPathComponent("target"), journalURL: root.appendingPathComponent("journal")) }
+    var mainQueueResponded = false
+    DispatchQueue.main.async { mainQueueResponded = true }
+    let prepared = try await worker.value
+    #expect(mainQueueResponded && prepared.snapshot.notes.count == 1000)
+    #expect(try LibraryRelocation.digest(asset).1 == LibraryRelocation.digest(attachment.url(in: prepared.root.appendingPathComponent("assets/files"))).1)
+    print("Library migration: 1,000 text/code notes + one shared 64 MiB attachment, \(Date().timeIntervalSince(started)) s")
+}
+
+
+@Test @MainActor func libraryWindowStorageRetriesAfterDirectoryLockIsReleased() throws {
+    let root = URL(fileURLWithPath: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_DATA"]!).appendingPathComponent(UUID().uuidString)
+    let state = root.appendingPathComponent("state"), directory = root.appendingPathComponent("library")
+    var first: LibraryLocationController? = LibraryLocationController(privateDirectory: state, defaultDirectory: directory)
+    #expect(first?.library.canCreate == true)
+    let second = LibraryLocationController(privateDirectory: state, defaultDirectory: directory)
+    #expect(second.library.canCreate == false && second.failure != nil)
+    first = nil
+    second.retry()
+    #expect(second.library.canCreate && second.failure == nil)
+}
+
+@Test @MainActor func libraryWindowDefaultLocationUpgradesWithoutChoosingFolderAndReusesIt() async throws {
+    let root = URL(fileURLWithPath: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_DATA"]!).appendingPathComponent(UUID().uuidString)
+    let original = root.appendingPathComponent("default")
+    let controller = LibraryLocationController(privateDirectory: root.appendingPathComponent("state"), defaultDirectory: original)
+    let originalStore = try #require(controller.library.entries.first?.store)
+    originalStore.edit("Contents of original default library"); #expect(originalStore.flush())
+    let before = try LibraryRelocation.inventory(original)
+    let custom = try LibraryRelocation.copy(source: original, destination: root.appendingPathComponent("custom"), journalURL: root.appendingPathComponent("custom-journal"))
+    func waitForSwitch() async throws {
+        for _ in 0..<100 where controller.isBusy { try await Task.sleep(for: .milliseconds(20)) }
+        #expect(!controller.isBusy && controller.failure == nil)
+    }
+    controller.open(custom.root); try await waitForSwitch()
+    let customStore = try #require(controller.library.entries.first?.store)
+    customStore.edit("Current custom library must not be merged"); #expect(customStore.flush())
+    // Calling this real default action would block the check if it opened a
+    // modal upgrade dialog or a folder picker.
+    controller.openDefaultLibrary(); try await waitForSwitch()
+    #expect(controller.library.directory.path == original.appendingPathExtension("library").path)
+    let defaultLibrary = controller.library
+    let defaultStore = try #require(defaultLibrary.entries.first?.store)
+    #expect(defaultStore.document.text == "Contents of original default library")
+    #expect(try LibraryRelocation.inventory(original) == before)
+    defaultStore.edit("New edits in default library"); #expect(defaultStore.flush())
+    controller.open(custom.root); try await waitForSwitch()
+    #expect(controller.library.entries.first?.store.document.text == "Current custom library must not be merged")
+    controller.openDefaultLibrary(); try await waitForSwitch()
+    #expect(controller.library === defaultLibrary && controller.library.entries.first?.store === defaultStore)
+    #expect(defaultStore.document.text == "New edits in default library")
+    controller.openDefaultLibrary()
+    #expect(!controller.isBusy && controller.library === defaultLibrary)
+    #expect(controller.status == "You are already using the default library.")
+}

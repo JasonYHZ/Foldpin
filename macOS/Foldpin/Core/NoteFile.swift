@@ -26,12 +26,24 @@ enum NoteFileError: LocalizedError {
     }
 }
 
-struct NoteFile {
-    let url: URL
-    var assetDirectory: URL? = nil
-    var expectedID: UUID? = nil
+final class NoteFileCursor {
+    var revision: UUID?
+    var payload: Data?
+}
 
-    var assetsURL: URL { assetDirectory ?? url.deletingLastPathComponent().appendingPathComponent("assets", isDirectory: true) }
+struct NoteFile {
+    private let initialURL: URL
+    var assetDirectory: URL?
+    var expectedID: UUID?
+    let libraryPath: LibraryPath?
+    let cursor: NoteFileCursor
+    init(url: URL, assetDirectory: URL? = nil, expectedID: UUID? = nil, libraryPath: LibraryPath? = nil) {
+        initialURL = url; self.assetDirectory = assetDirectory; self.expectedID = expectedID
+        self.libraryPath = libraryPath; cursor = NoteFileCursor()
+    }
+    var url: URL { libraryPath?.root.appendingPathComponent("notes").appendingPathComponent(initialURL.lastPathComponent) ?? initialURL }
+
+    var assetsURL: URL { libraryPath?.root.appendingPathComponent("assets") ?? assetDirectory ?? url.deletingLastPathComponent().appendingPathComponent("assets", isDirectory: true) }
     var backupsURL: URL { url.deletingLastPathComponent().appendingPathComponent("backups", isDirectory: true) }
 
     func imageURL(_ id: UUID, original: Bool = false) -> URL {
@@ -46,6 +58,14 @@ struct NoteFile {
     func audioURL(_ audio: NoteAudio) -> URL { assetsURL.appendingPathComponent(audio.id.uuidString + "." + audio.fileExtension) }
 
     func load() throws -> NoteDocument {
+        if let path = libraryPath, path.manifest != nil, let id = expectedID {
+            guard let object = path.snapshot.notes[id], let payload = object.payload else { throw CocoaError(.fileReadNoSuchFile) }
+            var document = try JSONDecoder().decode(NoteDocument.self, from: payload)
+            try document.validate()
+            cursor.revision = object.revision; cursor.payload = payload
+            document = try LibraryDisk.withDesktop(document, at: path)
+            return document
+        }
         guard FileManager.default.fileExists(atPath: url.path) else {
             if expectedID != nil { throw CocoaError(.fileReadNoSuchFile) }
             return NoteDocument()
@@ -57,7 +77,22 @@ struct NoteFile {
     }
 
     func save(_ document: NoteDocument) throws {
+        if libraryPath?.writable == false { throw LibraryStorageError.busy }
         try document.validate()
+        if let path = libraryPath, path.manifest != nil {
+            try LibraryDisk.validateIdentity(path)
+            if let expectedID, document.id != expectedID { throw NoteFileError.invalidContent }
+            // Existing cloud attachments may be offloaded; saving text must not
+            // replace them or mistake their placeholders for missing originals.
+            try LibraryDisk.desktop(document, at: path)
+            let shared = try LibraryDisk.encode(LibraryDisk.shared(document))
+            if shared != cursor.payload {
+                let revision = try LibraryDisk.save(shared, id: document.id, parent: cursor.revision, root: path.root, kind: "notes")
+                cursor.revision = revision; cursor.payload = shared
+                path.record(LibraryObject(id: document.id, revision: revision, payload: shared), kind: "notes")
+            }
+            return
+        }
         if let expectedID, document.id != expectedID { throw NoteFileError.invalidContent }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

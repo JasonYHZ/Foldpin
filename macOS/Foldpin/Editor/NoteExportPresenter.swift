@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 
     static func present(_ notes: [NoteExportSource], in window: NSWindow) {
         guard !notes.isEmpty, window.attachedSheet == nil else { return }
+        LibraryFileActivity.exports += 1
         let presenter = NoteExportPresenter(notes: notes)
         presenter.show(in: window)
     }
@@ -25,7 +26,7 @@ import UniformTypeIdentifiers
         panel.nameFieldStringValue = notes.count == 1 ? NoteExport.filename(notes[0].title) : "Foldpin"
         changeFormat()
         panel.beginSheetModal(for: window) { [self] response in
-            guard response == .OK, let destination = panel.url else { return }
+            guard response == .OK, let destination = panel.url else { LibraryFileActivity.exports -= 1; return }
             let selectedFormat = format
             let progress = NSAlert()
             progress.messageText = String(localized: "Exporting notes…", bundle: bundle)
@@ -37,6 +38,7 @@ import UniformTypeIdentifiers
             let task = Task.detached(priority: .userInitiated) { try NoteExport.write(sources, format: selectedFormat, to: destination) }
             progress.beginSheetModal(for: window) { response in if response == .alertFirstButtonReturn { task.cancel() } }
             Task { @MainActor in
+                defer { LibraryFileActivity.exports -= 1 }
                 do {
                     try await task.value
                     if window.attachedSheet === progress.window { window.endSheet(progress.window, returnCode: .OK) }

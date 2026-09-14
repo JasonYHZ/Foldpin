@@ -4,22 +4,34 @@ import Combine
 /// Independent, versioned metadata. No body text, media bytes, or window state.
 @MainActor
 final class NoteCollections: ObservableObject {
-    struct Collection: Codable, Identifiable, Equatable {
-        var id = UUID()
-        var name: String
-        var members: Set<UUID> = []
-    }
+    typealias Collection = LibraryCollection
     private struct File: Codable { var version = 1; var collections: [Collection] }
     @Published private(set) var collections: [Collection] = []
     @Published private(set) var error: Error?
     private(set) var unreadable = false
-    let url: URL
-    init(directory: URL) {
-        url = directory.appendingPathComponent("collections.json")
+    private let initialURL: URL
+    private let libraryPath: LibraryPath?
+    private var revisions: [UUID: UUID] = [:]
+    var url: URL { libraryPath?.root.appendingPathComponent("collections.json") ?? initialURL }
+    init(directory: URL, libraryPath: LibraryPath? = nil) {
+        initialURL = directory.appendingPathComponent("collections.json")
+        self.libraryPath = libraryPath
         reload()
     }
     func reload() {
         do {
+            if let path = libraryPath, path.manifest != nil {
+                var next: [Collection] = []
+                for object in path.snapshot.collections.values {
+                    revisions[object.id] = object.revision
+                    if let payload = object.payload { next.append(try JSONDecoder().decode(Collection.self, from: payload)) }
+                }
+                next.sort { $0.id.uuidString < $1.id.uuidString }
+                if collections != next { collections = next }
+                if unreadable { unreadable = false }
+                if error != nil { error = nil }
+                return
+            }
             if FileManager.default.fileExists(atPath: url.path) {
                 let file = try JSONDecoder().decode(File.self, from: Data(contentsOf: url))
                 guard file.version == 1,
@@ -53,7 +65,25 @@ final class NoteCollections: ObservableObject {
     }
     private func save(_ next: [Collection]) -> Bool {
         guard !unreadable else { return false }
+        guard libraryPath?.writable != false else { error = LibraryStorageError.busy; return false }
         do {
+            if let path = libraryPath, path.manifest != nil {
+                try LibraryDisk.validateIdentity(path)
+                let old = Dictionary(uniqueKeysWithValues: collections.map { ($0.id, $0) })
+                let nextIDs = Set(next.map(\.id))
+                for value in next where old[value.id] != value {
+                    let data = try LibraryDisk.encode(value)
+                    let revision = try LibraryDisk.save(data, id: value.id, parent: revisions[value.id], root: path.root, kind: "collections")
+                    revisions[value.id] = revision
+                    path.record(LibraryObject(id: value.id, revision: revision, payload: data), kind: "collections")
+                }
+                for value in collections where !nextIDs.contains(value.id) {
+                    let revision = try LibraryDisk.save(nil, id: value.id, parent: revisions[value.id], root: path.root, kind: "collections")
+                    revisions[value.id] = revision
+                    path.record(LibraryObject(id: value.id, revision: revision, payload: nil), kind: "collections")
+                }
+                collections = next; error = nil; return true
+            }
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(File(collections: next)).write(to: url, options: .atomic)
             collections = next; error = nil

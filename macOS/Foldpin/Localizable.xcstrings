@@ -1,6 +1,720 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+  "You are already using the default library.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "You are already using the default library."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "当前已在使用默认资料库。"
+        }
+      }
+    }
+  },
+  "Open the default library?": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Open the default library?"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "打开默认资料库？"
+        }
+      }
+    }
+  },
+  "Foldpin will open the library saved in its default location and upgrade it automatically if needed. The original files are kept. Your current library will not be moved or merged.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Foldpin will open the library saved in its default location and upgrade it automatically if needed. The original files are kept. Your current library will not be moved or merged."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "将自动打开默认位置中保存的资料库，必要时自动升级并保留原文件。当前资料库不会迁移或合并，无需选择文件夹。"
+        }
+      }
+    }
+  },
+  "On other Macs, open the new location after this move. The original folder will not receive new changes.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "On other Macs, open the new location after this move. The original folder will not receive new changes."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "迁移后，请在其他 Mac 上打开新位置。原文件夹不会继续接收新的修改。"
+        }
+      }
+    }
+  },
+  "A checked copy will be created in the location you choose next. The original library and its files will be kept.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "A checked copy will be created in the location you choose next. The original library and its files will be kept."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "将在接下来选择的位置创建并校验一份副本，原资料库及其文件会保留。"
+        }
+      }
+    }
+  },
+  "A previous storage change was interrupted. Your original library is kept. Retry the move, or open the completed destination.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "A previous storage change was interrupted. Your original library is kept. Retry the move, or open the completed destination."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "上次更改存储位置时中断了，原资料库仍保留。可以重试迁移，或打开已完成的目标资料库。"
+        }
+      }
+    }
+  },
+  "All notes and attachments will be copied and checked. The original folder will be kept.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "All notes and attachments will be copied and checked. The original folder will be kept."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "将复制并校验全部纸片及附件，原文件夹会保留。"
+        }
+      }
+    }
+  },
+  "Change Storage Location…": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Change Storage Location…"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "更改存储位置…"
+        }
+      }
+    }
+  },
+  "Choose a parent folder. Foldpin Library will be created inside it. You can choose iCloud Drive.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Choose a parent folder. Foldpin Library will be created inside it. You can choose iCloud Drive."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "请选择上级文件夹，将在其中创建 Foldpin Library。可以选择 iCloud 云盘中的位置。"
+        }
+      }
+    }
+  },
+  "Choose a separate local or iCloud Drive folder without symbolic links.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Choose a separate local or iCloud Drive folder without symbolic links."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "请选择独立的本地或 iCloud 云盘文件夹，且其中不含符号链接。"
+        }
+      }
+    }
+  },
+  "Choose an existing Foldpin library, including a folder in iCloud Drive.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Choose an existing Foldpin library, including a folder in iCloud Drive."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "选择已有的 Foldpin 资料库，也可以选择 iCloud 云盘中的资料库。"
+        }
+      }
+    }
+  },
+  "Conflict copy": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Conflict copy"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "冲突副本"
+        }
+      }
+    }
+  },
+  "Contents and attachments are shared. Window positions and desktop visibility stay on each Mac. Concurrent edits are preserved as conflict copies.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Contents and attachments are shared. Window positions and desktop visibility stay on each Mac. Concurrent edits are preserved as conflict copies."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "正文和附件跨设备共享，窗口位置和桌面显示状态由各台 Mac 独立保存。同时修改的内容会保留为冲突副本。"
+        }
+      }
+    }
+  },
+  "Current Library": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Current Library"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "当前资料库"
+        }
+      }
+    }
+  },
+  "Data and Storage": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Data and Storage"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "数据与存储"
+        }
+      }
+    }
+  },
+  "Finish recording, importing, or exporting before changing libraries.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Finish recording, importing, or exporting before changing libraries."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "请先完成录音、导入或导出，再切换资料库。"
+        }
+      }
+    }
+  },
+  "Keep your library locally or in iCloud Drive. On another Mac, open the same library folder.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Keep your library locally or in iCloud Drive. On another Mac, open the same library folder."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "将资料库保存在本地或 iCloud 云盘。在另一台 Mac 上打开同一个资料库文件夹即可。"
+        }
+      }
+    }
+  },
+  "Library files are downloading from iCloud Drive. Try again when they are available.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Library files are downloading from iCloud Drive. Try again when they are available."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "资料库文件尚未从 iCloud 云盘下载完整，请下载完成后重试。"
+        }
+      }
+    }
+  },
+  "Library moved. The original folder has been kept.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Library moved. The original folder has been kept."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "资料库已迁移，原文件夹已保留。"
+        }
+      }
+    }
+  },
+  "Library opened. iCloud Drive transfers files in the background.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Library opened. iCloud Drive transfers files in the background."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "资料库已打开。位于 iCloud 云盘中的文件由系统在后台同步。"
+        }
+      }
+    }
+  },
+  "Library operations are paused while changing storage.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Library operations are paused while changing storage."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "正在更改存储位置，资料库操作已暂停。"
+        }
+      }
+    }
+  },
+  "Move Library": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Move Library"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "迁移资料库"
+        }
+      }
+    }
+  },
+  "Move this library?": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Move this library?"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "迁移此资料库？"
+        }
+      }
+    }
+  },
+  "Open This Library": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Open This Library"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "打开已有资料库"
+        }
+      }
+    }
+  },
+  "Open Existing Library…": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Open Existing Library…"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "打开已有资料库…"
+        }
+      }
+    }
+  },
+  "Opening it switches to that library's saved contents. It does not move your current notes back or merge the two libraries.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Opening it switches to that library's saved contents. It does not move your current notes back or merge the two libraries."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "打开后将切换到该资料库已保存的内容，不会把当前纸片迁回，也不会合并两个资料库。"
+        }
+      }
+    }
+  },
+  "Preparing library…": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Preparing library…"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "正在准备资料库…"
+        }
+      }
+    }
+  },
+  "Show in Finder": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Show in Finder"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "在访达中显示"
+        }
+      }
+    }
+  },
+  "Storage": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Storage"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "存储"
+        }
+      }
+    }
+  },
+  "Storage change cancelled. The original library is unchanged.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Storage change cancelled. The original library is unchanged."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "已取消更改存储位置，原资料库保持不变。"
+        }
+      }
+    }
+  },
+  "The default location contains an older library.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "The default location contains an older library."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "默认位置中已有之前的资料库。"
+        }
+      }
+    }
+  },
+  "The destination already exists. Open that library or choose another location.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "The destination already exists. Open that library or choose another location."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "目标已存在，请打开该资料库或选择其他位置。"
+        }
+      }
+    }
+  },
+  "The library changed during this operation. Existing files are preserved; try again.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "The library changed during this operation. Existing files are preserved; try again."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "操作期间资料库发生了变化。现有文件已保留，请重试。"
+        }
+      }
+    }
+  },
+  "The library is unavailable. Reauthorize its folder or try again.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "The library is unavailable. Reauthorize its folder or try again."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "无法访问资料库，请重新授权该文件夹或重试。"
+        }
+      }
+    }
+  },
+  "This folder is not a readable Foldpin library. Existing files are unchanged.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "This folder is not a readable Foldpin library. Existing files are unchanged."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "此文件夹不是可读取的 Foldpin 资料库，现有文件未更改。"
+        }
+      }
+    }
+  },
+  "This library is already open in another Foldpin process on this Mac.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "This library is already open in another Foldpin process on this Mac."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "本机的另一个 Foldpin 进程已打开此资料库。"
+        }
+      }
+    }
+  },
+  "This library requires a newer version of Foldpin.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "This library requires a newer version of Foldpin."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "此资料库需要更新版本的 Foldpin。"
+        }
+      }
+    }
+  },
+  "Upgrade and Open": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Upgrade and Open"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "升级并打开"
+        }
+      }
+    }
+  },
+  "Upgrade this older library?": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Upgrade this older library?"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "升级此旧版资料库？"
+        }
+      }
+    }
+  },
+  "Use Default Location…": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Use Default Location…"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "使用默认位置…"
+        }
+      }
+    }
+  },
+  "Some attachments are not available locally yet. Foldpin has requested their iCloud download.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Some attachments are not available locally yet. Foldpin has requested their iCloud download."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "部分附件在本机尚不可用，已尝试请求 iCloud 下载。"
+        }
+      }
+    }
+  },
+  "Attachments are available locally.": {
+    "extractionState": "manual",
+    "localizations": {
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Attachments are available locally."
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "附件已在本机就绪。"
+        }
+      }
+    }
+  },
 
   "Permanently delete %lld notes?": {
     "extractionState": "manual",
@@ -5798,9 +6512,23 @@
         }
       }
     },
-    "Retry" : {
-
+    "Retry": {
+  "extractionState": "manual",
+  "localizations": {
+    "en": {
+      "stringUnit": {
+        "state": "translated",
+        "value": "Retry"
+      }
     },
+    "zh-Hans": {
+      "stringUnit": {
+        "state": "translated",
+        "value": "重试"
+      }
+    }
+  }
+},
     "Retry image download" : {
       "extractionState" : "manual",
       "localizations" : {

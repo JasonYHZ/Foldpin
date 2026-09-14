@@ -77,6 +77,7 @@ final class AudioBlockModel: ObservableObject {
         }
     }
     func togglePlayback() {
+        guard file.libraryPath?.writable != false else { return }
         if isPlaying { pause(); return }
         guard !audio.isDraft, Self.recording == nil else { return }
         VideoBlockModel.playing?.pause()
@@ -92,6 +93,7 @@ final class AudioBlockModel: ObservableObject {
         } catch { self.error = "Could not play audio. Check that the file is available." }
     }
     func pause() { player?.pause(); isPlaying = false; stopTimer(); if Self.playing === self { Self.playing = nil } }
+    func releaseForLibraryChange() { pause(); player = nil }
     func seek(_ fraction: Double) {
         guard !audio.isDraft else { return }
         position = min(audio.duration, max(0, fraction * audio.duration))

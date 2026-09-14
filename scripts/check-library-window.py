@@ -27,7 +27,7 @@ import PackageDescription
 let package = Package(name: "FoldpinCore", platforms: [.macOS("26.5")], targets: [
     .target(name: "FoldpinCore", path: "Foldpin", exclude: ["AppDelegate.swift", "FoldpinApp.swift",
         "AppearanceSettingsView.swift", "ApplicationMenuLocalization.swift", "CodeThemeSettingsView.swift",
-        "Assets.xcassets", "Localizable.xcstrings", "ThirdPartyNotices.txt"],
+        "Assets.xcassets", "Localizable.xcstrings", "InfoPlist.xcstrings", "Foldpin.entitlements", "ThirdPartyNotices.txt"],
         resources: [.copy("CodeThemes"), .copy("SyntaxResources"), .copy("EmojiResources")],
         swiftSettings: [.unsafeFlags(["-default-isolation", "MainActor"])]),
     .testTarget(name: "FoldpinCoreTests", dependencies: ["FoldpinCore"], path: "Tests")], swiftLanguageModes: [.v5])
@@ -56,7 +56,7 @@ environment = dict(os.environ, DEVELOPER_DIR="/Applications/Xcode.app/Contents/D
     CLANG_MODULE_CACHE_PATH="/private/tmp/Foldpin-ModuleCache", SWIFTPM_MODULECACHE_OVERRIDE="/private/tmp/Foldpin-ModuleCache",
     FOLDPIN_CHECK_LOCALIZATIONS=str(localizations), FOLDPIN_CHECK_DATA=str(snapshot / "data"), FOLDPIN_CHECK_OUTPUT=str(output))
 command = ["xcrun", "swift", "test", "--disable-sandbox", "--no-parallel", "--package-path", str(snapshot),
-    "--scratch-path", str(snapshot / "build"), "--filter", "libraryWindow"]
+    "--scratch-path", str(snapshot / "build"), "--filter", sys.argv[2] if len(sys.argv) > 2 else "libraryWindow"]
 print("Isolated native check: " + str(snapshot), flush=True)
 with (output / "native-check.log").open("w") as log:
     result = subprocess.run(command, env=environment, stdout=log, stderr=subprocess.STDOUT)

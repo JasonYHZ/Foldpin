@@ -13,6 +13,7 @@ final class NoteStore: ObservableObject {
     @Published var shortcutLabel = "⌃⌥Space"
     @Published var focusRequest = 0
 
+    @Published var isLibrarySuspended = false
     let file: NoteFile
     private var pendingSave: Task<Void, Never>?
     private var permanentlyDeleted = false
@@ -34,6 +35,15 @@ final class NoteStore: ObservableObject {
             // Do not replace an unreadable file with an empty draft or autosave over it.
             loadFailure = error
         }
+    }
+
+    func acceptExternalRevision() {
+        guard !isDirty, !permanentlyDeleted else { return }
+        do {
+            let next = try file.load()
+            if next != document { document = next }
+            if loadFailure != nil { loadFailure = nil }
+        } catch { loadFailure = error }
     }
 
     func edit(_ text: String) {
@@ -121,7 +131,7 @@ final class NoteStore: ObservableObject {
         scheduleSave()
     }
 
-    var isCollapsed: Bool { document.isCollapsed && loadError == nil }
+    var isCollapsed: Bool { document.isCollapsed && loadFailure == nil }
 
     func setCollapsed(_ value: Bool) {
         guard loadError == nil, document.isCollapsed != value else { return }
@@ -182,6 +192,7 @@ final class NoteStore: ObservableObject {
     // Retain the failure itself so an already-visible message can be translated
     // again without retrying disk I/O or replacing unsaved text.
     var loadError: String? {
+        if isLibrarySuspended { return String(localized: "Library operations are paused while changing storage.", bundle: localizationBundle) }
         guard let loadFailure else { return nil }
         return String(localized: "Could not read the existing note. The original file is unchanged.\n\(description(of: loadFailure))", bundle: localizationBundle)
     }
@@ -199,7 +210,7 @@ final class NoteStore: ObservableObject {
     }
 
     private func description(of error: Error) -> String {
-        (error as? NoteFileError)?.description(bundle: localizationBundle) ?? error.localizedDescription
+        (error as? LibraryStorageError)?.description(bundle: localizationBundle) ?? (error as? NoteFileError)?.description(bundle: localizationBundle) ?? error.localizedDescription
     }
 
     var status: String {

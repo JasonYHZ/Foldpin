@@ -128,6 +128,10 @@ final class PaperTextView: NSTextView {
     var hasSlashSuggestions: Bool { slashMenu != nil }
     private var importInProgress = false
     var hasPendingFileImport: Bool { importInProgress }
+    var hasPendingLibraryFileWork: Bool { importInProgress || !remoteImageTasks.isEmpty || !remoteImageQueue.isEmpty }
+    var hasPendingLibraryWork: Bool {
+        hasPendingLibraryFileWork || AudioBlockModel.recording != nil || imageCaptionBlock != nil || imageResize != nil
+    }
     private var suppressMarkdownShortcuts = false
     private var historyEmptyBlock: NoteBlock?
     private let images = NSCache<NSUUID, NSImage>()
@@ -186,10 +190,15 @@ final class PaperTextView: NSTextView {
 
     func loadExternalContent(_ next: NoteContent) {
         guard next != content, !hasMarkedText() else { return }
-        let selection = selectedRange()
-        configure(content: next)
-        setSelectedRange(NSRange(location: min(selection.location, (string as NSString).length), length: 0))
-        undoManager?.removeAllActions()
+        // External revisions enter the existing native undo history. The
+        // shared revision files retain the remote version even after an undo.
+        let ranges = selectedRanges
+        replaceDocument(next, block: 0, preservingSelection: true)
+        selectedRanges = ranges.map { value in
+            let range = value.rangeValue, length = (string as NSString).length
+            let start = min(range.location, length)
+            return NSValue(range: NSRange(location: start, length: min(range.length, length - start)))
+        }
     }
 
     private var audioAppearanceRefreshScheduled = false
@@ -1710,7 +1719,7 @@ final class PaperTextView: NSTextView {
     }
 
     @objc private func chooseImage(_ sender: Any?) {
-        guard !importInProgress, let window, let target = activeSpan?.block.id else { return }
+        guard file?.libraryPath?.writable != false, !importInProgress, let window, let target = activeSpan?.block.id else { return }
         let command = slashContext
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.png, .jpeg, .heic, .tiff]
@@ -1798,7 +1807,7 @@ final class PaperTextView: NSTextView {
     }
 
     private func importImage(url: URL? = nil, data: Data? = nil, target: UUID, command: SlashCommandContext? = nil) {
-        guard !importInProgress, let directory = file?.assetsURL else { return }
+        guard file?.libraryPath?.writable != false, !importInProgress, let directory = file?.assetsURL else { return }
         importInProgress = true
         onStatusChange?(.importingImage)
         Task { [weak self] in
@@ -2787,6 +2796,12 @@ extension PaperTextView {
         }
         return saved
     }
+    func refreshCloudResources() {
+        images.removeAllObjects()
+        refreshStyles(force: true)
+        for view in videoViews.values { view.refreshPoster() }
+    }
+    func releaseMediaForLibraryChange() { detachVideoViews(); for model in audioModels.values { model.releaseForLibraryChange() } }
     func stopAudio() { detachVideoViews(); for model in audioModels.values { model.stop() } }
 
     private func copyAudioSelection() -> Bool? {
@@ -2866,7 +2881,7 @@ extension PaperTextView {
         importAudio(url: url, source: source); return true
     }
     private func importAudio(url: URL, source: NoteBlock, context: SlashCommandContext? = nil) {
-        guard !importInProgress, let file, isEditable else { return }
+        guard file?.libraryPath?.writable != false, !importInProgress, let file, isEditable else { return }
         importInProgress = true
         let directory = file.assetsURL
         Task { [weak self] in
@@ -3145,7 +3160,7 @@ extension PaperTextView {
         alert.informativeText = message; alert.beginSheetModal(for: window)
     }
     @objc func chooseVideo(_ sender: Any?) {
-        guard !importInProgress, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
+        guard file?.libraryPath?.writable != false, !importInProgress, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
               let source = activeSpan?.block, let window else { return }
         let context = slashContext
         let panel = NSOpenPanel()
@@ -3166,7 +3181,7 @@ extension PaperTextView {
         importVideo(url: url, source: source); return true
     }
     private func importVideo(url: URL, source: NoteBlock, context: SlashCommandContext? = nil) {
-        guard !importInProgress, let file, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true else { return }
+        guard file?.libraryPath?.writable != false, !importInProgress, let file, isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true else { return }
         importInProgress = true
         let directory = file.assetsURL
         Task { [weak self] in
@@ -3517,7 +3532,7 @@ extension PaperTextView {
         return true
     }
     @objc func chooseAttachments(_ sender: Any?) {
-        guard !importInProgress, isEditable, !hasMarkedText(), tableCellEditor == nil,
+        guard file?.libraryPath?.writable != false, !importInProgress, isEditable, !hasMarkedText(), tableCellEditor == nil,
               let source = activeSpan?.block, let window else { return }
         let panel = NSOpenPanel(); panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false; panel.canChooseFiles = true; panel.treatsFilePackagesAsDirectories = true
@@ -3527,7 +3542,7 @@ extension PaperTextView {
         }
     }
     func importAttachments(urls: [URL], source: NoteBlock) {
-        guard !importInProgress, let file, isEditable, !hasMarkedText(), tableCellEditor == nil else { return }
+        guard file?.libraryPath?.writable != false, !importInProgress, let file, isEditable, !hasMarkedText(), tableCellEditor == nil else { return }
         importInProgress = true
         onStatusChange?(.importingAttachment)
         let directory = file.assetsURL.appendingPathComponent("files", isDirectory: true)

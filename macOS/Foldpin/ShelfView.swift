@@ -31,7 +31,7 @@ struct ShelfSummary: Identifiable {
     init(_ entry: NoteLibrary.Entry) {
         let d = entry.store.document
         id = entry.id; text = d.content.plainText
-        title = String(text.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.first(where: { !$0.isEmpty })?.prefix(160) ?? "")
+        title = (d.conflictOf == nil ? "" : shelfText("Conflict copy") + " · ") + String(text.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.first(where: { !$0.isEmpty })?.prefix(160) ?? "")
         color = d.color; icon = d.icon; favorite = d.isFavorite; shelved = d.isShelved
         deleted = d.deletedAt != nil; unreadable = entry.store.loadError != nil
         modified = d.modifiedAt; created = d.createdAt
@@ -220,7 +220,7 @@ final class ShelfPreviewWindow: NSObject, NSWindowDelegate, ObservableObject, NS
         self.onPermanentlyDeleted = onPermanentlyDeleted
         self.existingController = existingController
         self.library = library; self.resolve = resolve; self.onNew = onNew; self.onRetry = onRetry
-        collections = NoteCollections(directory: library.directory)
+        collections = NoteCollections(directory: library.directory, libraryPath: library.path)
         super.init()
         window = LibraryWindow(contentRect: NSRect(x: 0, y: 0, width: 1240, height: 780),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
@@ -467,7 +467,7 @@ final class ShelfPreviewWindow: NSObject, NSWindowDelegate, ObservableObject, NS
         let favorite = ActionPaletteItem(id: "favorite", title: shelfText(document.isFavorite ? "Remove Favorite" : "Favorite"),
             symbol: document.isFavorite ? "star.fill" : "star", enabled: readable)
         let memberships = collections.collections.map { collection in
-            ActionPaletteItem(id: "collection:" + collection.id.uuidString, title: collection.name, symbol: "folder",
+            ActionPaletteItem(id: "collection:" + collection.id.uuidString, title: collection.displayName, symbol: "folder",
                 checked: collection.members.contains(id), enabled: readable)
         } + [ActionPaletteItem(id: "newCollection", title: shelfText("New Collection"), symbol: "folder.badge.plus", enabled: readable)]
         return [
@@ -787,7 +787,7 @@ private struct ShelfSidebar: View {
                 Section {
                     if expanded {
                         ForEach(collections.collections) { collection in
-                            row(.collection(collection.id), "folder", title: collection.name)
+                            row(.collection(collection.id), "folder", title: collection.displayName)
                                 .contextMenu {
                                     Button(shelfText("Rename Collection")) { owner.editCollection(collection.id) }
                                     Button(shelfText("Delete Collection")) { owner.removeCollection(collection.id) }
@@ -843,7 +843,7 @@ private struct ShelfBrowser: View {
             if case .collection(let id) = owner.destination, let collection = collections.collections.first(where: { $0.id == id }) {
                 HStack {
                     Image(systemName: "folder").foregroundStyle(.secondary)
-                    Text(collection.name).fontWeight(.medium)
+                    Text(collection.displayName).fontWeight(.medium)
                     Spacer()
                     Menu(shelfText("Collection Actions")) {
                         Button(shelfText("Open Entire Collection")) { owner.batch("Open on Desktop", ids: collection.members.intersection(Set(owner.summaries.filter { !$0.deleted }.map(\.id)))) }
@@ -1015,7 +1015,7 @@ private struct ShelfNoteMenu: View {
             Menu(shelfText("Collections")) {
                 ForEach(collections.collections) { collection in
                     Button { owner.membership(collection.id, ids: [item.id], included: !collection.members.contains(item.id)) } label: {
-                        Label(collection.name, systemImage: collection.members.contains(item.id) ? "checkmark" : "folder")
+                        Label(collection.displayName, systemImage: collection.members.contains(item.id) ? "checkmark" : "folder")
                     }
                 }
                 Button(shelfText("New Collection")) { owner.editCollection() }
@@ -1115,6 +1115,9 @@ struct ShelfEditorSlot: NSViewRepresentable {
     }
     func updateNSView(_ view: NoteEditingSlot, context: Context) {
         session.libraryInk = appearance.textColor
+        session.scheduleContentRefresh()
+        session.host.editor.isEditable = store.loadError == nil
+        session.host.editor.tableCellEditor?.isEditable = store.loadError == nil
         if session.inPreview {
             session.host.updateColors(appearance.textColor)
             session.host.editor.updatePaperBackground(NotePalette.paperBackground(for: store.document.color))
@@ -1423,7 +1426,7 @@ private struct ShelfSelectionSummary: View {
                     Button(shelfText("Favorite")) { for id in owner.picked { owner.favorite(id, true) } }
                     Menu(shelfText("Add to Collection")) {
                         ForEach(collections.collections) { collection in
-                            Button(collection.name) { owner.membership(collection.id, ids: owner.picked, included: true) }
+                            Button(collection.displayName) { owner.membership(collection.id, ids: owner.picked, included: true) }
                         }
                     }
                     Divider()
@@ -1453,4 +1456,8 @@ private struct ShelfSelectionSummary: View {
             Text(value).multilineTextAlignment(.trailing)
         }.font(.system(size: 11))
     }
+}
+
+private extension LibraryCollection {
+    var displayName: String { conflictOf == nil ? name : shelfText("Conflict copy") + " · " + name }
 }

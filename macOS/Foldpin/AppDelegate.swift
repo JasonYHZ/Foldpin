@@ -6,7 +6,9 @@ import AVFoundation
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private let languageSettings = LanguageSettings.shared
-    let library = NoteLibrary()
+    let storage = LibraryLocationController()
+    var library: NoteLibrary { storage.library }
+    private var libraryWindows: [ObjectIdentifier: [UUID: PaperWindowController]] = [:]
     private var windows: [UUID: PaperWindowController] = [:]
     private var lastActiveID: UUID?
     private var lastArrangement: [NoteArrangement.Placement] = []
@@ -23,6 +25,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var recordingSaveRetryID: UUID?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        storage.prepare = { [weak self] in
+            guard let self else { return }
+            guard LibraryFileActivity.exports == 0, !AudioBlockModel.requestingRecording,
+                  windows.values.allSatisfy({ !$0.session.host.editor.hasPendingLibraryFileWork }) else { throw LibraryStorageError.busy }
+            guard shelfWindow?.finish() != false else { throw LibraryStorageError.unavailable }
+            for controller in windows.values {
+                if controller.store.loadError != nil && !controller.store.isDirty { continue }
+                guard controller.session.prepareToLeave(), controller.prepareToTerminate() else { throw LibraryStorageError.unavailable }
+                controller.session.host.editor.releaseMediaForLibraryChange()
+            }
+            for entry in library.entries + library.deletedEntries {
+                if entry.store.loadError == nil || entry.store.isDirty {
+                    guard entry.store.flush() else { throw LibraryStorageError.unavailable }
+                }
+            }
+        }
+        storage.didSwitch = { [weak self] old, relocating in
+            guard let self else { return }
+            let shelfVisible = shelfWindow?.window.isVisible == true
+            shelfWindow?.window.orderOut(nil); shelfWindow = nil
+            if !relocating {
+                for controller in windows.values { controller.hideDeletedPaper() }
+                libraryWindows[ObjectIdentifier(old)] = windows
+                windows = libraryWindows[ObjectIdentifier(library)] ?? [:]
+                lastActiveID = nil; lastArrangement = []
+            }
+            for entry in library.entries where !entry.store.document.isShelved {
+                controller(for: entry).showPaper(focus: false)
+            }
+            applyLanguage(); updateEdge(); rebuildMenu()
+            if shelfVisible { showShelf() }
+        }
+        storage.willRefresh = { [weak self] in
+            guard let self else { return false }
+            guard windows.values.allSatisfy({ !$0.session.host.editor.hasPendingLibraryWork && !$0.session.host.editor.hasMarkedText()
+                && $0.session.host.editor.tableCellEditor?.hasMarkedText() != true }) else { return false }
+            return (library.entries + library.deletedEntries).allSatisfy { !$0.store.isDirty || $0.store.flush() }
+        }
+        storage.didRefresh = { [weak self] in
+            guard let self else { return }
+            for controller in windows.values {
+                if controller.store.document.deletedAt != nil || library.path.snapshot.notes[controller.id]?.payload == nil {
+                    controller.hideDeletedPaper()
+                }
+            }
+            for controller in windows.values { controller.session.synchronizeContentFromStore() }
+            shelfWindow?.collections.reload()
+            updateEdge(); rebuildMenu()
+        }
+        storage.resourcesArrived = { [weak self] ids in
+            for id in ids { self?.windows[id]?.session.host.editor.refreshCloudResources() }
+        }
+        storage.start()
         ThemeSettings.shared.apply()
         createEdge()
         createMenu()

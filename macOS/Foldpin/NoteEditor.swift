@@ -25,7 +25,7 @@ struct NoteEditor: NSViewRepresentable {
         editor.isEditable = store.loadError == nil
         editor.updatePaperBackground(NotePalette.paperBackground(for: store.document.color))
         editor.tableCellEditor?.isEditable = editor.isEditable
-        editor.loadExternalContent(store.document.content)
+        session.scheduleContentRefresh()
         session.desktopEscape = onEscape
         if !session.inPreview { editor.onEscape = onEscape }
         host.updateLanguage(bundle: languageSettings.bundle)
@@ -205,6 +205,22 @@ final class NoteEditingSession {
         editor.onAttachmentCommit = { [weak store] in store?.flush() ?? false }
         editor.onAudioCommit = { [weak store] in store?.flush() ?? false }
         editor.configure(content: store.document.content)
+    }
+
+    private var contentRefreshScheduled = false
+    func scheduleContentRefresh() {
+        guard host.editor.content != store.document.content, !contentRefreshScheduled else { return }
+        contentRefreshScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            contentRefreshScheduled = false
+            synchronizeContentFromStore()
+        }
+    }
+    func synchronizeContentFromStore() {
+        guard store.loadError == nil, !host.editor.hasPendingLibraryWork,
+              host.editor.tableCellEditor?.hasMarkedText() != true else { return }
+        host.editor.loadExternalContent(store.document.content)
     }
 
     func mount(in slot: NSView) {

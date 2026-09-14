@@ -76,13 +76,15 @@ nonisolated struct MediaExport: Sendable {
     }
 
     @MainActor func present(in window: NSWindow) {
+        LibraryFileActivity.exports += 1
         let panel = NSSavePanel()
         panel.allowedContentTypes = [contentType]
         panel.nameFieldStringValue = filename
         panel.canCreateDirectories = true
         panel.beginSheetModal(for: window) { response in
-            guard response == .OK, let destination = panel.url else { return }
+            guard response == .OK, let destination = panel.url else { LibraryFileActivity.exports -= 1; return }
             Task { @MainActor in
+                defer { LibraryFileActivity.exports -= 1 }
                 do { try await Task.detached(priority: .userInitiated) { try self.write(to: destination) }.value }
                 catch { Self.showError(error, in: window) }
             }

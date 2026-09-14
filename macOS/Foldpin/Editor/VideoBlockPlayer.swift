@@ -36,7 +36,7 @@ final class VideoBlockModel {
         self.blockID = blockID; self.video = video; self.file = file
     }
     func play() -> AVPlayer? {
-        guard AudioBlockModel.recording == nil else { return nil }
+        guard AudioBlockModel.recording == nil, file.libraryPath?.writable != false else { return nil }
         Self.playing?.pause(); AudioBlockModel.playing?.pause()
         if player == nil {
             let item = AVPlayerItem(asset: NoteVideoImporter.asset(at: file.videoURL(video)))
@@ -127,6 +127,7 @@ final class VideoBlockView: NSView {
         refresh()
     }
     required init?(coder: NSCoder) { nil }
+    func refreshPoster() { poster.image = NSImage(contentsOf: model.file.videoPosterURL(model.video)) }
     func refresh() {
         let bundle = LanguageSettings.shared.bundle
         let text = model.failed ? String(localized: "Could not play video. Check that the original file is available.", bundle: bundle)

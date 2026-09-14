@@ -17,6 +17,7 @@ nonisolated struct NoteDocument: Codable, Equatable, Sendable {
     var isFavorite = false
     var createdAt = Date()
     var icon: String?
+    var conflictOf: UUID?
     var deletedAt: Date?
     var frame: NoteFrame?
     var modifiedAt = Date()
@@ -24,7 +25,7 @@ nonisolated struct NoteDocument: Codable, Equatable, Sendable {
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case version, id, text, content, isPinned, isShelved, isCollapsed, color, icon, isFavorite, createdAt, deletedAt, frame, modifiedAt
+        case conflictOf, version, id, text, content, isPinned, isShelved, isCollapsed, color, icon, isFavorite, createdAt, deletedAt, frame, modifiedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -46,6 +47,7 @@ nonisolated struct NoteDocument: Codable, Equatable, Sendable {
         // original surface without changing the note's content on load.
         color = NoteColor(rawValue: try values.decodeIfPresent(String.self, forKey: .color) ?? "") ?? .original
         icon = try values.decodeIfPresent(String.self, forKey: .icon).flatMap(NoteIcon.normalized)
+        conflictOf = try values.decodeIfPresent(UUID.self, forKey: .conflictOf)
         deletedAt = try values.decodeIfPresent(Date.self, forKey: .deletedAt)
         frame = try values.decodeIfPresent(NoteFrame.self, forKey: .frame)
         modifiedAt = try values.decode(Date.self, forKey: .modifiedAt)
@@ -65,6 +67,7 @@ nonisolated struct NoteDocument: Codable, Equatable, Sendable {
         try values.encodeIfPresent(icon, forKey: .icon)
         try values.encode(isFavorite, forKey: .isFavorite)
         try values.encode(createdAt, forKey: .createdAt)
+        try values.encodeIfPresent(conflictOf, forKey: .conflictOf)
         try values.encodeIfPresent(deletedAt, forKey: .deletedAt)
         try values.encodeIfPresent(frame, forKey: .frame)
         try values.encode(modifiedAt, forKey: .modifiedAt)

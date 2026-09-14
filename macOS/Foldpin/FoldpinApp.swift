@@ -15,7 +15,7 @@ struct FoldpinApp: App {
 
     var body: some Scene {
         Settings {
-            FoldpinSettingsView()
+            FoldpinSettingsView(storage: delegate.storage)
         }
         .windowResizability(.contentSize)
         .commands {
@@ -45,15 +45,22 @@ struct FoldpinApp: App {
 }
 
 struct FoldpinSettingsView: View {
+    @ObservedObject var storage: LibraryLocationController
+    @State private var selectedTab = 0
     @ObservedObject private var shortcuts = ShortcutSettings.shared
     @ObservedObject private var language = LanguageSettings.shared
     var body: some View {
-        TabView(selection: $shortcuts.showShortcuts) {
+        TabView(selection: $selectedTab) {
             AppearanceSettingsView()
-                .tabItem { Label(String(localized: "Appearance", bundle: language.bundle), systemImage: "paintpalette") }.tag(false)
+                .tabItem { Label(String(localized: "Appearance", bundle: language.bundle), systemImage: "paintpalette") }.tag(0)
             ShortcutSettingsView()
-                .tabItem { Label(String(localized: "Shortcuts", bundle: language.bundle), systemImage: "keyboard") }.tag(true)
+                .tabItem { Label(String(localized: "Shortcuts", bundle: language.bundle), systemImage: "keyboard") }.tag(1)
+            LibraryStorageSettingsView(storage: storage)
+                .tabItem { Label(String(localized: "Data and Storage", bundle: language.bundle), systemImage: "externaldrive") }.tag(2)
         }
+        .onChange(of: shortcuts.showShortcuts) { _, value in if value { selectedTab = 1 } }
+        .onChange(of: selectedTab) { _, value in shortcuts.showShortcuts = value == 1 }
+        .onAppear { if shortcuts.showShortcuts { selectedTab = 1 } }
         .padding(8)
         .navigationTitle(String(localized: "Foldpin Settings", bundle: language.bundle))
         .environment(\.locale, language.locale)
