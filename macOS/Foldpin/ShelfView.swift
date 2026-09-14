@@ -404,9 +404,10 @@ final class ShelfPreviewWindow: NSObject, NSWindowDelegate, ObservableObject, NS
         return true
     }
     func applyMarquee(_ hits: Set<UUID>, base: Set<UUID>, modifiers: NSEvent.ModifierFlags) {
-        multiple = true
-        picked = modifiers.contains(.command) ? base.symmetricDifference(hits)
+        let next = modifiers.contains(.command) ? base.symmetricDifference(hits)
             : modifiers.contains(.shift) ? base.union(hits) : hits
+        if !multiple { multiple = true }
+        if picked != next { picked = next }
     }
     func endMarquee() {
         selectedEntry = nil; selected = nil
@@ -825,8 +826,7 @@ private struct ShelfSidebar: View {
 private struct ShelfBrowser: View {
     @ObservedObject var owner: ShelfPreviewWindow
     @ObservedObject var collections: NoteCollections
-    @State private var itemFrames: [UUID: CGRect] = [:]
-    @State private var controlFrames: [CGRect] = []
+    @State private var geometry = ShelfHitGeometry()
     @AppStorage("libraryGroupByDate") private var groupByDate = true
     private let types = ["All Types", "Text", "Tasks", "Code", "Images", "Audio", "Video", "Tables", "Attachments"]
     var body: some View {
@@ -865,7 +865,7 @@ private struct ShelfBrowser: View {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 270, maximum: 420), spacing: 16)], alignment: .leading, spacing: 16) {
                         ForEach(owner.sections(grouped: groupByDate)) { section in
                             Section {
-                                ForEach(section.items) { item in ShelfCard(item: item, owner: owner, collections: collections).modifier(ShelfItemFrame(id: item.id)) }
+                                ForEach(section.items) { item in ShelfCard(item: item, owner: owner, collections: collections, geometry: geometry).modifier(ShelfItemFrame(id: item.id, geometry: geometry)) }
                             } header: { groupHeader(section.title) }
                         }
                     }.padding(22)
@@ -873,16 +873,14 @@ private struct ShelfBrowser: View {
                     LazyVStack(spacing: 0) {
                         ForEach(owner.sections(grouped: groupByDate)) { section in
                             Section {
-                                ForEach(section.items) { item in ShelfListRow(item: item, owner: owner, collections: collections).modifier(ShelfItemFrame(id: item.id)) }
+                                ForEach(section.items) { item in ShelfListRow(item: item, owner: owner, collections: collections).modifier(ShelfItemFrame(id: item.id, geometry: geometry)) }
                             } header: { groupHeader(section.title).padding(.horizontal, 8) }
                         }
                     }.padding(.horizontal, 14).padding(.vertical, 8)
                 }
             }
             .coordinateSpace(name: "shelf-viewport")
-            .onPreferenceChange(ShelfItemFrames.self) { itemFrames = $0 }
-            .onPreferenceChange(ShelfControlFrames.self) { controlFrames = $0 }
-            .overlay { ShelfMarqueeOverlay(owner: owner, frames: itemFrames, controlFrames: controlFrames) }
+            .overlay { ShelfMarqueeOverlay(owner: owner, geometry: geometry) }
             HStack {
                 Text(String(format: shelfText("%lld notes"), owner.results.count))
                 Spacer()
@@ -924,6 +922,7 @@ private struct ShelfCard: View {
     let item: ShelfSummary
     @ObservedObject var owner: ShelfPreviewWindow
     @ObservedObject var collections: NoteCollections
+    let geometry: ShelfHitGeometry
     @State private var hovering = false
     private var chosen: Bool { owner.multiple ? owner.picked.contains(item.id) : owner.selectedEntry?.id == item.id }
     var body: some View {
@@ -937,9 +936,7 @@ private struct ShelfCard: View {
                         Image(systemName: item.favorite ? "star.fill" : "star").foregroundStyle(item.favorite ? .orange : .secondary)
                     }.buttonStyle(.plain).opacity(item.favorite || hovering ? 1 : 0).disabled(item.deleted)
                         .help(shelfText(item.favorite ? "Remove Favorite" : "Favorite"))
-                        .background { GeometryReader { geometry in
-                            Color.clear.preference(key: ShelfControlFrames.self, value: [geometry.frame(in: .named("shelf-viewport"))])
-                        } }
+                        .modifier(ShelfItemFrame(id: item.id, geometry: geometry, isControl: true))
                 }
             }
             Text(item.displayTitle).font(.system(size: 13, weight: .semibold)).lineLimit(2)
@@ -1097,7 +1094,7 @@ private struct ShelfDetailContent: View {
     }
 }
 
-private struct ShelfEditorSlot: NSViewRepresentable {
+struct ShelfEditorSlot: NSViewRepresentable {
     let session: NoteEditingSession
     @ObservedObject var store: NoteStore
     var appearance: NoteAppearance
@@ -1105,13 +1102,16 @@ private struct ShelfEditorSlot: NSViewRepresentable {
         let slot = NoteEditingSlot(session: session, isLibrary: true)
         session.libraryInk = appearance.textColor
         session.librarySlot = slot
-        if slot.claimEditor() {
-            DispatchQueue.main.async { [weak slot] in
-                guard let slot, session.host.superview === slot else { return }
-                slot.window?.makeFirstResponder(session.host.editor.tableCellEditor ?? session.host.editor)
-            }
+        // Claiming commits IME/captions and may publish a save result. Never do
+        // that inside makeNSView's SwiftUI update transaction.
+        DispatchQueue.main.async { [weak slot] in
+            guard let slot, slot.window != nil, session.librarySlot === slot else { return }
+            slot.claimEditor()
         }
         return slot
+    }
+    static func dismantleNSView(_ view: NoteEditingSlot, coordinator: ()) {
+        if view.session.librarySlot === view { view.session.librarySlot = nil }
     }
     func updateNSView(_ view: NoteEditingSlot, context: Context) {
         session.libraryInk = appearance.textColor
@@ -1154,30 +1154,67 @@ private struct ShelfReadOnlyContent: NSViewRepresentable {
     }
 }
 
-private struct ShelfControlFrames: PreferenceKey {
-    static let defaultValue: [CGRect] = []
-    static func reduce(value: inout [CGRect], nextValue: () -> [CGRect]) { value.append(contentsOf: nextValue()) }
-}
-private struct ShelfItemFrames: PreferenceKey {
-    static let defaultValue: [UUID: CGRect] = [:]
-    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, latest in latest })
+/// Hit-test geometry is native input data, not SwiftUI layout state. Keeping it
+/// outside the observation graph prevents measurement → body → measurement loops.
+@MainActor
+private final class ShelfHitGeometry {
+    private var items: [UUID: CGRect] = [:]
+    private var controls: [UUID: CGRect] = [:]
+    private var itemSources: [UUID: UUID] = [:]
+    private var controlSources: [UUID: UUID] = [:]
+    weak var view: ShelfMarqueeView?
+    func attach(_ view: ShelfMarqueeView) {
+        self.view = view
+        view.itemFrames = items
+        view.controlFrames = Array(controls.values)
+    }
+    func set(_ id: UUID, source: UUID, frame: CGRect?, isControl: Bool) {
+        // A grid/list replacement may appear before the old view disappears.
+        // Only the measuring view that owns a frame may remove it.
+        if isControl {
+            guard frame != nil || controlSources[id] == source else { return }
+            controlSources[id] = frame == nil ? nil : source
+            guard controls[id] != frame else { return }
+            controls[id] = frame
+            view?.controlFrames = Array(controls.values)
+        } else {
+            guard frame != nil || itemSources[id] == source else { return }
+            itemSources[id] = frame == nil ? nil : source
+            guard items[id] != frame else { return }
+            items[id] = frame
+            view?.itemFrames = items
+        }
     }
 }
 private struct ShelfItemFrame: ViewModifier {
     let id: UUID
+    let geometry: ShelfHitGeometry
+    var isControl = false
+    @State private var source = UUID()
     func body(content: Content) -> some View {
-        content.background { GeometryReader { geometry in
-            Color.clear.preference(key: ShelfItemFrames.self, value: [id: geometry.frame(in: .named("shelf-viewport"))])
-        } }
+        content.background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("shelf-viewport")) } action: {
+                        geometry.set(id, source: source, frame: $0, isControl: isControl)
+                    }
+                    .onAppear {
+                        geometry.set(id, source: source, frame: proxy.frame(in: .named("shelf-viewport")), isControl: isControl)
+                    }
+                    .onDisappear { geometry.set(id, source: source, frame: nil, isControl: isControl) }
+            }
+        }
     }
 }
 private struct ShelfMarqueeOverlay: NSViewRepresentable {
     let owner: ShelfPreviewWindow
-    let frames: [UUID: CGRect]
-    let controlFrames: [CGRect]
-    func makeNSView(context: Context) -> ShelfMarqueeView { ShelfMarqueeView(owner: owner) }
-    func updateNSView(_ view: ShelfMarqueeView, context: Context) { view.itemFrames = frames; view.controlFrames = controlFrames }
+    let geometry: ShelfHitGeometry
+    func makeNSView(context: Context) -> ShelfMarqueeView {
+        let view = ShelfMarqueeView(owner: owner)
+        geometry.attach(view)
+        return view
+    }
+    func updateNSView(_ view: ShelfMarqueeView, context: Context) {}
 }
 
 /// Select on the first native press, open on the second press. Do not make
@@ -1185,7 +1222,27 @@ private struct ShelfMarqueeOverlay: NSViewRepresentable {
 @MainActor
 final class ShelfMarqueeView: NSView {
     weak var owner: ShelfPreviewWindow?
-    var itemFrames: [UUID: CGRect] = [:] { didSet { if active { rememberFrames(); updateSelection() } } }
+    var itemFrames: [UUID: CGRect] = [:] {
+        didSet {
+            guard itemFrames != oldValue, active else { return }
+            rememberFrames()
+            // Geometry arrives during layout. Merge it now, publish selection
+            // after the update; native mouse events still select synchronously.
+            scheduleGeometrySelection()
+        }
+    }
+    private var geometrySelectionPending = false
+    private var dragGeneration = 0
+    private func scheduleGeometrySelection() {
+        guard !geometrySelectionPending else { return }
+        geometrySelectionPending = true
+        let generation = dragGeneration
+        DispatchQueue.main.async { [weak self] in
+            guard let self, dragGeneration == generation else { return }
+            geometrySelectionPending = false
+            updateSelection()
+        }
+    }
     var controlFrames: [CGRect] = []
     private var documentFrames: [UUID: CGRect] = [:]
     private var start: NSPoint?
@@ -1261,6 +1318,7 @@ final class ShelfMarqueeView: NSView {
         needsDisplay = true
     }
     override func mouseUp(with event: NSEvent) {
+        if active { rememberFrames(); updateSelection() }
         let completed = active
         let clear = start != nil && modifiers.intersection([.command, .shift]).isEmpty
         // Stop consuming frame updates before revealing the inspector changes
@@ -1270,10 +1328,16 @@ final class ShelfMarqueeView: NSView {
         else if clear { owner?.closePreview() }
     }
     override func viewWillMove(toWindow newWindow: NSWindow?) {
-        if newWindow == nil, active { reset(); owner?.endMarquee() }
+        if newWindow == nil, active {
+            reset()
+            DispatchQueue.main.async { [weak self, weak owner] in
+                guard self?.window == nil, owner?.marqueeActive == true else { return }
+                owner?.endMarquee()
+            }
+        }
         super.viewWillMove(toWindow: newWindow)
     }
-    private func reset() { scrollTimer?.invalidate(); scrollTimer = nil; start = nil; end = nil; active = false; needsDisplay = true }
+    private func reset() { dragGeneration += 1; geometrySelectionPending = false; scrollTimer?.invalidate(); scrollTimer = nil; start = nil; end = nil; active = false; needsDisplay = true }
     private func rememberFrames() {
         let offset = viewportScroll?.contentView.bounds.minY ?? 0
         for (id, rect) in itemFrames { documentFrames[id] = rect.offsetBy(dx: 0, dy: offset) }

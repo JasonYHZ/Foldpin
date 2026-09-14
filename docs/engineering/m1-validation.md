@@ -370,3 +370,11 @@ Debug 构建通过；Xcode 实例中点击折叠后显示「第一张 Foldpin �
 ## 2026-09-12 原生收纳布局重做
 
 按后期 macOS 原型重做系统工具栏、原生侧栏、彩色网格／列表和右侧详情，并接入收藏／集合和范围查询。232 项回归通过；原生合成窗口检查覆盖五种布局与按需控制器创建。截图是非激活窗口的减少透明度回退，不代表已验收真实桌面液态玻璃折射。实现、截图、复跑方式与未实现范围见[原生收纳窗口](library-window-native.md)。
+
+
+### 2026-09-14 收纳更新告警
+
+- Debug 构建通过；两项隔离原生窗口回归通过，使用合成笔记与不可见窗口。
+- 新增坐标批次无同步选区发布、相同选区去重、松手丢弃排队更新、脏纸片在视图创建后再提交保存和失效挂载取消检查。旧实现对新的挂载回归产生 3 项预期失败，修复版通过。
+- 日志：`/private/tmp/Foldpin-UpdateWarnings-After/native-check.log`、`/private/tmp/Foldpin-UpdateWarnings-negative.log`、`/private/tmp/Foldpin-UpdateWarnings-build.log`。临时日志不是永久资产。
+- 此测试不等同于 Xcode 调试器下的全部 Runtime Issue 验收；用户实际运行控制台、窗口恢复类缺失和 task name port 日志仍需区分处理。实现见 library-window-native.md。

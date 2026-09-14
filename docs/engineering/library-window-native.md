@@ -152,3 +152,15 @@ Debug 构建与原生回归通过：网格、列表按下立即增选／连选�
 用户确认蓝色边框也延迟后，去掉网格和列表串联的单击／双击 SwiftUI 手势。ShelfMarqueeView 对普通左键同样在 mouseDown 内选择；第二次点击通过原生 clickCount == 2 打开桌面纸片。收藏按钮通过实际几何偏好排除，普通点击仍交给按钮；Control-click、右键与滚动条原路由保留。修饰键和普通单击共用明确事件标志，mouseUp 不清除刚选中的条目。编辑交接和保存失败保护不变。
 
 Debug 构建与原生回归通过，覆盖按下后立即选中、松手保持、后续编辑器挂载、控件排除和修饰键多选。本机 NSEvent.doubleClickInterval 读数为 1400 ms；合成数据在已复用会话上的 mouseDown 处理约网格 1.39 ms、列表 0.67 ms。后者只是同步状态处理时长，不是屏幕绘制或冷启动编辑器耗时，不以此宣称端到端延迟已实机测量。
+
+
+## 视图更新告警修复（2026-09-14）
+
+- 移除 ShelfItemFrames / ShelfControlFrames 的 PreferenceKey → @State → 浏览区更新反馈链。onGeometryChange 只写 ShelfHitGeometry 原生命中缓存，不发布 ObservableObject / State；独立来源 UUID 防止网格 / 列表交替时旧视图的 onDisappear 删除新坐标，重新出现的惰性条目重新上报坐标。
+- ShelfMarqueeView 接受坐标时只保存几何，在下一次主队列合并选区计算，且选中集合不变就不发布。mouseDown / mouseDragged 保持同步；mouseUp 采纳最后坐标后结束会话，用代次丢弃已排队的旧框选计算。
+- ShelfEditorSlot.makeNSView 只创建挂载槽，随后在主队列检查槽仍挂在窗口中且仍为该会话的收纳槽，才 claimEditor。提交中文组合输入、图片标题、录音和 flush 的失败保护保留；不在 SwiftUI 创建视图过程中发布保存状态。dismantle 清理匹配的槽引用，不关闭 / 销毁共享编辑器与撤销历史。
+- PaperTextView.updateColors 的音频 ObservableObject 通知延后并合并，避免外观切换从 updateNSView 同步回写播放器视图。
+
+验证：`scripts/check-library-window.py` 串行运行两项原生检查，均通过；包含网格 / 列表切换、拖分栏、框选与边缘滚动、Command / Shift 选择、直接编辑及既有附件和导出 / 删除路径。新增检查证明坐标批次不会同步发布选区；脏纸片挂载不在创建视图时 flush，随后正常保存；提前移除挂载槽不再接管编辑器。将旧 ShelfView 仅放入临时源码副本运行新增测试，可见同步发布 2 次、提前清除脏状态和失效槽仍接管这 3 项失败，确认测试能检出旧行为。Debug Xcode 构建通过。
+
+边界：合成进程修复前后的标准输出均未直接打印用户所见的 SwiftUI Runtime Issue，不能据此宣称所有真实控制台日志已经清零；此次依据明确调用链与新增发布时序回归确认修复。未启动用户 Foldpin / 未操作真实笔记。NSWindowRestoration className 与 task name port 日志未在本轮修改，也未隐藏系统日志。

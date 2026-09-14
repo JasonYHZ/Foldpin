@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import Combine
 @testable import FoldpinCore
 
 @Test @MainActor func libraryWindowLayout() async throws {
@@ -263,8 +264,23 @@ import Testing
     #expect(owner.marqueeActive)
     #expect(owner.picked.contains(first.key) && owner.picked.contains(second.key))
     try capture("12-marquee")
+    // Layout may report several sets of frames in one render transaction.
+    // It must not publish selection synchronously or repeat identical selections.
+    var selectionPublications = 0
+    let selectionObserver = owner.objectWillChange.sink { selectionPublications += 1 }
+    let measuredFrames = marquee.itemFrames
+    marquee.itemFrames = measuredFrames.mapValues { $0.offsetBy(dx: 0, dy: 10_000) }
+    marquee.itemFrames = measuredFrames
+    #expect(selectionPublications == 0)
+    try await Task.sleep(for: .milliseconds(30))
+    #expect(selectionPublications == 0)
+    #expect(owner.picked.contains(first.key) && owner.picked.contains(second.key))
+    // Queue another geometry pass, then release: stale work must not reopen
+    // multi-selection or alter its final contents after mouse-up.
+    marquee.itemFrames = measuredFrames.mapValues { $0.offsetBy(dx: 0, dy: 1) }
     marquee.mouseUp(with: try pointer(.leftMouseUp, endPoint))
     try await Task.sleep(for: .milliseconds(200))
+    selectionObserver.cancel()
     #expect(owner.showsSelectionSummary && !owner.marqueeActive)
     #expect(owner.picked.contains(first.key) && owner.picked.contains(second.key))
     #expect(!detail.splitViewItems[1].isCollapsed)
@@ -622,4 +638,44 @@ import Testing
     owner.permanentlyDelete(ids: owner.permanentDeletionTargets)
     #expect(library.deletedEntries.isEmpty && owner.permanentDeletionTargets.isEmpty)
 
+}
+
+
+/// Dirty stores make a synchronous mount/flush observable even without the
+/// Xcode runtime-issue debugger. All files and windows are synthetic.
+@Test @MainActor func libraryWindowUpdateTransactions() async throws {
+    let directory = URL(fileURLWithPath: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_DATA"]!)
+        .appendingPathComponent(UUID().uuidString)
+    let library = NoteLibrary(directory: directory)
+    let entry = try #require(library.entries.first)
+    let session = NoteEditingSession(store: entry.store)
+    let desktop = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
+    session.desktopSlot = desktop
+    session.mount(in: desktop)
+    let history = session.host.editor.undoManager
+    entry.store.setPinned(!entry.store.document.isPinned)
+    #expect(entry.store.isDirty)
+    var publications = 0
+    let observer = entry.store.objectWillChange.sink { publications += 1 }
+    let window = NSWindow(contentRect: desktop.frame, styleMask: [.titled, .closable], backing: .buffered, defer: false)
+    window.isReleasedWhenClosed = false
+    window.isRestorable = false
+    defer { observer.cancel(); window.contentView = nil; window.close() }
+    let host = NSHostingView(rootView: ShelfEditorSlot(session: session, store: entry.store, appearance: .paper))
+    window.contentView = host
+    host.layoutSubtreeIfNeeded()
+    #expect(publications == 0)
+    #expect(entry.store.isDirty && !session.inPreview)
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(session.inPreview && !entry.store.isDirty)
+    #expect(session.host.editor.undoManager === history)
+    #expect(session.endPreview())
+    window.contentView = nil
+    // A slot removed before the deferred claim runs must not take the editor.
+    let obsolete = NSHostingView(rootView: ShelfEditorSlot(session: session, store: entry.store, appearance: .paper))
+    window.contentView = obsolete
+    obsolete.layoutSubtreeIfNeeded()
+    window.contentView = nil
+    try await Task.sleep(for: .milliseconds(100))
+    #expect(!session.inPreview && session.host.superview === desktop)
 }

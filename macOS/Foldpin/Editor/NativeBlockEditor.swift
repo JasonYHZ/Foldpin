@@ -192,12 +192,23 @@ final class PaperTextView: NSTextView {
         undoManager?.removeAllActions()
     }
 
+    private var audioAppearanceRefreshScheduled = false
+
     func updateColors(_ color: NSColor) {
         guard noteColor != color else { return }
         noteColor = color
         refreshVideoControls()
         scheduleImageControls()
-        for model in audioModels.values { model.objectWillChange.send() }
+        // updateColors is also called by NSViewRepresentable.updateNSView.
+        // Audio controls observe these models, so publish after that transaction.
+        if !audioAppearanceRefreshScheduled, !audioModels.isEmpty {
+            audioAppearanceRefreshScheduled = true
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                audioAppearanceRefreshScheduled = false
+                for model in audioModels.values { model.objectWillChange.send() }
+            }
+        }
         blockHandle?.ink = color
         tableControls?.updateColors(color)
         refreshStyles(force: true)

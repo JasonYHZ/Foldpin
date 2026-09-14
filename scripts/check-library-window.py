@@ -55,8 +55,8 @@ language.write_text(langsource)
 environment = dict(os.environ, DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer",
     CLANG_MODULE_CACHE_PATH="/private/tmp/Foldpin-ModuleCache", SWIFTPM_MODULECACHE_OVERRIDE="/private/tmp/Foldpin-ModuleCache",
     FOLDPIN_CHECK_LOCALIZATIONS=str(localizations), FOLDPIN_CHECK_DATA=str(snapshot / "data"), FOLDPIN_CHECK_OUTPUT=str(output))
-command = ["xcrun", "swift", "test", "--disable-sandbox", "--package-path", str(snapshot),
-    "--scratch-path", str(snapshot / "build"), "--filter", "libraryWindowLayout"]
+command = ["xcrun", "swift", "test", "--disable-sandbox", "--no-parallel", "--package-path", str(snapshot),
+    "--scratch-path", str(snapshot / "build"), "--filter", "libraryWindow"]
 print("Isolated native check: " + str(snapshot), flush=True)
 with (output / "native-check.log").open("w") as log:
     result = subprocess.run(command, env=environment, stdout=log, stderr=subprocess.STDOUT)
