@@ -8,6 +8,7 @@ import Combine
 final class PaperWindowController: NSObject, NSWindowDelegate {
     let id: UUID
     let store: NoteStore
+    let session: NoteEditingSession
     let titlebarState = NoteTitlebarState()
     private(set) var paper: PaperPanel!
     private var paperShadow: NoteShadowWindow?
@@ -32,6 +33,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     init(entry: NoteLibrary.Entry, initialFrame: NSRect? = nil) {
         id = entry.id
         store = entry.store
+        session = NoteEditingSession(store: entry.store)
         super.init()
         store.localizationBundle = languageSettings.bundle
         createPaper(initialFrame: initialFrame)
@@ -85,7 +87,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         paper.contentMinSize = NSSize(width: NoteLayout.minimumWidth, height: NoteLayout.minimumExpandedHeight)
         paper.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .fullScreenAuxiliary]
         paper.delegate = self
-        let hosting = TransparentNoteHostingView(rootView: ContentView(store: store, titlebarState: titlebarState,
+        let hosting = TransparentNoteHostingView(rootView: ContentView(store: store, session: session, titlebarState: titlebarState,
             onPin: { [weak self] in self?.togglePin() },
             onCollapse: { [weak self] in self?.toggleCollapsed() },
             onClose: { [weak self] in self?.closePaper() },
@@ -151,6 +153,11 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         case .collapse: toggleCollapsed()
         case .shelve: shelvePaper()
         case .icon: titlebarState.iconRequest += 1
+        case .exportNote:
+            guard let source = exportSource() else {
+                NoteExportPresenter.showError(NoteExportError.unavailable, in: paper); return
+            }
+            NoteExportPresenter.present([source], in: paper)
         case .copyAll:
             commitMarkedText()
             guard audioEditor?.prepareAudioForHiding() != false else { return }
@@ -236,8 +243,12 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
 
     func showPaper(focus: Bool) {
         guard store.document.deletedAt == nil else { return }
+        if session.inPreview && !session.prepareToLeave() { return }
         if pendingGeometryUpdate != nil { recordGeometry() }
+        let wasShelved = store.document.isShelved
         store.setShelved(false)
+        if store.loadError == nil, !store.flush() { store.setShelved(wasShelved); return }
+        guard session.endPreview() else { store.setShelved(wasShelved); return }
         paper.level = store.document.isPinned ? .floating : .normal
         applyPaperPresentation()
         if focus {
@@ -263,24 +274,16 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         paper.makeMain()
     }
 
-    func windowDidBecomeKey(_ notification: Notification) { onActivate?(id) }
-
-    var audioEditor: PaperTextView? {
-        func find(_ view: NSView) -> PaperTextView? {
-            if let editor = view as? PaperTextView { return editor }
-            for child in view.subviews { if let editor = find(child) { return editor } }
-            return nil
+    func windowDidBecomeKey(_ notification: Notification) {
+        if session.inPreview, session.endPreview() {
+            paper.makeFirstResponder(session.host.editor.tableCellEditor ?? session.host.editor)
         }
-        return paper.contentView.flatMap(find)
+        onActivate?(id)
     }
 
-    private func commitMarkedText() {
-        audioEditor?.prepareImageEditingForHiding()
-        if let editor = paper.firstResponder as? NSTextView, editor.hasMarkedText() {
-            editor.unmarkText()
-            (editor as? PaperTextView)?.commitContent()
-        }
-    }
+    var audioEditor: PaperTextView? { session.host.editor }
+
+    private func commitMarkedText() { session.host.editor.commitForHandoff() }
 
     @objc func toggleCollapsed() {
         guard store.loadError == nil else { return }
@@ -497,6 +500,12 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         return false
     }
 
+    func exportSource() -> NoteExportSource? {
+        guard store.loadError == nil, !session.host.editor.hasPendingFileImport,
+              session.prepareToLeave() else { return nil }
+        return NoteExportSource(document: store.document, assets: store.file.assetsURL)
+    }
+
     func prepareToTerminate() -> Bool {
         commitMarkedText()
         guard audioEditor?.prepareAudioForHiding() != false else { return false }
@@ -514,6 +523,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
     }
 
     func dispose() {
+        session.host.editor.undoManager?.removeAllActions()
         audioEditor?.stopAudio()
         copyFeedbackTask?.cancel()
         actionsPanel?.close()

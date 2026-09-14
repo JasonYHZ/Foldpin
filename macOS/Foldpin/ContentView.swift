@@ -5,6 +5,7 @@ struct ContentView: View {
     @ObservedObject private var languageSettings = LanguageSettings.shared
     @ObservedObject var store: NoteStore
     @AppStorage(NoteAppearance.preferenceKey) private var appearance: NoteAppearance = .paper
+    let session: NoteEditingSession
     var titlebarState = NoteTitlebarState()
     var onPin: () -> Void
     var onCollapse: () -> Void
@@ -55,7 +56,7 @@ struct ContentView: View {
                 .background(Color.red.opacity(0.12))
             }
             // The native block editor owns all empty-block hints.
-            NoteEditor(store: store, appearance: appearance, onEscape: onShelve)
+            NoteEditor(store: store, session: session, appearance: appearance, onEscape: onShelve)
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 NoteActionsButton(state: titlebarState, appearance: appearance, onActions: onActions)
@@ -279,7 +280,7 @@ private struct TitlebarShortcutHint: View {
     }
 }
 
-private struct NoteActionsButton: View {
+struct NoteActionsButton: View {
     @ObservedObject private var shortcuts = ShortcutSettings.shared
     @ObservedObject private var language = LanguageSettings.shared
     @ObservedObject var state: NoteTitlebarState

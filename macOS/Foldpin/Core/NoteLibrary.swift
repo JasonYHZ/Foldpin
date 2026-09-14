@@ -47,7 +47,7 @@ final class NoteLibrary: ObservableObject {
             deletedEntries = loaded.filter { $0.store.document.deletedAt != nil }
                 .sorted { $0.store.document.deletedAt! > $1.store.document.deletedAt! }
             failure = nil
-            if entries.isEmpty && deletedEntries.isEmpty { _ = createNote() }
+            if entries.isEmpty && deletedEntries.isEmpty && !FileManager.default.fileExists(atPath: directory.appendingPathComponent("library-kept-empty").path) { _ = createNote() }
         } catch { failure = error }
     }
 
@@ -65,6 +65,7 @@ final class NoteLibrary: ObservableObject {
         document.isShelved = false
         document.deletedAt = nil
         document.modifiedAt = Date()
+        document.createdAt = document.modifiedAt
         if var frame = document.frame {
             frame.x += 24; frame.y -= 24
             document.frame = frame
@@ -96,11 +97,32 @@ final class NoteLibrary: ObservableObject {
         return true
     }
 
-    @discardableResult func restoreNote(_ id: UUID) -> Entry? {
-        guard let entry = deletedEntries.first(where: { $0.id == id }), entry.store.setDeletedAt(nil) else { return nil }
+    @discardableResult func restoreNote(_ id: UUID, toShelf: Bool = false) -> Entry? {
+        guard let entry = deletedEntries.first(where: { $0.id == id }) else { return nil }
+        guard toShelf ? entry.store.restoreToShelf() : entry.store.setDeletedAt(nil) else { return nil }
         deletedEntries.removeAll { $0.id == id }
         entries.append(entry)
         return entry
+    }
+
+    /// Only a confirmed UUID in Recently Deleted is eligible. Unlink the
+    /// document first; a failure keeps its store and restore path intact.
+    func permanentlyDeleteNote(_ id: UUID) throws {
+        guard failure == nil, let entry = deletedEntries.first(where: { $0.id == id }),
+              entry.store.document.deletedAt != nil, entry.store.loadError == nil else { throw NoteFileError.invalidContent }
+        let url = entry.store.file.url
+        let info = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+        guard info.isRegularFile == true, info.isSymbolicLink != true,
+              try entry.store.file.load().deletedAt != nil else { throw NoteFileError.invalidContent }
+        // Once the user deliberately empties the library, startup must not
+        // manufacture a replacement blank note.
+        let marker = directory.appendingPathComponent("library-kept-empty")
+        if !FileManager.default.fileExists(atPath: marker.path) { try Data().write(to: marker, options: .atomic) }
+        try FileManager.default.removeItem(at: url)
+        entry.store.invalidateAfterPermanentDeletion()
+        deletedEntries.removeAll { $0.id == id }
+        // Shared assets can belong to surviving notes, clipboard references or
+        // their undo histories. Do not sweep that directory during note deletion.
     }
 
     func message(bundle: Bundle) -> String? {

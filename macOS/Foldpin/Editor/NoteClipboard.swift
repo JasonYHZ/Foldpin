@@ -72,6 +72,17 @@ enum NoteClipboard {
             let data = try Data(contentsOf: url)
             audioBytes += data.count; videoData[video.id] = data
         }
+        var attachmentData: [UUID: Data] = [:]
+        for attachment in content.blocks.compactMap(\.attachment) where attachmentData[attachment.id] == nil {
+            let url = file.attachmentURL(attachment)
+            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
+            guard size <= 32 * 1024 * 1024 - audioBytes else {
+                throw NoteAudioCopyError(message: String(localized: "For attachments over 32 MB, use Export instead of copying.", bundle: LanguageSettings.shared.bundle))
+            }
+            let data = try Data(contentsOf: url)
+            guard data.count <= 32 * 1024 * 1024 - audioBytes else { throw CocoaError(.fileReadTooLarge) }
+            audioBytes += data.count; attachmentData[attachment.id] = data
+        }
         var imageData: [UUID: Data] = [:]
         for block in content.blocks {
             guard let image = block.image, !image.isRemotePlaceholder else { continue }
@@ -93,6 +104,13 @@ enum NoteClipboard {
         var captions: [(Int, String)] = []
         rendered.enumerateAttribute(.attachment, in: fullRange) { value, range, _ in
             guard let attachment = value as? NSTextAttachment else { return }
+            if let metadata = rendered.attribute(.blockFile, at: range.location, effectiveRange: nil) as? Data,
+               let file = try? JSONDecoder().decode(NoteAttachment.self, from: metadata), let data = attachmentData[file.id] {
+                let wrapper = FileWrapper(regularFileWithContents: data)
+                wrapper.preferredFilename = file.id.uuidString + "-" + file.name
+                rendered.addAttribute(.attachment, value: NSTextAttachment(fileWrapper: wrapper), range: range)
+                return
+            }
             if let metadata = rendered.attribute(.blockVideo, at: range.location, effectiveRange: nil) as? Data,
                let video = try? JSONDecoder().decode(NoteVideo.self, from: metadata), let data = videoData[video.id] {
                 let wrapper = FileWrapper(regularFileWithContents: data)
@@ -136,7 +154,7 @@ enum NoteClipboard {
         item.setString(content.plainText, forType: .string)
         item.setData(try JSONEncoder().encode(content), forType: blocksType)
         item.setData(rtfd, forType: .rtfd)
-        item.setString(html(content, imageData: imageData, audioData: audioData, videoData: videoData), forType: .html)
+        item.setString(html(content, imageData: imageData, audioData: audioData, videoData: videoData, attachmentData: attachmentData), forType: .html)
         board.clearContents()
         guard board.writeObjects([item]) else { throw CocoaError(.fileWriteUnknown) }
     }
@@ -164,7 +182,7 @@ enum NoteClipboard {
         }.joined()
     }
 
-    private static func html(_ content: NoteContent, imageData: [UUID: Data], audioData: [UUID: Data], videoData: [UUID: Data]) -> String {
+    private static func html(_ content: NoteContent, imageData: [UUID: Data], audioData: [UUID: Data], videoData: [UUID: Data], attachmentData: [UUID: Data]) -> String {
         var result = "<html><head><meta charset=\"utf-8\"></head><body>"
         var list: String?
         for block in content.blocks {
@@ -184,6 +202,8 @@ enum NoteClipboard {
                 if image.clickableLink != nil { result += "</a>" }
                 if let caption = image.caption, !caption.isEmpty { result += "<figcaption>\(escape(caption))</figcaption>" }
                 result += "</figure>"
+            } else if let attachment = block.attachment, let data = attachmentData[attachment.id] {
+                result += "<p><a download=\"\(escape(attachment.name))\" href=\"data:application/octet-stream;base64,\(data.base64EncodedString())\">\(escape(attachment.name))</a></p>"
             } else if let video = block.video, let data = videoData[video.id] {
                 result += "<p>\(escape(video.name)) · \(NoteAudio.timestamp(video.duration))<br><video controls preload=\"none\" src=\"data:\(video.mimeType);base64,\(data.base64EncodedString())\">\(escape(video.name))</video></p>"
             } else if let audio = block.audio, let data = audioData[audio.id] {

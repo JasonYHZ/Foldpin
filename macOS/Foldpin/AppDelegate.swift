@@ -15,7 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var observers: [NSObjectProtocol] = []
     private var edge: EdgePanel!
     private var statusItem: NSStatusItem!
-    private let popover = NSPopover()
+    private var shelfWindow: ShelfPreviewWindow?
     private let shortcut = GlobalShortcut()
     private let shortcutSettings = ShortcutSettings.shared
     private var localShortcutMonitor: Any?
@@ -123,14 +123,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private func duplicatePaper(_ id: UUID) {
         guard let source = windows[id], source.prepareToTerminate() else { return }
         guard let copy = library.duplicateNote(id) else { showShelf(); rebuildMenu(); return }
-        popover.close()
         controller(for: copy).showPaper(focus: true)
         updateEdge(); rebuildMenu()
     }
 
     private func restorePaper(_ id: UUID) {
         guard let entry = library.restoreNote(id) else { return }
-        popover.close()
         controller(for: entry).showPaper(focus: true)
         updateEdge(); rebuildMenu()
     }
@@ -140,13 +138,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let screen = workingScreen.visibleFrame
         let offset = CGFloat(windows.values.filter(\.isVisible).count % 8) * 24
         let frame = NSRect(x: screen.maxX - 452 - offset, y: screen.midY - 170 - offset, width: 360, height: 340)
-        popover.close()
         controller(for: entry, initialFrame: frame).showPaper(focus: true)
     }
 
     private func openPaper(_ id: UUID) {
         guard let entry = library.entry(id) else { return }
-        popover.close()
         controller(for: entry).showPaper(focus: true)
     }
 
@@ -161,11 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         edge.hasShadow = true
         edge.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .fullScreenAuxiliary]
         edge.contentView = NSHostingView(rootView: EdgeView(library: library) { [weak self] in self?.toggleShelf() })
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: ShelfView(library: library,
-            onOpen: { [weak self] in self?.openPaper($0) }, onNew: { [weak self] in self?.newPaper() },
-            onRetry: { [weak self] in self?.retryLibrary() },
-            onRestore: { [weak self] in self?.restorePaper($0) }))
+
     }
 
     private func updateEdge() {
@@ -174,16 +166,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         edge?.orderOut(nil)
     }
 
-    private func toggleShelf() {
-        if popover.isShown { popover.close(); return }
-        guard let view = edge.contentView else { return }
-        popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minX)
-    }
+    private func toggleShelf() { showShelf() }
 
     @objc func showShelf() {
-        guard let button = statusItem?.button else { return }
-        popover.close()
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        if shelfWindow == nil {
+            shelfWindow = ShelfPreviewWindow(library: library,
+                resolve: { [weak self] id in
+                    guard let self, let entry = library.entry(id) else { return nil }
+                    return controller(for: entry)
+                }, onNew: { [weak self] in self?.newPaper() },
+                onRetry: { [weak self] in self?.retryLibrary() },
+                onRestore: { [weak self] in self?.restorePaper($0) },
+                existingController: { [weak self] in self?.windows[$0] },
+                onPermanentlyDeleted: { [weak self] id in
+                    guard let self else { return }
+                    windows.removeValue(forKey: id)
+                    if lastActiveID == id { lastActiveID = nil }
+                    updateEdge(); rebuildMenu()
+                })
+        }
+        shelfWindow?.show()
     }
 
     private func retryLibrary() {
@@ -276,7 +278,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     @objc func showSettings() {
-        popover.close()
         // Invoke SwiftUI's actual Settings menu command, keeping every entry point
         // on the same Settings scene without deprecated private selector strings.
         DispatchQueue.main.async {
@@ -422,7 +423,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }, start: { [weak self] in
             guard let self else { return }
             guard let entry = library.createNote() else { showShelf(); return }
-            popover.close()
             let controller = controller(for: entry)
             await controller.startQuickRecording()
             if entry.store.saveError != nil { recordingSaveRetryID = entry.id }

@@ -23,7 +23,7 @@ final class SlashCommandMenu {
             case .task: prefix = "[]"
             case .quote: prefix = "\""
             case .code: prefix = "```"
-            case .paragraph, .image, .table, .audio, .video: return ""
+            case .paragraph, .image, .table, .audio, .video, .file: return ""
             }
             return prefix
         }
@@ -40,6 +40,7 @@ final class SlashCommandMenu {
             case .quote: "text.quote"
             case .code: "chevron.left.forwardslash.chevron.right"
             case .audio: importsAudio ? "waveform" : "mic"
+            case .file: "paperclip"
             case .video: "video"
             case .image: "photo"
             }

@@ -15,6 +15,7 @@ final class NoteStore: ObservableObject {
 
     let file: NoteFile
     private var pendingSave: Task<Void, Never>?
+    private var permanentlyDeleted = false
 
     init(file: NoteFile? = nil, localizationBundle: Bundle = .main) {
         self.localizationBundle = localizationBundle
@@ -24,6 +25,7 @@ final class NoteStore: ObservableObject {
     }
 
     func reload() {
+        guard !permanentlyDeleted else { return }
         pendingSave?.cancel()
         do {
             document = try file.load()
@@ -44,6 +46,30 @@ final class NoteStore: ObservableObject {
         document.content = content
         document.modifiedAt = Date()
         scheduleSave()
+    }
+
+    @discardableResult func setFavorite(_ value: Bool) -> Bool {
+        guard loadError == nil else { return false }
+        let previous = document.isFavorite
+        document.isFavorite = value
+        isDirty = true
+        if flush() { return true }
+        document.isFavorite = previous
+        return false
+    }
+
+    /// Restoring from the library always returns to the shelf, in one save.
+    @discardableResult func restoreToShelf() -> Bool {
+        guard loadError == nil else { return false }
+        let deleted = document.deletedAt
+        let shelved = document.isShelved
+        document.deletedAt = nil
+        document.isShelved = true
+        isDirty = true
+        if flush() { return true }
+        document.deletedAt = deleted
+        document.isShelved = shelved
+        return false
     }
 
     func setPinned(_ value: Bool) {
@@ -127,6 +153,16 @@ final class NoteStore: ObservableObject {
             do { try await Task.sleep(for: .milliseconds(450)) } catch { return }
             self?.flush()
         }
+    }
+
+    /// Terminal lifecycle state: a retained callback or undo object must never
+    /// recreate a note after the user has permanently deleted it.
+    func invalidateAfterPermanentDeletion() {
+        permanentlyDeleted = true
+        pendingSave?.cancel(); pendingSave = nil
+        loadFailure = CocoaError(.fileNoSuchFile)
+        saveFailure = nil; isDirty = false
+        document.content = NoteContent()
     }
 
     @discardableResult func flush() -> Bool {

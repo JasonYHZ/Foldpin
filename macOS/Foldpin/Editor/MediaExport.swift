@@ -30,6 +30,13 @@ nonisolated struct MediaExport: Sendable {
         return Self(sourceURL: url, filename: filename(video.name, extension: video.fileExtension, fallback: fallback), contentType: UTType(filenameExtension: video.fileExtension) ?? type)
     }
 
+    static func attachment(at url: URL, attachment: NoteAttachment) throws -> Self {
+        guard attachment.isValid else { throw CocoaError(.fileReadCorruptFile) }
+        try requireFile(url)
+        return Self(sourceURL: url, filename: attachment.name,
+            contentType: UTType(filenameExtension: (attachment.name as NSString).pathExtension) ?? .data)
+    }
+
     static func audio(at url: URL, audio: NoteAudio, fallback: String) throws -> Self {
         guard audio.isValid, !audio.isDraft else { throw CocoaError(.fileReadCorruptFile) }
         try requireFile(url)

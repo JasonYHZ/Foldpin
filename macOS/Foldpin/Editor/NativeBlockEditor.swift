@@ -4,10 +4,11 @@ import AVFoundation
 import Combine
 
 enum NoteEditorStatus: Equatable {
-    case importingImage, insertionChanged, imageFailed, imageCopyFailed
+    case importingAttachment, importingImage, insertionChanged, imageFailed, imageCopyFailed
 
     func description(bundle: Bundle) -> String {
         switch self {
+        case .importingAttachment: String(localized: "Importing attachments…", bundle: bundle)
         case .importingImage: String(localized: "Importing image…", bundle: bundle)
         case .insertionChanged: String(localized: "The insertion block changed. Please insert the image again.", bundle: bundle)
         case .imageFailed: String(localized: "Could not insert image. Choose an image under 40 MB and 80 megapixels.", bundle: bundle)
@@ -17,6 +18,20 @@ enum NoteEditorStatus: Equatable {
 }
 
 final class PaperTextView: NSTextView {
+    var sessionUndoManager: UndoManager?
+    override var undoManager: UndoManager? { sessionUndoManager ?? super.undoManager }
+
+    func commitForHandoff() {
+        if let responder = window?.firstResponder as? NSTextView, responder.hasMarkedText() {
+            responder.unmarkText()
+        }
+        if hasMarkedText() { unmarkText() }
+        if let cell = tableCellEditor, cell.hasMarkedText() { cell.unmarkText() }
+        prepareImageEditingForHiding()
+        commitContent()
+        breakUndoCoalescing()
+    }
+
     private(set) var imageControls: ImageBlockControls?
     private var imageResize: (block: NoteBlock, width: CGFloat, side: CGFloat, preview: CGFloat)?
     private var imageCaptionBlock: NoteBlock?
@@ -32,6 +47,7 @@ final class PaperTextView: NSTextView {
     private var videoViewsScheduled = false
     private var updatingVideoViews = false
     var onVideoCommit: (() -> Bool)?
+    var onAttachmentCommit: (() -> Bool)?
     private var audioModels: [UUID: AudioBlockModel] = [:]
     private var audioViews: [UUID: NSView] = [:]
     private var audioViewsScheduled = false
@@ -111,6 +127,7 @@ final class PaperTextView: NSTextView {
     private(set) var syntaxTask: Task<Void, Never>?
     var hasSlashSuggestions: Bool { slashMenu != nil }
     private var importInProgress = false
+    var hasPendingFileImport: Bool { importInProgress }
     private var suppressMarkdownShortcuts = false
     private var historyEmptyBlock: NoteBlock?
     private let images = NSCache<NSUUID, NSImage>()
@@ -288,7 +305,7 @@ final class PaperTextView: NSTextView {
             case .task: label = String(localized: "To-do", bundle: bundle)
             case .quote: label = String(localized: "Quote", bundle: bundle)
             case .code: label = String(localized: "Type or paste code", bundle: bundle)
-            case .image, .divider, .table, .audio, .video: return nil
+            case .image, .divider, .table, .audio, .video, .file: return nil
             }
             let paragraph = NSMutableParagraphStyle()
             paragraph.lineBreakMode = .byTruncatingTail
@@ -965,6 +982,9 @@ final class PaperTextView: NSTextView {
         dismissSlashMenu()
         let point = convert(event.locationInWindow, from: nil)
         let hitIDs = Set(blockSurfaces().filter { $0.rect.contains(point) }.map(\.blockID))
+        if event.clickCount == 2, !hasMarkedText(), let block = content.blocks.first(where: { hitIDs.contains($0.id) && $0.attachment != nil }) {
+            _ = openAttachment(blockID: block.id); return
+        }
         for block in content.blocks where hitIDs.contains(block.id) {
             guard !hasMarkedText(), let image = block.image, let rect = imageFrame(blockID: block.id), rect.contains(point) else { continue }
             if image.isRemotePlaceholder { enqueueRemoteImages([block.id]); return }
@@ -1204,7 +1224,7 @@ final class PaperTextView: NSTextView {
         if slashMenuContext != context {
             dismissSlashMenu()
             let blockID = context.source.id
-            var entries = NoteBlockKind.allCases.map {
+            var entries = NoteBlockKind.allCases.filter { $0 != .file }.map {
                 SlashCommandMenu.Entry(kind: $0, title: $0 == .paragraph ? String(localized: "Text", bundle: bundle) : $0 == .audio ? String(localized: "Record Audio", bundle: bundle) : title($0))
             }
             entries.append(.init(kind: .audio, title: String(localized: "Import Audio…", bundle: bundle), importsAudio: true))
@@ -1328,7 +1348,7 @@ final class PaperTextView: NSTextView {
 
     private func makeBlockMenu() -> NSMenu {
         let menu = NSMenu()
-        for kind in NoteBlockKind.allCases where kind != .image && kind != .audio && kind != .video {
+        for kind in NoteBlockKind.allCases where kind != .image && kind != .audio && kind != .video && kind != .file {
             let item = NSMenuItem(title: title(kind), action: #selector(selectKind(_:)), keyEquivalent: "")
             item.representedObject = kind.rawValue
             item.target = self
@@ -1337,6 +1357,7 @@ final class PaperTextView: NSTextView {
             menu.addItem(item)
         }
         add(menu, String(localized: "Import Video…", bundle: bundle), #selector(chooseVideo(_:)))
+        add(menu, String(localized: "Import Attachments…", bundle: bundle), #selector(chooseAttachments(_:)))
         add(menu, String(localized: "Record Audio", bundle: bundle), #selector(recordAudio(_:)))
         add(menu, String(localized: "Import Audio…", bundle: bundle), #selector(chooseAudio(_:)))
         add(menu, String(localized: "Insert Image…", bundle: bundle), #selector(chooseImage(_:)), enabled: !importInProgress)
@@ -1394,6 +1415,7 @@ final class PaperTextView: NSTextView {
         case .task: String(localized: "To-do", bundle: bundle)
         case .quote: String(localized: "Quote", bundle: bundle)
         case .code: String(localized: "Code Block", bundle: bundle)
+        case .file: String(localized: "Attachment", bundle: bundle)
         case .video: String(localized: "Video", bundle: bundle)
         case .audio: String(localized: "Audio", bundle: bundle)
         case .image: String(localized: "Image", bundle: bundle)
@@ -1406,6 +1428,7 @@ final class PaperTextView: NSTextView {
     }
 
     func changeKind(_ kind: NoteBlockKind) {
+        if kind == .file { chooseAttachments(nil); return }
         if kind == .video { chooseVideo(nil); return }
         if kind == .audio { recordAudio(nil); return }
         if let context = slashContext {
@@ -1590,12 +1613,17 @@ final class PaperTextView: NSTextView {
         suppressMarkdownShortcuts = true
         defer { suppressMarkdownShortcuts = previous }
         let board = NSPasteboard.general
+        if importAttachments(from: board) { return }
         if activeSpan?.block.kind == .code, let text = board.string(forType: .string) {
             insertPastedText(text, interpretingMarkdown: false); return
         }
         if let data = board.data(forType: Self.pasteboardType),
            let value = try? JSONDecoder().decode(NoteContent.self, from: data), (try? value.validate()) != nil {
-            if !insertPastedBlocks(value) { insertPastedText(value.plainText, interpretingMarkdown: false) }
+            if !insertPastedBlocks(value) {
+                if value.blocks.contains(where: { $0.attachment != nil }) {
+                    attachmentError(NoteFileError.missingAttachment.description(bundle: bundle))
+                } else { insertPastedText(value.plainText, interpretingMarkdown: false) }
+            }
             return
         }
         if importVideo(from: board) || importAudio(from: board) || importImages(from: board) { return }
@@ -1630,6 +1658,9 @@ final class PaperTextView: NSTextView {
     @discardableResult
     func insertPastedBlocks(_ value: NoteContent) -> Bool {
         guard isEditable, !hasMarkedText(), tableCellEditor == nil, (try? value.validate()) != nil else { return false }
+        for attachment in value.blocks.compactMap(\.attachment) {
+            guard let file, FileManager.default.fileExists(atPath: file.attachmentURL(attachment).path) else { return false }
+        }
         for video in value.blocks.compactMap(\.video) {
             guard let file, FileManager.default.fileExists(atPath: file.videoURL(video).path) else { return false }
         }
@@ -1704,6 +1735,9 @@ final class PaperTextView: NSTextView {
         if sender.draggingPasteboard.types?.contains(BlockReordering.pasteboardType) == true {
             return updateLocalBlockDrag(sender)
         }
+        if attachmentURLs(from: sender.draggingPasteboard) != nil {
+            return isEditable && !hasMarkedText() && !importInProgress && tableCellEditor == nil ? .copy : []
+        }
         if videoURL(from: sender.draggingPasteboard) != nil {
             return isEditable && !hasMarkedText() && !importInProgress ? .copy : []
         }
@@ -1722,6 +1756,9 @@ final class PaperTextView: NSTextView {
             guard matchesLocalBlockDrag(sender) else { return false }
             sender.animatesToDestination = false
             return updateBlockDrop(at: convert(sender.draggingLocation, from: nil)) != nil
+        }
+        if attachmentURLs(from: sender.draggingPasteboard) != nil {
+            return isEditable && !hasMarkedText() && !importInProgress && tableCellEditor == nil
         }
         if videoURL(from: sender.draggingPasteboard) != nil {
             return isEditable && !hasMarkedText() && !importInProgress && tableCellEditor?.hasMarkedText() != true
@@ -1746,7 +1783,7 @@ final class PaperTextView: NSTextView {
         defer { suppressMarkdownShortcuts = previous }
         let index = characterIndexForInsertion(at: convert(sender.draggingLocation, from: nil))
         setSelectedRange(NSRange(location: index, length: 0))
-        return importVideo(from: sender.draggingPasteboard) || importAudio(from: sender.draggingPasteboard) || importImages(from: sender.draggingPasteboard) || super.performDragOperation(sender)
+        return importAttachments(from: sender.draggingPasteboard) || importVideo(from: sender.draggingPasteboard) || importAudio(from: sender.draggingPasteboard) || importImages(from: sender.draggingPasteboard) || super.performDragOperation(sender)
     }
 
     private func importImage(url: URL? = nil, data: Data? = nil, target: UUID, command: SlashCommandContext? = nil) {
@@ -2047,6 +2084,11 @@ extension PaperTextView {
             menu.addItem(item(String(localized: "Export Image…", bundle: bundle), .exportMedia, symbol: "square.and.arrow.up", enabled: block.image?.isRemotePlaceholder != true))
             menu.addItem(item(String(localized: "Copy Image", bundle: bundle), .copyImage, symbol: "photo.on.rectangle", key: "c", enabled: block.image?.isRemotePlaceholder != true))
         }
+        if block.kind == .file {
+            menu.addItem(item(String(localized: "Open Attachment", bundle: bundle), .openAttachment, symbol: "arrow.up.right.square"))
+            menu.addItem(item(String(localized: "Export Attachment…", bundle: bundle), .exportMedia, symbol: "square.and.arrow.up"))
+            menu.addItem(.separator())
+        }
         if block.kind == .video {
             menu.addItem(item(String(localized: "Export Video…", bundle: bundle), .exportMedia, symbol: "square.and.arrow.up"))
         }
@@ -2111,6 +2153,7 @@ extension PaperTextView {
         case .restoreImageMarkdown:
             guard let text = next.blocks[index].image?.sourceMarkdown else { return false }
             next.blocks[index] = NoteBlock(id: blockID, text: text)
+        case .openAttachment: return openAttachment(blockID: blockID)
         case .exportMedia: return exportMedia(blockID: blockID)
         case .imageCaption: beginImageCaption(blockID: blockID); return true
         case .resetImageSize: resetImageSize(blockID: blockID); return true
@@ -2137,11 +2180,12 @@ extension PaperTextView {
                 return false
             }
         case .copy:
-            if content.blocks[index].audio != nil || content.blocks[index].video != nil {
+            if content.blocks[index].audio != nil || content.blocks[index].video != nil || content.blocks[index].attachment != nil {
                 guard let file else { return false }
                 do { try NoteClipboard.copy(NoteContent(blocks: [content.blocks[index]]), file: file); return true }
                 catch {
-                    if content.blocks[index].video != nil { videoError(error.localizedDescription) }
+                    if content.blocks[index].attachment != nil { attachmentError(error.localizedDescription) }
+                    else if content.blocks[index].video != nil { videoError(error.localizedDescription) }
                     else { audioError(error.localizedDescription) }
                     return false
                 }
@@ -2648,7 +2692,9 @@ extension PaperTextView {
         guard let current = content.blocks.first(where: { $0.id == blockID }) else { return false }
         do {
             let export: MediaExport
-            if current.kind == .image, let image = current.image {
+            if let attachment = current.attachment {
+                export = try .attachment(at: file.attachmentURL(attachment), attachment: attachment)
+            } else if current.kind == .image, let image = current.image {
                 export = try .image(at: file.imageURL(image.id, original: true), name: image.name,
                                     fallback: String(localized: "Image", bundle: bundle), isSVG: image.isSVG == true)
             } else if current.kind == .video, let video = current.video {
@@ -2739,14 +2785,15 @@ extension PaperTextView {
             NoteContent(blocks: BlockTextCodec.read(attributedString().attributedSubstring(from: range), typing: typingAttributes).map(\.block))
         }
         let selected = selectedContent()
-        guard selected.blocks.contains(where: { $0.audio != nil || $0.video != nil }) else { return nil }
+        guard selected.blocks.contains(where: { $0.audio != nil || $0.video != nil || $0.attachment != nil }) else { return nil }
         guard let file, !hasMarkedText() else { return false }
         for block in selected.blocks {
             if let model = audioModels[block.id], model.isRecording, !model.finish() { return false }
         }
         do { try NoteClipboard.copy(selectedContent(), file: file); return true }
         catch {
-            if selected.blocks.contains(where: { $0.video != nil }) { videoError(error.localizedDescription) }
+            if selected.blocks.contains(where: { $0.attachment != nil }) { attachmentError(error.localizedDescription) }
+            else if selected.blocks.contains(where: { $0.video != nil }) { videoError(error.localizedDescription) }
             else { audioError(error.localizedDescription) }
             return false
         }
@@ -3438,5 +3485,91 @@ extension PaperTextView {
             }
             remoteImageTasks[id] = (token, image.id, source, task)
         }
+    }
+}
+
+
+// MARK: - Ordinary file attachments
+extension PaperTextView {
+    private func attachmentURLs(from board: NSPasteboard) -> [URL]? {
+        guard let urls = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty else { return nil }
+        if urls.count == 1, let url = urls.first {
+            let type = (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType
+            if type?.conforms(to: .image) == true || NoteVideo.extensions.contains(url.pathExtension.lowercased()) || NoteAudio.extensions.contains(url.pathExtension.lowercased()) { return nil }
+        }
+        return urls
+    }
+    @discardableResult func importAttachments(from board: NSPasteboard) -> Bool {
+        guard let urls = attachmentURLs(from: board) else { return false }
+        guard let source = activeSpan?.block else { return true }
+        importAttachments(urls: urls, source: source)
+        return true
+    }
+    @objc func chooseAttachments(_ sender: Any?) {
+        guard !importInProgress, isEditable, !hasMarkedText(), tableCellEditor == nil,
+              let source = activeSpan?.block, let window else { return }
+        let panel = NSOpenPanel(); panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false; panel.canChooseFiles = true; panel.treatsFilePackagesAsDirectories = true
+        panel.beginSheetModal(for: window) { [weak self] result in
+            guard result == .OK else { return }
+            self?.importAttachments(urls: panel.urls, source: source)
+        }
+    }
+    func importAttachments(urls: [URL], source: NoteBlock) {
+        guard !importInProgress, let file, isEditable, !hasMarkedText(), tableCellEditor == nil else { return }
+        importInProgress = true
+        onStatusChange?(.importingAttachment)
+        let directory = file.assetsURL.appendingPathComponent("files", isDirectory: true)
+        Task { [weak self] in
+            do {
+                let attachments = try await Task.detached(priority: .userInitiated) {
+                    try NoteAttachmentImporter.prepare(urls: urls, directory: directory)
+                }.value
+                guard let self else { NoteAttachmentImporter.removeUninserted(attachments, directory: directory); return }
+                importInProgress = false
+                onStatusChange?(nil)
+                guard insertAttachments(attachments, source: source) else {
+                    NoteAttachmentImporter.removeUninserted(attachments, directory: directory)
+                    attachmentError(String(localized: "The insertion block changed. Paste the attachments again.", bundle: bundle)); return
+                }
+                if onAttachmentCommit?() == false {
+                    attachmentError(String(localized: "The attachments could not be saved. Their files are kept; retry saving the note.", bundle: bundle))
+                }
+            } catch {
+                guard let self else { return }
+                importInProgress = false
+                onStatusChange?(nil)
+                attachmentError(String(localized: "Could not import attachments. Choose up to 32 ordinary files totaling no more than 512 MB. Folders and app packages are not supported.", bundle: bundle))
+            }
+        }
+    }
+    @discardableResult func insertAttachments(_ attachments: [NoteAttachment], source: NoteBlock) -> Bool {
+        guard !attachments.isEmpty, attachments.allSatisfy(\.isValid), isEditable, !hasMarkedText(), tableCellEditor == nil,
+              let file, attachments.allSatisfy({ FileManager.default.fileExists(atPath: file.attachmentURL($0).path) }),
+              let index = content.blocks.firstIndex(of: source) else { return false }
+        var next = content
+        let blocks = attachments.map { NoteBlock(kind: .file, attachment: $0) }
+        let destination = source.text.isEmpty && !source.kind.isAttachment ? index : index + 1
+        if destination == index { next.blocks.replaceSubrange(index...index, with: blocks) }
+        else { next.blocks.insert(contentsOf: blocks, at: destination) }
+        let after = destination + blocks.count
+        if after == next.blocks.count { next.blocks.append(NoteBlock()) }
+        replaceDocument(next, block: after)
+        undoManager?.setActionName(String(localized: "Import Attachments…", bundle: bundle))
+        return true
+    }
+    @discardableResult func openAttachment(blockID: UUID) -> Bool {
+        guard !hasMarkedText(), let file, let attachment = content.blocks.first(where: { $0.id == blockID })?.attachment else { return false }
+        let url = file.attachmentURL(attachment)
+        guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]),
+              values.isRegularFile == true, values.isSymbolicLink != true, NSWorkspace.shared.open(url) else {
+            attachmentError(String(localized: "The attachment could not be opened. Its file may be missing or no app is available.", bundle: bundle)); return false
+        }
+        return true
+    }
+    private func attachmentError(_ message: String) {
+        guard let window else { return }
+        let alert = NSAlert(); alert.messageText = String(localized: "Attachment", bundle: bundle)
+        alert.informativeText = message; alert.beginSheetModal(for: window)
     }
 }

@@ -73,6 +73,22 @@ private struct ActionSearchField: NSViewRepresentable {
     }
 }
 
+struct ActionPaletteItem: Identifiable {
+    let id: String
+    let title: String
+    let symbol: String
+    var keycaps: [String] = []
+    var color: NoteColor? = nil
+    var checked = false
+    var enabled = true
+    var destructive = false
+    var submenu = false
+}
+struct ActionPaletteSection {
+    let title: String
+    let items: [ActionPaletteItem]
+}
+
 struct NoteActionsView: View {
     @ObservedObject private var shortcuts = ShortcutSettings.shared
     @ObservedObject private var language = LanguageSettings.shared
@@ -84,11 +100,13 @@ struct NoteActionsView: View {
     let dismiss: () -> Void
     let openColors: (NSView) -> Void
     @State private var query = ""
-    @State private var selected: NoteAction?
+    var customSections: [ActionPaletteSection]? = nil
+    var performCustom: (String) -> Void = { _ in }
+    @State private var selected: String?
     @State private var colorAnchor = ActionMenuAnchorReference()
 
     private let sections: [[NoteAction]] = [
-        [.pin, .collapse, .shelve, .copyAll, .duplicateNote, .icon, .color],
+        [.pin, .collapse, .shelve, .copyAll, .exportNote, .duplicateNote, .icon, .color],
         [.newNote, .shelf, .arrange, .undoArrangement, .shelveAll],
         [.settings, .captureShortcut],
         [.deleteNote]
@@ -97,17 +115,27 @@ struct NoteActionsView: View {
         action.title(bundle: language.bundle, pinned: store.document.isPinned,
                      collapsed: store.isCollapsed, hasIcon: store.document.icon != nil)
     }
-    private func matches(_ action: NoteAction) -> Bool {
+    private func matches(_ item: ActionPaletteItem) -> Bool {
         let terms = query.split(whereSeparator: \.isWhitespace)
-        let haystack = title(action) + " " + action.rawValue + " " + action.activeKeycaps.joined()
+        let haystack = item.title + " " + item.id + " " + item.keycaps.joined()
         return terms.allSatisfy { haystack.localizedStandardContains(String($0)) }
     }
-    private var displayedSections: [[NoteAction]] {
-        if !query.isEmpty { return sections + [NoteAction.colors] }
-        return sections
+    private var displayedSections: [ActionPaletteSection] {
+        if let customSections { return customSections }
+        let actions = query.isEmpty ? sections : sections + [NoteAction.colors]
+        return actions.enumerated().map { index, values in
+            ActionPaletteSection(title: sectionTitle(index), items: values.map { action in
+                ActionPaletteItem(id: action.rawValue, title: title(action),
+                    symbol: action == .collapse && store.isCollapsed ? "chevron.down" :
+                        action == .pin && store.document.isPinned ? "pin.fill" : action.symbol,
+                    keycaps: action.activeKeycaps, color: action.noteColor,
+                    checked: action.noteColor == store.document.color, enabled: isEnabled(action),
+                    destructive: action == .deleteNote, submenu: action == .color)
+            })
+        }
     }
-    private var filtered: [NoteAction] { displayedSections.flatMap { $0 }.filter(matches) }
-    private var selectable: [NoteAction] { filtered.filter(isEnabled) }
+    private var filtered: [ActionPaletteItem] { displayedSections.flatMap(\.items).filter(matches) }
+    private var selectable: [String] { filtered.filter(\.enabled).map(\.id) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -123,11 +151,11 @@ struct NoteActionsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 3) {
                         ForEach(displayedSections.indices, id: \.self) { section in
-                            let actions = displayedSections[section].filter(matches)
+                            let actions = displayedSections[section].items.filter(matches)
                             if !actions.isEmpty {
-                                Text(sectionTitle(section)).font(.system(size: 10, weight: .medium))
+                                Text(displayedSections[section].title).font(.system(size: 10, weight: .medium))
                                     .foregroundStyle(.secondary).padding(.horizontal, 10).padding(.top, 8).padding(.bottom, 3)
-                                ForEach(actions) { action in row(action).id(action) }
+                                ForEach(actions) { item in row(item).id(item.id) }
                             }
                         }
                         if filtered.isEmpty {
@@ -170,32 +198,30 @@ struct NoteActionsView: View {
         default: String(localized: "Current Note", bundle: language.bundle)
         }
     }
-    private func row(_ action: NoteAction) -> some View {
-        Button { activate(action) } label: {
+    private func row(_ item: ActionPaletteItem) -> some View {
+        Button { activate(item) } label: {
             HStack(spacing: 10) {
-                if let color = action.noteColor {
+                if let color = item.color {
                     Image(nsImage: NotePalette.colorSwatch(for: color)).frame(width: 20)
                 } else {
-                    Image(systemName: action == .collapse && store.isCollapsed ? "chevron.down" :
-                            action == .pin && store.document.isPinned ? "pin.fill" : action.symbol)
-                        .font(.system(size: 15)).frame(width: 20)
+                    Image(systemName: item.symbol).font(.system(size: 15)).frame(width: 20)
                 }
-                Text(title(action)).font(.system(size: 13)).lineLimit(1)
+                Text(item.title).font(.system(size: 13)).lineLimit(1)
                 Spacer(minLength: 4)
-                if action.noteColor == store.document.color { Image(systemName: "checkmark").font(.system(size: 10)) }
-                ShortcutKeycaps(keys: action.activeKeycaps).foregroundStyle(.secondary)
-                if action == .color { Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(.secondary) }
+                if item.checked { Image(systemName: "checkmark").font(.system(size: 10)) }
+                ShortcutKeycaps(keys: item.keycaps).foregroundStyle(.secondary)
+                if item.submenu { Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(.secondary) }
             }
             .padding(.horizontal, 10).frame(height: 37)
             .contentShape(.rect)
-            .background(Color(nsColor: EditorMenuPalette.selection).opacity(selected == action ? 1 : 0), in: .rect(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor, lineWidth: selected == action ? 2 : 0))
+            .background(Color(nsColor: EditorMenuPalette.selection).opacity(selected == item.id ? 1 : 0), in: .rect(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor, lineWidth: selected == item.id ? 2 : 0))
         }
-        .buttonStyle(.plain).foregroundStyle(action == .deleteNote ? Color.red : Color.primary).disabled(!isEnabled(action))
-        .accessibilityLabel(title(action) + " " + action.activeKeycaps.joined())
-        .accessibilityAddTraits(selected == action ? .isSelected : [])
+        .buttonStyle(.plain).foregroundStyle(item.destructive ? Color.red : Color.primary).disabled(!item.enabled)
+        .accessibilityLabel(item.title + " " + item.keycaps.joined())
+        .accessibilityAddTraits(selected == item.id ? .isSelected : [])
         .background {
-            if action == .color { ActionMenuAnchor(reference: colorAnchor) }
+            if item.submenu { ActionMenuAnchor(reference: colorAnchor) }
         }
     }
     private func move(_ delta: Int) {
@@ -204,21 +230,23 @@ struct NoteActionsView: View {
         let index = selected.flatMap { values.firstIndex(of: $0) } ?? (delta > 0 ? -1 : values.count)
         selected = values[min(max(index + delta, 0), values.count - 1)]
     }
-    private func activate(_ action: NoteAction) {
-        if action == .color {
-            selected = action
+    private func activate(_ item: ActionPaletteItem) {
+        guard item.enabled else { return }
+        if item.submenu {
+            selected = item.id
             _ = openSelectedSubmenu()
-        }
-        else { perform(action) }
+        } else if customSections != nil { performCustom(item.id) }
+        else if let action = NoteAction(rawValue: item.id) { perform(action) }
     }
     private func openSelectedSubmenu() -> Bool {
-        guard selected == .color, isEnabled(.color), let view = colorAnchor.view else { return false }
+        guard customSections == nil, selected == NoteAction.color.rawValue, isEnabled(.color), let view = colorAnchor.view else { return false }
         openColors(view)
         return true
     }
     private func execute() {
-        if let selected, isEnabled(selected) { activate(selected) }
+        if let item = filtered.first(where: { $0.id == selected && $0.enabled }) { activate(item) }
     }
+
 }
 
 private final class ActionMenuAnchorReference { weak var view: NSView? }
@@ -249,13 +277,14 @@ final class NoteActionsPanel: NSObject {
     var isShown: Bool { panel?.isVisible == true }
 
     func show(in paper: NSWindow, anchorView: NSView?, store: NoteStore,
-              isEnabled: @escaping (NoteAction) -> Bool, perform: @escaping (NoteAction) -> Void) {
+              isEnabled: @escaping (NoteAction) -> Bool, perform: @escaping (NoteAction) -> Void,
+              customSections: [ActionPaletteSection]? = nil, performCustom: ((String) -> Void)? = nil) {
         close()
         self.paper = paper
         previousResponder = paper.firstResponder
         paper.contentView?.layoutSubtreeIfNeeded()
         let anchor: NSPoint
-        if !store.isCollapsed, let view = anchorView, view.window === paper {
+        if (customSections != nil || !store.isCollapsed), let view = anchorView, view.window === paper {
             let point = NSPoint(x: view.bounds.maxX, y: view.isFlipped ? view.bounds.maxY : view.bounds.minY)
             anchor = paper.convertPoint(toScreen: view.convert(point, to: nil))
         } else { anchor = NSPoint(x: paper.frame.maxX - 12, y: paper.frame.minY + 8) }
@@ -278,6 +307,9 @@ final class NoteActionsPanel: NSObject {
             }, dismiss: { [weak self] in self?.close(restoringFocus: true) },
             openColors: { [weak self] view in
                 self?.showColors(at: view, store: store, isEnabled: isEnabled, perform: perform)
+            }, customSections: customSections, performCustom: { [weak self] id in
+                self?.close(restoringFocus: true)
+                DispatchQueue.main.async { performCustom?(id) }
             }))
         hosting.sizingOptions = []
         hosting.frame = NSRect(origin: .zero, size: frame.size)

@@ -6,6 +6,7 @@ extension NSAttributedString.Key {
     static let blockChecked = Self("Foldpin.checked")
     static let blockLanguage = Self("Foldpin.language")
     static let blockImage = Self("Foldpin.image")
+    static let blockFile = Self("Foldpin.file")
     static let blockVideo = Self("Foldpin.video")
     static let blockAudio = Self("Foldpin.audio")
     static let blockTable = Self("Foldpin.table")
@@ -35,6 +36,7 @@ enum BlockTextCodec {
             .blockChecked: block.isChecked, .blockLanguage: block.language.rawValue
         ]
         if let image = block.image, let data = try? JSONEncoder().encode(image) { values[.blockImage] = data }
+        if let attachment = block.attachment, let data = try? JSONEncoder().encode(attachment) { values[.blockFile] = data }
         if let video = block.video, let data = try? JSONEncoder().encode(video) { values[.blockVideo] = data }
         if let audio = block.audio, let data = try? JSONEncoder().encode(audio) { values[.blockAudio] = data }
         if let table = block.table, let data = try? JSONEncoder().encode(table) { values[.blockTable] = data }
@@ -75,7 +77,10 @@ enum BlockTextCodec {
             block.isChecked = attributes[.blockChecked] as? Bool ?? false
             block.language = (attributes[.blockLanguage] as? String).flatMap(CodeLanguage.init(rawValue:)) ?? .plain
             var textRange = range
-            if block.kind == .video, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
+            if block.kind == .file, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
+               let data = attributes[.blockFile] as? Data, let attachment = try? JSONDecoder().decode(NoteAttachment.self, from: data), attachment.isValid {
+                block.attachment = attachment
+            } else if block.kind == .video, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
                let data = attributes[.blockVideo] as? Data, let video = try? JSONDecoder().decode(NoteVideo.self, from: data), video.isValid {
                 block.video = video
             } else if block.kind == .audio, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
@@ -159,6 +164,27 @@ enum BlockTextCodec {
             for mark in block.marks where mark.location + mark.length <= (block.text as NSString).length {
                 let range = NSRange(location: prefixLength + mark.location, length: mark.length)
                 value.addAttributes(inlineAttributes(mark, block: block, color: color), range: range)
+            }
+            if let file = block.attachment {
+                let attachment = NSTextAttachment()
+                let size = NSSize(width: max(80, width - 2), height: 68)
+                attachment.bounds = NSRect(origin: .zero, size: size)
+                attachment.image = NSImage(size: size, flipped: true) { rect in
+                    let box = NSBezierPath(roundedRect: rect.insetBy(dx: 1, dy: 3), xRadius: 9, yRadius: 9)
+                    color.withAlphaComponent(0.045).setFill(); box.fill()
+                    color.withAlphaComponent(0.14).setStroke(); box.lineWidth = 1; box.stroke()
+                    let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingMiddle
+                    let icon = NSImage(systemSymbolName: "doc", accessibilityDescription: nil)?.withSymbolConfiguration(.init(paletteColors: [color.withAlphaComponent(0.7)]))
+                    icon?.draw(in: NSRect(x: 12, y: 20, width: 25, height: 28))
+                    (file.name as NSString).draw(in: NSRect(x: 48, y: 13, width: max(20, rect.width - 60), height: 20),
+                        withAttributes: [.font: NSFont.systemFont(ofSize: 13, weight: .medium), .foregroundColor: color, .paragraphStyle: style])
+                    let detail = ByteCountFormatter.string(fromByteCount: file.byteCount, countStyle: .file)
+                    (detail as NSString).draw(in: NSRect(x: 48, y: 37, width: max(20, rect.width - 60), height: 17),
+                        withAttributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: color.withAlphaComponent(0.6)])
+                    return true
+                }
+                value.setAttributedString(NSAttributedString(attachment: attachment))
+                value.addAttributes(attributes, range: NSRange(location: 0, length: value.length))
             }
             if let video = block.video {
                 let attachment = VideoTextAttachment(video: video, width: max(80, width - 2))

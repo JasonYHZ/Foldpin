@@ -1,7 +1,7 @@
 import Foundation
 import CoreGraphics
 
-struct NoteDocument: Codable, Equatable, Sendable {
+nonisolated struct NoteDocument: Codable, Equatable, Sendable {
     static let currentVersion = 2
     var version = currentVersion
     var id = UUID()
@@ -14,6 +14,8 @@ struct NoteDocument: Codable, Equatable, Sendable {
     var isShelved = false
     var isCollapsed = false
     var color: NoteColor = .original
+    var isFavorite = false
+    var createdAt = Date()
     var icon: String?
     var deletedAt: Date?
     var frame: NoteFrame?
@@ -22,7 +24,7 @@ struct NoteDocument: Codable, Equatable, Sendable {
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case version, id, text, content, isPinned, isShelved, isCollapsed, color, icon, deletedAt, frame, modifiedAt
+        case version, id, text, content, isPinned, isShelved, isCollapsed, color, icon, isFavorite, createdAt, deletedAt, frame, modifiedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -47,6 +49,8 @@ struct NoteDocument: Codable, Equatable, Sendable {
         deletedAt = try values.decodeIfPresent(Date.self, forKey: .deletedAt)
         frame = try values.decodeIfPresent(NoteFrame.self, forKey: .frame)
         modifiedAt = try values.decode(Date.self, forKey: .modifiedAt)
+        createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? modifiedAt
+        isFavorite = try values.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
     }
 
     func encode(to encoder: Encoder) throws {
@@ -59,6 +63,8 @@ struct NoteDocument: Codable, Equatable, Sendable {
         try values.encode(isCollapsed, forKey: .isCollapsed)
         try values.encode(color, forKey: .color)
         try values.encodeIfPresent(icon, forKey: .icon)
+        try values.encode(isFavorite, forKey: .isFavorite)
+        try values.encode(createdAt, forKey: .createdAt)
         try values.encodeIfPresent(deletedAt, forKey: .deletedAt)
         try values.encodeIfPresent(frame, forKey: .frame)
         try values.encode(modifiedAt, forKey: .modifiedAt)
@@ -77,7 +83,7 @@ struct NoteDocument: Codable, Equatable, Sendable {
     }
 }
 
-struct NoteFrame: Codable, Equatable, Sendable {
+nonisolated struct NoteFrame: Codable, Equatable, Sendable {
     var x: Double
     var y: Double
     var width: Double

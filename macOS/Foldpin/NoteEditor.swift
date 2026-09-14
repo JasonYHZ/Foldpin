@@ -4,36 +4,32 @@ import AppKit
 struct NoteEditor: NSViewRepresentable {
     @ObservedObject private var languageSettings = LanguageSettings.shared
     @ObservedObject var store: NoteStore
+    let session: NoteEditingSession
     var appearance: NoteAppearance
     var onEscape: () -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    func makeNSView(context: Context) -> NativeEditorHost {
-        let host = NativeEditorHost()
-        let editor = host.editor
-        editor.file = store.file
-        editor.noteColor = textColor
-        editor.updatePaperBackground(NotePalette.paperBackground(for: store.document.color))
-        host.updateColors(textColor)
-        editor.onRemoteImageCommit = { [weak store] in store?.flush() ?? false }
-        editor.onVideoCommit = { [weak store] in store?.flush() ?? false }
-        editor.onAudioCommit = { [weak store] in store?.flush() ?? false }
-        editor.onContentChange = { [weak store] in store?.edit($0) }
-        editor.onEscape = onEscape
-        editor.configure(content: store.document.content)
-        return host
+    func makeNSView(context: Context) -> NSView {
+        let slot = NoteEditingSlot(session: session, isLibrary: false)
+        session.desktopSlot = slot
+        if !session.inPreview { session.mount(in: slot) }
+        return slot
     }
 
-    func updateNSView(_ host: NativeEditorHost, context: Context) {
+    func updateNSView(_ slot: NSView, context: Context) {
+        let host = session.host
         let editor = host.editor
-        host.updateColors(textColor)
+        session.desktopInk = textColor
+        host.updateColors(session.inPreview ? session.libraryInk : textColor)
         editor.isEditable = store.loadError == nil
         editor.updatePaperBackground(NotePalette.paperBackground(for: store.document.color))
         editor.tableCellEditor?.isEditable = editor.isEditable
         editor.loadExternalContent(store.document.content)
-        editor.onEscape = onEscape
+        session.desktopEscape = onEscape
+        if !session.inPreview { editor.onEscape = onEscape }
         host.updateLanguage(bundle: languageSettings.bundle)
+        (slot as? NoteEditingSlot)?.refreshMirror()
         if context.coordinator.lastFocusRequest != store.focusRequest {
             context.coordinator.lastFocusRequest = store.focusRequest
             DispatchQueue.main.async { [weak editor, weak store] in
@@ -183,4 +179,143 @@ final class NoteWindowDragView: NSView {
         window?.performDrag(with: event)
     }
     override var mouseDownCanMoveWindow: Bool { false }
+}
+
+/// Retained by the UUID's controller, independently of either presentation slot.
+@MainActor
+final class NoteEditingSession {
+    let host = NativeEditorHost()
+    private let history = UndoManager()
+    let store: NoteStore
+    weak var desktopSlot: NSView?
+    weak var librarySlot: NoteEditingSlot?
+    var desktopInk: NSColor = NotePalette.paperText
+    var libraryInk: NSColor = NotePalette.paperText
+    var desktopEscape: (() -> Void)?
+    private(set) var inPreview = false
+
+    init(store: NoteStore) {
+        self.store = store
+        let editor = host.editor
+        editor.sessionUndoManager = history
+        editor.file = store.file
+        editor.onContentChange = { [weak store] in store?.edit($0) }
+        editor.onRemoteImageCommit = { [weak store] in store?.flush() ?? false }
+        editor.onVideoCommit = { [weak store] in store?.flush() ?? false }
+        editor.onAttachmentCommit = { [weak store] in store?.flush() ?? false }
+        editor.onAudioCommit = { [weak store] in store?.flush() ?? false }
+        editor.configure(content: store.document.content)
+    }
+
+    func mount(in slot: NSView) {
+        guard host.superview !== slot else { return }
+        let selection = host.editor.selectedRanges
+        if let responder = host.window?.firstResponder as? NSView,
+           responder === host.editor || responder.isDescendant(of: host) {
+            host.window?.makeFirstResponder(nil)
+        }
+        let previous = host.superview as? NoteEditingSlot
+        host.removeFromSuperview()
+        host.frame = slot.bounds
+        host.autoresizingMask = [.width, .height]
+        slot.addSubview(host)
+        host.editor.selectedRanges = selection
+        previous?.refreshMirror()
+        (slot as? NoteEditingSlot)?.refreshMirror()
+    }
+
+    func prepareToLeave() -> Bool {
+        host.editor.commitForHandoff()
+        guard host.editor.prepareAudioForHiding() else { return false }
+        return store.flush()
+    }
+
+    func beginPreview(in slot: NSView) -> Bool {
+        guard store.document.deletedAt == nil,
+              store.loadError == nil, prepareToLeave() else { return false }
+        librarySlot = slot as? NoteEditingSlot
+        inPreview = true
+        host.updateColors(libraryInk)
+        host.editor.isEditable = true
+        host.updateLanguage(bundle: LanguageSettings.shared.bundle)
+        host.editor.onEscape = {} // Esc must not invoke desktop shelving/focus routing.
+        mount(in: slot)
+        return true
+    }
+
+    func endPreview() -> Bool {
+        guard inPreview else { return true }
+        guard prepareToLeave() else { return false }
+        inPreview = false
+        host.updateColors(desktopInk)
+        host.editor.onEscape = desktopEscape
+        if let desktopSlot { mount(in: desktopSlot) }
+        return true
+    }
+}
+
+
+/// The inactive presentation mirrors the document. Clicking it hands back the
+/// UUID's one real editor, so both locations remain directly editable without
+/// independent editing histories or a user-visible mode switch.
+@MainActor
+final class NoteEditingSlot: NSView {
+    let session: NoteEditingSession
+    let isLibrary: Bool
+    private var mirror: NSScrollView?
+    private var mirroredContent: NoteContent?
+    private var mirroredWidth: CGFloat = 0
+    private var mirroredInk: NSColor?
+    init(session: NoteEditingSession, isLibrary: Bool) {
+        self.session = session; self.isLibrary = isLibrary
+        super.init(frame: .zero)
+    }
+    required init?(coder: NSCoder) { nil }
+    @discardableResult func claimEditor() -> Bool {
+        if session.host.superview === self { return true }
+        let success = isLibrary ? session.beginPreview(in: self) : session.endPreview()
+        if success { window?.makeFirstResponder(session.host.editor.tableCellEditor ?? session.host.editor) }
+        return success
+    }
+    func refreshMirror() {
+        if session.host.superview === self {
+            mirror?.removeFromSuperview(); mirror = nil; mirroredContent = nil
+            return
+        }
+        if mirror == nil {
+            let scroll = NSScrollView(frame: bounds)
+            scroll.autoresizingMask = [.width, .height]
+            scroll.drawsBackground = false
+            let text = NSTextView(frame: bounds)
+            text.drawsBackground = false; text.isEditable = false; text.isSelectable = false
+            text.usesAdaptiveColorMappingForDarkAppearance = false
+            text.isVerticallyResizable = true; text.autoresizingMask = [.width]
+            text.textContainer?.widthTracksTextView = true
+            text.textContainerInset = session.host.editor.textContainerInset
+            text.textContainer?.lineFragmentPadding = 0
+            scroll.documentView = text
+            addSubview(scroll); mirror = scroll
+        }
+        let content = session.store.document.content
+        let ink = isLibrary ? session.libraryInk : session.desktopInk
+        guard content != mirroredContent || abs(mirroredWidth - bounds.width) > 0.5 || mirroredInk != ink else { return }
+        mirroredContent = content; mirroredWidth = bounds.width; mirroredInk = ink
+        let rendered = BlockTextCodec.render(content, color: ink,
+            width: max(100, bounds.width - NoteLayout.editorHorizontalInset * 2), image: { [file = session.store.file] image in
+                NSImage(contentsOf: file.imageURL(image.id))
+            })
+        (mirror?.documentView as? NSTextView)?.textStorage?.setAttributedString(rendered)
+    }
+    override func layout() { super.layout(); refreshMirror() }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard let hit = super.hitTest(point) else { return nil }
+        return session.host.superview === self ? hit : self
+    }
+    override func mouseDown(with event: NSEvent) {
+        guard claimEditor() else { return }
+        layoutSubtreeIfNeeded()
+        let point = convert(event.locationInWindow, from: nil)
+        if let target = session.host.hitTest(point) { target.mouseDown(with: event) }
+    }
 }

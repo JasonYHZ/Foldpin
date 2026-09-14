@@ -1,10 +1,10 @@
 import Foundation
 
-enum NoteBlockKind: String, Codable, CaseIterable, Sendable {
+nonisolated enum NoteBlockKind: String, Codable, CaseIterable, Sendable {
     // Keep the existing H1 / H2 raw values compatible with saved notes.
-    case paragraph, heading, subheading, heading3, heading4, bullet, orderedList, task, quote, divider, table, code, image, audio, video
+    case paragraph, heading, subheading, heading3, heading4, bullet, orderedList, task, quote, divider, table, code, image, audio, video, file
 
-    var isAttachment: Bool { [.image, .divider, .table, .audio, .video].contains(self) }
+    var isAttachment: Bool { [.image, .divider, .table, .audio, .video, .file].contains(self) }
 
     var headingLevel: Int? {
         switch self {
@@ -98,7 +98,7 @@ nonisolated enum CodeLanguage: String, Codable, CaseIterable, Sendable {
     }
 }
 
-struct NoteTextMark: Codable, Equatable, Sendable {
+nonisolated struct NoteTextMark: Codable, Equatable, Sendable {
     var location: Int
     var length: Int
     var bold = false
@@ -148,7 +148,7 @@ struct NoteTextMark: Codable, Equatable, Sendable {
     }
 }
 
-struct NoteImage: Codable, Equatable, Sendable {
+nonisolated struct NoteImage: Codable, Equatable, Sendable {
     var id: UUID
     var name: String
     var pixelWidth: Int
@@ -175,7 +175,7 @@ struct NoteImage: Codable, Equatable, Sendable {
 }
 
 /// Rows and cells are document data; grid geometry and colors are only display.
-struct NoteTable: Codable, Equatable, Sendable {
+nonisolated struct NoteTable: Codable, Equatable, Sendable {
     var rows: [[String]] = Array(repeating: Array(repeating: "", count: 2), count: 3)
     var headerRow = false
     var headerColumn = false
@@ -203,7 +203,7 @@ struct NoteTable: Codable, Equatable, Sendable {
     }
 }
 
-struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
+nonisolated struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
     var id = UUID()
     var kind: NoteBlockKind = .paragraph
     var text = ""
@@ -213,10 +213,11 @@ struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
     var image: NoteImage?
     var audio: NoteAudio?
     var video: NoteVideo?
+    var attachment: NoteAttachment?
     var table: NoteTable?
 
     init(id: UUID = UUID(), kind: NoteBlockKind = .paragraph, text: String = "", marks: [NoteTextMark] = [],
-         isChecked: Bool = false, language: CodeLanguage? = nil, image: NoteImage? = nil, table: NoteTable? = nil, audio: NoteAudio? = nil, video: NoteVideo? = nil) {
+         isChecked: Bool = false, language: CodeLanguage? = nil, image: NoteImage? = nil, table: NoteTable? = nil, audio: NoteAudio? = nil, video: NoteVideo? = nil, attachment: NoteAttachment? = nil) {
         self.id = id
         self.kind = kind
         self.text = text
@@ -226,10 +227,12 @@ struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
         self.image = image
         self.audio = audio
         self.video = video
+        self.attachment = attachment
         self.table = table ?? (kind == .table ? NoteTable() : nil)
     }
 
     var plainText: String {
+        if let attachment { return "[\(attachment.name)]" }
         if let video { return "[\(video.name) · \(NoteAudio.timestamp(video.duration))]" }
         if let audio { return "[\(audio.name) · \(NoteAudio.timestamp(audio.duration))]" }
         if let table { return table.plainText }
@@ -242,7 +245,7 @@ struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-struct NoteContent: Codable, Equatable, Sendable {
+nonisolated struct NoteContent: Codable, Equatable, Sendable {
     var schemaVersion = 1
     var blocks: [NoteBlock] = [NoteBlock()]
 
@@ -261,7 +264,7 @@ struct NoteContent: Codable, Equatable, Sendable {
     var isBlankForClosing: Bool {
         blocks.allSatisfy { block in
             !block.kind.isAttachment && !block.isChecked
-                && block.image == nil && block.audio == nil && block.video == nil && block.table == nil
+                && block.image == nil && block.audio == nil && block.video == nil && block.table == nil && block.attachment == nil
                 && block.text.unicodeScalars.allSatisfy { $0.properties.isWhitespace }
         }
     }
@@ -279,6 +282,9 @@ struct NoteContent: Codable, Equatable, Sendable {
             throw NoteFileError.invalidContent
         }
         for block in blocks {
+            if block.kind == .file {
+                guard let attachment = block.attachment, attachment.isValid, block.text.isEmpty, block.marks.isEmpty else { throw NoteFileError.invalidContent }
+            } else if block.attachment != nil { throw NoteFileError.invalidContent }
             if block.kind == .video {
                 guard let video = block.video, video.isValid, block.text.isEmpty, block.marks.isEmpty else { throw NoteFileError.invalidContent }
             } else if block.video != nil { throw NoteFileError.invalidContent }

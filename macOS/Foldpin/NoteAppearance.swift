@@ -25,6 +25,7 @@ enum NoteAppearance: String, CaseIterable, Identifiable {
 struct NoteSheetSurface: ViewModifier {
     var appearance: NoteAppearance
     var cornerRadius: CGFloat = 16
+    var color: NoteColor = .original
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
 
@@ -34,9 +35,9 @@ struct NoteSheetSurface: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background { NoteSheetFill(appearance: appearance) }
+            .background { NoteSheetFill(appearance: appearance, color: color) }
             .clipShape(.rect(cornerRadius: cornerRadius))
-            .glassEffect(usesGlass ? .regular : .identity, in: .rect(cornerRadius: cornerRadius))
+            .glassEffect(usesGlass ? .regular.tint(NotePalette.glassTint(for: color).map { Color(nsColor: $0) }) : .identity, in: .rect(cornerRadius: cornerRadius))
     }
 }
 

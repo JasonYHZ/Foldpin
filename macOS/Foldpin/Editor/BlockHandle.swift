@@ -5,7 +5,7 @@ enum BlockAction: Equatable {
     case insertTableRow(Int), insertTableColumn(Int), deleteTableRow(Int), deleteTableColumn(Int)
     case renderTextLinks
     case retryRemoteImage, openImageLink, restoreImageMarkdown
-    case imageCaption, resetImageSize, removeImageCaption, exportMedia
+    case imageCaption, resetImageSize, removeImageCaption, exportMedia, openAttachment
     case copyCode, codeLanguage(CodeLanguage), toggleTask
 }
 
