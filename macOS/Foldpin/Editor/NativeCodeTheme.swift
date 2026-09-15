@@ -80,6 +80,7 @@ final class NativeCodeTheme {
     private let light: CodeThemeDefinition
     private let dark: CodeThemeDefinition
     private var tokens: [String: TokenStyle] = [:]
+    private var tokenTypography = NoteTypography()
     private var tokenAttributes: [String: [NSAttributedString.Key: Any]] = [:]
 
     init(light: CodeThemeDefinition, dark: CodeThemeDefinition? = nil) {
@@ -115,11 +116,16 @@ final class NativeCodeTheme {
     }
 
     func attributes(for token: CodeToken, language: CodeLanguage) -> [NSAttributedString.Key: Any] {
+        let typography = NoteStyleSettings.shared.values.typography
+        if tokenTypography != typography {
+            tokenTypography = typography
+            tokenAttributes.removeAll(keepingCapacity: true)
+        }
         let key = token.rawValue + ":" + language.rawValue
         if let cached = tokenAttributes[key] { return cached }
         let style = self.token(token, language: language)
         let traits = style.fontStyle.split(separator: " ")
-        var font = NSFont.monospacedSystemFont(ofSize: 13, weight: traits.contains("bold") ? .bold : .regular)
+        var font = NoteStyleSettings.shared.codeFont(weight: traits.contains("bold") ? .bold : .regular)
         if traits.contains("italic") { font = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask) }
         // Keep the adaptive NSColor, not a color resolved for today's appearance.
         let attributes: [NSAttributedString.Key: Any] = [

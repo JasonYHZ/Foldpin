@@ -8,11 +8,17 @@ func readinessText(_ key: String) -> String {
 struct GeneralSettingsView: View {
     @ObservedObject var login: LoginItemSettings
     @ObservedObject private var language = LanguageSettings.shared
-    let help: () -> Void
-    let feedback: () -> Void
     var body: some View {
         Form {
             Section {
+                Picker(selection: Binding(get: { language.selection }, set: { language.select($0) })) {
+                    ForEach(AppLanguage.allCases) { choice in
+                        Text(choice.title(bundle: language.bundle)).tag(choice)
+                    }
+                } label: { Text(verbatim: "语言 / Language") }
+                Text(readinessText("Changes apply immediately and are saved automatically.")).font(.caption).foregroundStyle(.secondary)
+            }
+            Section(readinessText("Launch at login")) {
                 Toggle(readinessText("Launch Foldpin at login"), isOn: Binding(get: { login.enabled }, set: { value in Task { await login.setEnabled(value) } })).disabled(login.changing)
                 Text(readinessText("Restore your desktop notes quietly when you log in.")).foregroundStyle(.secondary)
                 if login.status == .requiresApproval {
@@ -26,15 +32,7 @@ struct GeneralSettingsView: View {
                     Button(readinessText("Retry")) { Task { await login.setEnabled(login.requestedEnabled) } }.disabled(login.changing)
                 }
             }
-            Section(readinessText("Help")) {
-                Button(readinessText("User Guide"), action: help)
-                Button(readinessText("Feedback…"), action: feedback)
-            }
-            Section("Foldpin") {
-                LabeledContent(readinessText("Version"), value: FeedbackController.version)
-                Text(readinessText("Floating notes for your Mac.")).foregroundStyle(.secondary)
-            }
-        }.formStyle(.grouped).frame(width: 560, height: 460)
+        }.formStyle(.grouped)
             .onAppear { login.refresh() }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in login.refresh() }
             .environment(\.locale, language.locale)

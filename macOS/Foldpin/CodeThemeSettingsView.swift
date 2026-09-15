@@ -126,6 +126,8 @@ struct CodeThemeSettingsView: View {
 }
 
 private struct CodeStylePreview: View {
+    private struct RenderKey: Hashable { let theme: ObjectIdentifier; let typography: NoteTypography }
+    @ObservedObject private var noteStyle = NoteStyleSettings.shared
     let theme: NativeCodeTheme
     let backgroundOpacity: Double
     @State private var preview: AttributedString?
@@ -139,7 +141,7 @@ private struct CodeStylePreview: View {
             .background(Color(nsColor: theme.background).opacity(backgroundOpacity), in: .rect(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color(nsColor: theme.border), lineWidth: 0.75))
             .accessibilityHidden(true)
-            .task(id: ObjectIdentifier(theme)) {
+            .task(id: RenderKey(theme: ObjectIdentifier(theme), typography: noteStyle.values.typography)) {
                 _ = await CodeSyntaxEngine.shared.analyze(sample.blocks[0].text, language: .javascript)
                 guard !Task.isCancelled else { return }
                 preview = AttributedString(BlockTextCodec.render(sample, color: .labelColor, width: 460,

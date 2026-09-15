@@ -4,10 +4,11 @@ import AppKit
 /// an NSTextView, so inactive tables do not keep one editor per cell alive.
 @MainActor
 struct TableBlockLayout {
-    static let font = NSFont.systemFont(ofSize: 14)
-    static let headerFont = NSFont.systemFont(ofSize: 14, weight: .semibold)
+    static var font: NSFont { NoteStyleSettings.shared.bodyFont(size: NoteStyleSettings.shared.values.typography.bodySize * 14 / 15) }
+    static var headerFont: NSFont { NoteStyleSettings.shared.bodyFont(size: NoteStyleSettings.shared.values.typography.bodySize * 14 / 15, weight: .semibold) }
     static let controlsHeight: CGFloat = 24
     static let padding: CGFloat = 7
+    let typography = NoteStyleSettings.shared.values.typography
     let table: NoteTable
     let width: CGFloat
     let rowHeights: [CGFloat]
@@ -18,7 +19,8 @@ struct TableBlockLayout {
         let layoutWidth = max(80, width)
         self.width = layoutWidth
         let cellWidth = max(12, layoutWidth / CGFloat(max(1, table.columnCount)) - Self.padding * 2)
-        let reusable = previous.flatMap { $0.width == layoutWidth && $0.table.columnCount == table.columnCount ? $0 : nil }
+        let currentTypography = NoteStyleSettings.shared.values.typography
+        let reusable = previous.flatMap { $0.typography == currentTypography && $0.width == layoutWidth && $0.table.columnCount == table.columnCount ? $0 : nil }
         rowHeights = table.rows.enumerated().map { index, row in
             if let reusable, reusable.table.rows.indices.contains(index), reusable.table.rows[index] == row,
                reusable.table.headerColumn == table.headerColumn, (index != 0 || reusable.table.headerRow == table.headerRow) {

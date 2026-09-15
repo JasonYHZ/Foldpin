@@ -4,125 +4,116 @@ struct AppearanceSettingsView: View {
     @AppStorage(NoteAppearance.preferenceKey) private var appearance: NoteAppearance = .paper
     @ObservedObject private var languageSettings = LanguageSettings.shared
     @ObservedObject private var themeSettings = ThemeSettings.shared
+    @ObservedObject private var style = NoteStyleSettings.shared
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
+    @State private var families: [String] = []
+    @State private var codeFamilies: [String] = []
 
     var body: some View {
-        ScrollView {
-        VStack(alignment: .leading, spacing: 22) {
-            VStack(alignment: .leading, spacing: 7) {
-                Text(String(localized: "Make yourself at home", bundle: languageSettings.bundle)).font(.system(size: 23, weight: .semibold))
-                Text(String(localized: "Choose a look for your notes. Switch anytime.", bundle: languageSettings.bundle))
-                    .font(.system(size: 13)).foregroundStyle(.secondary)
-            }
-
-            HStack(alignment: .top, spacing: 16) {
-                ForEach(NoteAppearance.allCases) { choice in
-                    Button { appearance = choice } label: {
-                        VStack(alignment: .leading, spacing: 12) {
-                            AppearancePreview(appearance: choice)
-                                .frame(height: 152)
-                            HStack {
-                                Text(choice.title(bundle: languageSettings.bundle)).font(.system(size: 14, weight: .semibold))
-                                Spacer()
-                                Image(systemName: appearance == choice ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(appearance == choice ? Color.accentColor : Color.secondary)
-                                    .font(.system(size: 18))
-                            }
-                            Text(choice.subtitle(bundle: languageSettings.bundle)).font(.system(size: 12)).foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(.background, in: .rect(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(appearance == choice ? Color.accentColor : Color.primary.opacity(0.12),
-                                          lineWidth: appearance == choice ? 2 : 1))
-                        .contentShape(.rect(cornerRadius: 16))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(choice.title(bundle: languageSettings.bundle))
-                    .accessibilityValue(appearance == choice ? String(localized: "Selected", bundle: languageSettings.bundle) : String(localized: "Not selected", bundle: languageSettings.bundle))
-                    .accessibilityHint(choice.subtitle(bundle: languageSettings.bundle))
-                    .accessibilityAddTraits(appearance == choice ? .isSelected : [])
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text(String(localized: "Right-click a note’s title bar to choose a color for that note.", bundle: languageSettings.bundle))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Label(String(localized: "\(appearance.title(bundle: languageSettings.bundle)) applied · Preference saved", bundle: languageSettings.bundle), systemImage: "checkmark.circle")
-                    .font(.system(size: 12, weight: .medium))
-                Text(reduceTransparency || contrast == .increased
-                     ? String(localized: "Glass uses a solid background to match your accessibility settings.", bundle: languageSettings.bundle)
-                     : String(localized: "Glass reflects your desktop and adapts to light, dark, and accessibility settings.", bundle: languageSettings.bundle))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 8) {
-                Label(String(localized: "Theme", bundle: languageSettings.bundle), systemImage: "circle.lefthalf.filled")
-                    .font(.system(size: 13, weight: .medium))
-                Picker(String(localized: "Theme", bundle: languageSettings.bundle),
-                       selection: Binding(get: { themeSettings.selection }, set: { themeSettings.select($0) })) {
+        Form {
+            Section {
+                Picker(readinessText("Theme"), selection: Binding(get: { themeSettings.selection }, set: { themeSettings.select($0) })) {
                     ForEach(AppTheme.allCases) { theme in
                         Text(theme.title(bundle: languageSettings.bundle)).tag(theme)
                     }
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                Text(String(localized: "Applies immediately to notes and settings. Code blocks use the style selected below.", bundle: languageSettings.bundle))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            Divider()
-
-            CodeThemeSettingsView()
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Label {
-                        Text(verbatim: "语言 / Language")
-                    } icon: {
-                        Image(systemName: "globe")
+            Section(readinessText("Note material")) {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(NoteAppearance.allCases) { choice in
+                        Button { appearance = choice } label: {
+                            VStack(spacing: 8) {
+                                AppearancePreview(appearance: choice).frame(height: 152)
+                                HStack {
+                                    Text(choice.title(bundle: languageSettings.bundle))
+                                    Spacer()
+                                    Image(systemName: appearance == choice ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(appearance == choice ? Color.accentColor : Color.secondary)
+                                }.padding(.horizontal, 8).padding(.bottom, 8)
+                            }
+                            .contentShape(.rect)
+                            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(appearance == choice ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: appearance == choice ? 2 : 1))
+                        }.buttonStyle(.plain)
+                        .accessibilityLabel(choice.title(bundle: languageSettings.bundle))
+                        .accessibilityAddTraits(appearance == choice ? .isSelected : [])
+                        .frame(maxWidth: .infinity)
                     }
-                    .font(.system(size: 13, weight: .medium))
-                    Spacer()
-                    Picker(selection: Binding(get: { languageSettings.selection },
-                                              set: { languageSettings.select($0) })) {
-                        ForEach(AppLanguage.allCases) { language in
-                            Text(language.title(bundle: languageSettings.bundle)).tag(language)
-                        }
-                    } label: {
-                        Text(verbatim: "语言 / Language")
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .frame(width: 170)
                 }
-                Text(String(localized: "Changes apply immediately and are saved automatically.", bundle: languageSettings.bundle))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if appearance == .translucent {
+                    Picker(readinessText("Glass effect"), selection: binding(\.clearGlass)) {
+                        Text(readinessText("Standard glass")).tag(false)
+                        Text(readinessText("Clear glass")).tag(true)
+                    }
+                    .disabled(reduceTransparency || contrast == .increased)
+                }
+                valueSlider("Note background opacity", value: appearance == .paper ? binding(\.paperOpacity) : binding(\.glassOpacity), range: appearance == .paper ? 0.2...1 : 0...1, step: 0.01, percent: true)
+                    .disabled(reduceTransparency || contrast == .increased)
+                Text(readinessText("Only the background fades. Text and controls stay opaque. Glass blur is managed by macOS."))
+                    .font(.caption).foregroundStyle(.secondary)
+                if reduceTransparency || contrast == .increased {
+                    Text(readinessText("Glass uses a solid background to match your accessibility settings."))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Text(readinessText("Right-click a note’s title bar to choose a color for that note."))
+                    .font(.caption).foregroundStyle(.secondary)
             }
+            Section(readinessText("Text layout")) {
+                fontPicker("Body font", value: typographyBinding(\.bodyFamily), choices: families)
+                valueSlider("Body font size", value: typographyBinding(\.bodySize), range: 11...28, step: 1)
+                valueSlider("Line spacing", value: typographyBinding(\.lineSpacing), range: 0...12, step: 1)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(readinessText("Keep that thought")).font(Font(style.bodyFont(weight: .semibold)))
+                    Text(readinessText("Jot it. Pin it. Fold it away.") + "\n" + readinessText("Saved on this Mac"))
+                        .font(Font(style.bodyFont())).lineSpacing(style.values.typography.lineSpacing)
+                }.padding(.vertical, 8)
+                Text(readinessText("Applies to existing notes immediately. Your content and undo history stay unchanged."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section(readinessText("Code style")) {
+                fontPicker("Code font", value: typographyBinding(\.codeFamily), choices: codeFamilies)
+                valueSlider("Code font size", value: typographyBinding(\.codeSize), range: 10...24, step: 1)
+                CodeThemeSettingsView()
+            }
+            Section {
+                Button(readinessText("Reset note appearance adjustments")) { style.update { $0 = NoteStylePreferences() } }
+            }
+        }.formStyle(.grouped)
+        .task {
+            guard families.isEmpty else { return }
+            families = NSFontManager.shared.availableFontFamilies.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            codeFamilies = families.filter { NSFontManager.shared.font(withFamily: $0, traits: [], weight: 5, size: 13)?.isFixedPitch == true }
         }
-        .padding(28)
+    }
+    private func binding<T>(_ key: WritableKeyPath<NoteStylePreferences, T>) -> Binding<T> {
+        Binding(get: { style.values[keyPath: key] }, set: { value in style.update { $0[keyPath: key] = value } })
+    }
+    private func typographyBinding<T>(_ key: WritableKeyPath<NoteTypography, T>) -> Binding<T> {
+        Binding(get: { style.values.typography[keyPath: key] }, set: { value in style.update { $0.typography[keyPath: key] = value } })
+    }
+    private func fontPicker(_ title: String, value: Binding<String>, choices: [String]) -> some View {
+        Picker(readinessText(title), selection: value) {
+            Text(readinessText("System font")).tag("")
+            if !value.wrappedValue.isEmpty && !choices.contains(value.wrappedValue) {
+                Text(value.wrappedValue).tag(value.wrappedValue)
+            }
+            ForEach(choices, id: \.self) { Text(verbatim: $0).tag($0) }
         }
-        .frame(width: 556, height: 720)
-        .navigationTitle(String(localized: "Foldpin Settings", bundle: languageSettings.bundle))
-        .environment(\.locale, languageSettings.locale)
-        .onAppear { languageSettings.refresh() }
+    }
+    private func valueSlider(_ title: String, value: Binding<Double>, range: ClosedRange<Double>, step: Double, percent: Bool = false) -> some View {
+        HStack {
+            Text(readinessText(title)).frame(width: 140, alignment: .leading)
+            Slider(value: value, in: range, step: step).accessibilityLabel(readinessText(title))
+            Text(percent ? value.wrappedValue.formatted(.percent.precision(.fractionLength(0)).locale(languageSettings.locale)) : value.wrappedValue.formatted(.number.precision(.fractionLength(0)).locale(languageSettings.locale)))
+                .monospacedDigit().foregroundStyle(.secondary).frame(width: 42, alignment: .trailing)
+        }
     }
 }
 
 /// A small native preview of each style, using sample text rather than the user's note.
 private struct AppearancePreview: View {
     @ObservedObject private var languageSettings = LanguageSettings.shared
+    @ObservedObject private var style = NoteStyleSettings.shared
     var appearance: NoteAppearance
     private var secondaryInk: Color { Color(nsColor: appearance.secondaryTextColor) }
 
@@ -139,9 +130,9 @@ private struct AppearancePreview: View {
                 .font(.system(size: 10)).padding(7)
             }
             .padding(.bottom, 15)
-            Text(String(localized: "Keep that thought", bundle: languageSettings.bundle)).font(.system(size: 13, weight: .medium))
+            Text(String(localized: "Keep that thought", bundle: languageSettings.bundle)).font(Font(style.bodyFont(size: min(17, style.values.typography.bodySize), weight: .medium)))
             Text(String(localized: "Jot it. Pin it. Fold it away.", bundle: languageSettings.bundle))
-                .font(.system(size: 11)).foregroundStyle(secondaryInk).padding(.top, 7)
+                .font(Font(style.bodyFont(size: min(15, style.values.typography.bodySize - 2)))).foregroundStyle(secondaryInk).padding(.top, 7)
             Spacer(minLength: 10)
             Text(String(localized: "Saved on this Mac", bundle: languageSettings.bundle)).font(.system(size: 9)).foregroundStyle(secondaryInk)
         }

@@ -17,7 +17,9 @@ struct FoldpinApp: App {
         Settings {
             FoldpinSettingsView(mcp: delegate.mcp, storage: delegate.storage, login: delegate.login, help: delegate.showQuickStart, feedback: delegate.showFeedback, locate: delegate.locateNote)
         }
-        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 900, height: 680)
+        .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .appSettings) {
                 SettingsLink {
@@ -48,37 +50,5 @@ struct FoldpinApp: App {
                 }.keyboardShortcut("v", modifiers: [.command, .option, .shift])
             }
         }
-    }
-}
-
-struct FoldpinSettingsView: View {
-    @ObservedObject var mcp: MCPServer
-    @ObservedObject var storage: LibraryLocationController
-    @ObservedObject var login: LoginItemSettings
-    let help: () -> Void
-    let feedback: () -> Void
-    let locate: (UUID) -> Void
-    @State private var selectedTab = 3
-    @ObservedObject private var shortcuts = ShortcutSettings.shared
-    @ObservedObject private var language = LanguageSettings.shared
-    var body: some View {
-        TabView(selection: $selectedTab) {
-            GeneralSettingsView(login: login, help: help, feedback: feedback)
-                .tabItem { Label(String(localized: "General", bundle: language.bundle), systemImage: "gearshape") }.tag(3)
-            AppearanceSettingsView()
-                .tabItem { Label(String(localized: "Appearance", bundle: language.bundle), systemImage: "paintpalette") }.tag(0)
-            ShortcutSettingsView()
-                .tabItem { Label(String(localized: "Shortcuts", bundle: language.bundle), systemImage: "keyboard") }.tag(1)
-            LibraryStorageSettingsView(storage: storage, locate: locate)
-                .tabItem { Label(String(localized: "Data and Storage", bundle: language.bundle), systemImage: "externaldrive") }.tag(2)
-            MCPSettingsView(server: mcp)
-                .tabItem { Label(mcpText("Connect AI Tools"), systemImage: "point.3.connected.trianglepath.dotted") }.tag(4)
-        }
-        .onChange(of: shortcuts.showShortcuts) { _, value in if value { selectedTab = 1 } }
-        .onChange(of: selectedTab) { _, value in shortcuts.showShortcuts = value == 1 }
-        .onAppear { if shortcuts.showShortcuts { selectedTab = 1 } }
-        .padding(8)
-        .navigationTitle(String(localized: "Foldpin Settings", bundle: language.bundle))
-        .environment(\.locale, language.locale)
     }
 }

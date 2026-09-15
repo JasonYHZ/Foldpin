@@ -35,7 +35,7 @@ struct MCPSettingsView:View {
                 Button(mcpText("Clear call history")){server.clearCalls()}
                 Text(mcpText("Call history stays in memory and contains no note content, file paths or access keys.")).font(.caption).foregroundStyle(.secondary)
             }
-        }.formStyle(.grouped).frame(width:680,height:540)
+        }.formStyle(.grouped)
         .sheet(isPresented:$adding,onDismiss:{revealedToken=pendingToken;pendingToken=nil}){MCPGrantView(server:server,onToken:{pendingToken=$0;adding=false})}
         .sheet(isPresented:Binding(get:{revealedToken != nil},set:{if !$0{revealedToken=nil}})){
             VStack(alignment:.leading,spacing:16){

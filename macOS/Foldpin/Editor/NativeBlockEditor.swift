@@ -108,6 +108,7 @@ final class PaperTextView: NSTextView {
     var writeImageToPasteboard: (NoteImage, NoteFile) throws -> Void = { image, file in
         try NoteClipboard.copyImage(image, file: file)
     }
+    private var typographyRefresh: Task<Void, Never>?
     var codeThemes = CodeThemeSettings.shared
     var noteColor: NSColor = .labelColor
     private var paperBackground = NotePalette.paperBackground
@@ -198,6 +199,7 @@ final class PaperTextView: NSTextView {
             NotificationCenter.default.addObserver(self, selector: #selector(historyChanged(_:)), name: .NSUndoManagerDidRedoChange, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(codeThemeChanged(_:)), name: CodeThemeSettings.didChange, object: codeThemes)
             NotificationCenter.default.addObserver(self, selector: #selector(codeBackgroundOpacityChanged(_:)), name: CodeThemeSettings.backgroundOpacityDidChange, object: codeThemes)
+            NotificationCenter.default.addObserver(self, selector: #selector(noteTypographyChanged(_:)), name: NoteStyleSettings.typographyDidChange, object: NoteStyleSettings.shared)
             observingChanges = true
             NotificationCenter.default.addObserver(self, selector: #selector(selectionChanged(_:)), name: NSTextView.didChangeSelectionNotification, object: self)
             NotificationCenter.default.addObserver(self, selector: #selector(editorWindowBecameKey(_:)), name: NSWindow.didBecomeKeyNotification, object: nil)
@@ -273,6 +275,28 @@ final class PaperTextView: NSTextView {
         refreshStyles(force: true)
         slashMenu?.updateAppearance(effectiveAppearance)
         updateCodeCaretColors()
+    }
+
+    @objc private func noteTypographyChanged(_ notification: Notification) {
+        typographyRefresh?.cancel()
+        typographyRefresh = Task { @MainActor [weak self] in
+            do { try await Task.sleep(for: .milliseconds(60)) } catch { return }
+            // Defer composition safely; no text replacement or undo registration.
+            while self?.hasMarkedText() == true || self?.tableCellEditor?.hasMarkedText() == true {
+                do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
+            }
+            guard let self else { return }
+            let ranges = self.selectedRanges
+            let origin = self.enclosingScrollView?.contentView.bounds.origin
+            self.tableLayouts.removeAll()
+            self.refreshStyles(force: true)
+            self.selectedRanges = ranges
+            if let origin, let scroll = self.enclosingScrollView {
+                scroll.contentView.scroll(to: origin)
+                scroll.reflectScrolledClipView(scroll.contentView)
+            }
+            self.scheduleInsertionPointRefresh()
+        }
     }
 
     @objc private func codeThemeChanged(_ notification: Notification) {
@@ -2456,7 +2480,7 @@ extension PaperTextView {
     private func tableLayout(for block: NoteBlock, width: CGFloat) -> TableBlockLayout {
         let table = block.table ?? NoteTable()
         let previous = tableLayouts[block.id]
-        if let previous, previous.table == table, previous.width == max(80, width) { return previous }
+        if let previous, previous.typography == NoteStyleSettings.shared.values.typography, previous.table == table, previous.width == max(80, width) { return previous }
         let layout = TableBlockLayout(table: table, width: width, reusing: previous)
         // At most one current snapshot per table, with a bounded editor cache.
         if tableLayouts.count >= 16, previous == nil { tableLayouts.removeAll() }

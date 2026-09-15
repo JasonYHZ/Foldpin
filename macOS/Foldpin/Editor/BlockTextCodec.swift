@@ -241,10 +241,10 @@ enum BlockTextCodec {
         let theme = theme ?? .github
         let paragraph = NSMutableParagraphStyle()
         paragraph.paragraphSpacing = block.kind == .code ? 0 : 9
-        paragraph.lineSpacing = 3
+        paragraph.lineSpacing = NoteStyleSettings.shared.values.typography.lineSpacing
         paragraph.lineBreakMode = .byWordWrapping
         if block.kind == .image { paragraph.alignment = .center }
-        paragraph.headIndent = CGFloat((prefix(block, ordinal: ordinal) as NSString).length) * 9
+        paragraph.headIndent = ceil((prefix(block, ordinal: ordinal) as NSString).size(withAttributes: [.font: font(block)]).width)
         if block.kind == .quote { paragraph.headIndent = 12; paragraph.firstLineHeadIndent = 12 }
         paragraph.tabStops = []
         paragraph.defaultTabInterval = 28
@@ -302,19 +302,21 @@ enum BlockTextCodec {
     }
 
     static func font(_ block: NoteBlock, bold: Bool = false, italic: Bool = false, code: Bool = false) -> NSFont {
+        let settings = NoteStyleSettings.shared
+        let scale = settings.values.typography.bodySize / 15
         let base: NSFont
         switch block.kind {
-        case .heading: base = .systemFont(ofSize: 23, weight: .semibold)
-        case .subheading: base = .systemFont(ofSize: 18, weight: .semibold)
-        case .heading3: base = .systemFont(ofSize: 16, weight: .semibold)
-        case .heading4: base = .systemFont(ofSize: 15, weight: .semibold)
-        case .code: base = .monospacedSystemFont(ofSize: 13, weight: .regular)
-        default: base = .systemFont(ofSize: 15)
+        case .heading: base = settings.bodyFont(size: 23 * scale, weight: .semibold)
+        case .subheading: base = settings.bodyFont(size: 18 * scale, weight: .semibold)
+        case .heading3: base = settings.bodyFont(size: 16 * scale, weight: .semibold)
+        case .heading4: base = settings.bodyFont(size: 15 * scale, weight: .semibold)
+        case .code: base = settings.codeFont()
+        default: base = settings.bodyFont()
         }
         var traits: NSFontTraitMask = []
         if bold { traits.insert(.boldFontMask) }
         if italic { traits.insert(.italicFontMask) }
-        let face = code ? NSFont.monospacedSystemFont(ofSize: base.pointSize, weight: .regular) : base
+        let face = code ? settings.codeFont(size: base.pointSize) : base
         return traits.isEmpty ? face : NSFontManager.shared.convert(face, toHaveTrait: traits)
     }
 

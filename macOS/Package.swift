@@ -8,7 +8,7 @@ let package = Package(
     targets: [
         .target(name: "FoldpinCore", path: "Foldpin",
                 exclude: ["AppDelegate.swift", "AppearanceSettingsView.swift", "ApplicationMenuLocalization.swift",
-                          "ContentView.swift", "CodeThemeSettingsView.swift", "FoldpinApp.swift", "NoteAppearance.swift",
+                          "SettingsView.swift", "ContentView.swift", "CodeThemeSettingsView.swift", "FoldpinApp.swift", "NoteAppearance.swift",
                           "NoteEditor.swift", "NoteIconPicker.swift", "NoteActionsView.swift", "NoteWindowSurface.swift", "ShelfView.swift", "PaperWindowController.swift", "PaperPanel.swift",
                           "LibraryLocationController.swift", "LibraryStorageSettingsView.swift", "ReadinessFeatures.swift", "MCPSettingsView.swift", "MarkdownFileImportController.swift", "LibraryUsageView.swift", "Foldpin.entitlements",
                           "Assets.xcassets", "Localizable.xcstrings", "InfoPlist.xcstrings", "ThirdPartyNotices.txt"],

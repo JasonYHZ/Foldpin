@@ -23,6 +23,7 @@ enum NoteAppearance: String, CaseIterable, Identifiable {
 /// Apply one glass surface to the whole note. Keep the modifier in place in
 /// both modes so switching material never replaces the native text editor.
 struct NoteSheetSurface: ViewModifier {
+    @ObservedObject private var style = NoteStyleSettings.shared
     var appearance: NoteAppearance
     var cornerRadius: CGFloat = 16
     var color: NoteColor = .original
@@ -37,28 +38,30 @@ struct NoteSheetSurface: ViewModifier {
         content
             .background { NoteSheetFill(appearance: appearance, color: color) }
             .clipShape(.rect(cornerRadius: cornerRadius))
-            .glassEffect(usesGlass ? .regular.tint(NotePalette.glassTint(for: color).map { Color(nsColor: $0) }) : .identity, in: .rect(cornerRadius: cornerRadius))
+            .glassEffect(usesGlass ? (style.values.clearGlass ? Glass.clear : Glass.regular).tint(NotePalette.glassTint(for: color).map { Color(nsColor: $0) }) : .identity, in: .rect(cornerRadius: cornerRadius))
     }
 }
 
 struct NoteSheetFill: View {
+    var drawsPaper = true
+    @ObservedObject private var style = NoteStyleSettings.shared
     var appearance: NoteAppearance
     var color: NoteColor = .original
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         if appearance == .paper {
             Color(nsColor: NotePalette.paperBackground(for: color))
+                .opacity(drawsPaper ? (reduceTransparency || contrast == .increased ? 1 : style.values.paperOpacity) : 0)
         } else {
             if reduceTransparency || contrast == .increased {
                 Color(nsColor: NotePalette.solidGlassBackground(for: color))
             } else {
-                // Regular glass supplies adaptive blur and contrast. Keep only
-                // a light reading tint so its material remains visible.
-                (colorScheme == .dark ? Color.black : Color.white)
-                    .opacity(colorScheme == .dark ? 0.16 : 0.12)
+                // Glass supplies adaptive blur; this independently adjusts
+                // the reading tint without fading text or controls.
+                Color(nsColor: .textBackgroundColor)
+                    .opacity(style.values.glassOpacity)
                     .overlay {
                         // A persistent color wash inside the existing glass
                         // content survives the system's inactive-window tint.

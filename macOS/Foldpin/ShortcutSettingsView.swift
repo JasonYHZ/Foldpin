@@ -8,7 +8,6 @@ struct ShortcutSettingsView: View {
     private var bundle: Bundle { language.bundle }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(String(localized: "Shortcuts", bundle: bundle)).font(.title2.bold())
             Picker(String(localized: "Shortcut scope", bundle: bundle), selection: $global) {
                 Text(String(localized: "In App", bundle: bundle)).tag(false)
                 Text(String(localized: "Global", bundle: bundle)).tag(true)
@@ -46,7 +45,7 @@ struct ShortcutSettingsView: View {
                     settings.reset(global ? GlobalShortcutAction.allCases.map(\.id) : ShortcutSettings.localIDs)
                 }
             }
-        }.padding(24).frame(width: 556, height: 720)
+        }.padding(24)
         .onChange(of: global) { _, _ in settings.error = nil }
     }
     private func group(_ title: String, ids: [String]) -> some View {

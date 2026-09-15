@@ -34,7 +34,7 @@ struct ContentView: View {
                     .accessibilityHidden(store.isCollapsed)
             }
         }
-        .background { NoteSheetFill(appearance: appearance, color: store.document.color).allowsHitTesting(false) }
+        .background { NoteSheetFill(drawsPaper: false, appearance: appearance, color: store.document.color).allowsHitTesting(false) }
         .clipShape(.rect(cornerRadius: NoteWindowStyle.cornerRadius))
         .ignoresSafeArea(.container, edges: .top)
         .environment(\.locale, languageSettings.locale)

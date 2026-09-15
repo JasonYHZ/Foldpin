@@ -27,12 +27,15 @@ for old in (snapshot / "Tests").glob("*.swift"):
 import PackageDescription
 let package = Package(name: "FoldpinCore", platforms: [.macOS("26.5")], targets: [
     .target(name: "FoldpinCore", path: "Foldpin", exclude: ["AppDelegate.swift", "FoldpinApp.swift",
-        "AppearanceSettingsView.swift", "ApplicationMenuLocalization.swift", "CodeThemeSettingsView.swift",
+        "ApplicationMenuLocalization.swift",
         "Assets.xcassets", "Localizable.xcstrings", "InfoPlist.xcstrings", "Foldpin.entitlements", "ThirdPartyNotices.txt"],
         resources: [.copy("CodeThemes"), .copy("SyntaxResources"), .copy("EmojiResources")],
         swiftSettings: [.unsafeFlags(["-default-isolation", "MainActor"])]),
     .testTarget(name: "FoldpinCoreTests", dependencies: ["FoldpinCore"], path: "Tests")], swiftLanguageModes: [.v5])
 ''')
+note_style = snapshot / "Foldpin/Editor/NoteStyleSettings.swift"
+note_style.write_text(note_style.read_text().replace("static let shared = NoteStyleSettings()",
+    'static let shared = NoteStyleSettings(defaults: UserDefaults(suiteName: "Foldpin.NoteStyle.Check")!)'))
 themes = snapshot / "Foldpin/Editor/CodeThemeSettings.swift"
 source = themes.read_text()
 assert "static let shared = CodeThemeSettings()" in source
@@ -52,7 +55,17 @@ for code in ["en", "zh-Hans"]:
 language = snapshot / "Foldpin/LanguageSettings.swift"
 langsource = language.read_text().replace("static let shared = LanguageSettings()",
     'static let shared = LanguageSettings(applicationID: "Foldpin.Library.Check", resources: Bundle(path: ProcessInfo.processInfo.environment["FOLDPIN_CHECK_LOCALIZATIONS"]!)!, systemLanguages: { ["zh-Hans"] })')
+if check_source == "Settings.swift":
+    langsource = langsource.replace('LanguageSettings(applicationID: "Foldpin.Library.Check",', 'LanguageSettings(defaults: UserDefaults(suiteName: "Foldpin.Library.Check")!, applicationID: "Foldpin.Library.Check",')
 language.write_text(langsource)
+if check_source == "Settings.swift":
+    for relative in ["Core/ShortcutSettings.swift", "ThemeSettings.swift"]:
+        path = snapshot / "Foldpin" / relative
+        content = path.read_text()
+        typename = path.stem
+        content = content.replace("static let shared = " + typename + "()", 'static let shared = ' + typename + '(defaults: UserDefaults(suiteName: "Foldpin.Settings.Check.Preferences")!)')
+        path.write_text(content)
+
 environment = dict(os.environ, DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer",
     CLANG_MODULE_CACHE_PATH="/private/tmp/Foldpin-ModuleCache", SWIFTPM_MODULECACHE_OVERRIDE="/private/tmp/Foldpin-ModuleCache",
     FOLDPIN_CHECK_LOCALIZATIONS=str(localizations), FOLDPIN_CHECK_DATA=str(snapshot / "data"), FOLDPIN_CHECK_OUTPUT=str(output))

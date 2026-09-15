@@ -78,7 +78,7 @@ import ServiceManagement
     let preview = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 460), styleMask: [.titled], backing: .buffered, defer: false)
     preview.isReleasedWhenClosed = false
     let login = LoginItemSettings(readStatus: { .requiresApproval }, register: {}, unregister: {}, installed: { true })
-    let settings = NSHostingView(rootView: GeneralSettingsView(login: login, help: {}, feedback: {}))
+    let settings = NSHostingView(rootView: GeneralSettingsView(login: login))
     preview.setContentSize(NSSize(width: 560, height: 460)); preview.contentView = settings
     for _ in 0..<8 { try await Task.sleep(for: .milliseconds(25)); settings.layoutSubtreeIfNeeded() }
     if let bitmap = settings.bitmapImageRepForCachingDisplay(in: settings.bounds) {

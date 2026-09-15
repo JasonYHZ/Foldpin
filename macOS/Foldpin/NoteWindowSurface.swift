@@ -43,6 +43,7 @@ final class NoteWindowSurface: NSView {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.refreshAppearance() }
         }
+        NotificationCenter.default.addObserver(self, selector: #selector(noteStyleChanged(_:)), name: NoteStyleSettings.didChange, object: NoteStyleSettings.shared)
         accessibilityObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in
@@ -127,7 +128,9 @@ final class NoteWindowSurface: NSView {
             bounds.fill()
         } else {
             (material == .paper ? NotePalette.paperBackground(for: color)
-                : NotePalette.solidGlassBackground(for: color)).setFill()
+                : NotePalette.solidGlassBackground(for: color))
+                .withAlphaComponent(material == .paper && !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+                    && !NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? NoteStyleSettings.shared.values.paperOpacity : 1).setFill()
             bounds.fill()
         }
     }
@@ -202,7 +205,10 @@ final class NoteWindowSurface: NSView {
         window?.invalidateCursorRects(for: resizeHandles)
     }
 
+    @objc private func noteStyleChanged(_ notification: Notification) { refreshAppearance() }
+
     private func refreshAppearance() {
+        glass.style = NoteStyleSettings.shared.values.clearGlass ? .clear : .regular
         let choice = NoteAppearance(rawValue: UserDefaults.standard.string(forKey: NoteAppearance.preferenceKey) ?? "") ?? .paper
         material = choice
         let workspace = NSWorkspace.shared
