@@ -59,6 +59,12 @@ final class LibraryLocationController: ObservableObject {
     private var retryOperation: (() -> Void)?
     private var startupURL: URL?
     private var startupID: UUID?
+    let firstRunCandidate: Bool
+    var isGettingStartedLibrary: Bool {
+        firstRunCandidate && library.directory == defaultDirectory && library.path.manifest == nil
+    }
+    var generation: Int { epoch }
+    var isRefreshing: Bool { refreshing }
     private var selectionURL: URL { privateDirectory.appendingPathComponent("location.json") }
     private var journalURL: URL { privateDirectory.appendingPathComponent("relocation.json") }
     init(privateDirectory: URL? = nil, defaultDirectory: URL? = nil) {
@@ -66,6 +72,9 @@ final class LibraryLocationController: ObservableObject {
         self.privateDirectory = privateDirectory ?? support.appendingPathComponent("FoldpinLocalState")
         self.defaultDirectory = defaultDirectory ?? support.appendingPathComponent("Foldpin")
         let preference = self.privateDirectory.appendingPathComponent("location.json")
+        firstRunCandidate = !UserDefaults.standard.bool(forKey: "gettingStarted.completed") &&
+            (UserDefaults.standard.bool(forKey: "gettingStarted.eligible") ||
+             (!FileManager.default.fileExists(atPath: preference.path) && !FileManager.default.fileExists(atPath: self.defaultDirectory.path)))
         var lastKnownURL = self.defaultDirectory
         if FileManager.default.fileExists(atPath: preference.path) {
             do {
@@ -83,7 +92,7 @@ final class LibraryLocationController: ObservableObject {
             do {
                 try FileManager.default.createDirectory(at: self.defaultDirectory, withIntermediateDirectories: true)
                 access = try LibraryFolderAccess(url: self.defaultDirectory, lockDirectory: self.privateDirectory.appendingPathComponent("locks"))
-                library = NoteLibrary(directory: self.defaultDirectory, localDirectory: self.privateDirectory)
+                library = NoteLibrary(directory: self.defaultDirectory, localDirectory: self.privateDirectory, createsInitialNote: !firstRunCandidate)
             } catch {
                 library = NoteLibrary(directory: self.defaultDirectory, localDirectory: self.privateDirectory, initialError: error)
                 lastError = error
@@ -118,6 +127,17 @@ final class LibraryLocationController: ObservableObject {
             } catch { lastError = error }
         } else { Task { await refresh() } }
     }
+    func commandChangeLocation(_ action: String, validate: () throws -> Void) async throws {
+        guard !isBusy else { throw MCPFailure("busy_editing") }
+        if action == "default" { try validate(); useDefault(); return }
+        let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false; panel.canCreateDirectories = action == "move"
+        guard await panel.begin() == .OK, let selected = panel.url else { throw MCPFailure("cancelled") }
+        try validate()
+        if action == "move" { move(to: selected.appendingPathComponent("Foldpin Library"), granting: selected) }
+        else { open(selected) }
+    }
+
     func chooseExisting() {
         guard !isBusy else { return }
         let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.allowsMultipleSelection = false
@@ -168,7 +188,7 @@ final class LibraryLocationController: ObservableObject {
     func cancel() { task?.cancel() }
     private func text(_ value: String) -> String { LanguageSettings.shared.bundle.localizedString(forKey: value, value: value, table: nil) }
     private func begin(restoring: Bool = false) throws {
-        guard !isBusy, !refreshing else { throw LibraryStorageError.busy }
+        guard !isBusy, !refreshing, LibraryFileActivity.imports == 0 else { throw LibraryStorageError.busy }
         if !restoring { try prepare?() }
         isBusy = true; lastError = nil; progress = 0; epoch += 1
         library.setSuspended(true)

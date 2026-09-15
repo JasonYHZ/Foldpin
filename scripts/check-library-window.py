@@ -19,7 +19,8 @@ output.mkdir(parents=True, exist_ok=True)
 snapshot = pathlib.Path(os.environ.get("FOLDPIN_LIBRARY_WORK") or tempfile.mkdtemp(prefix="foldpin-handoff-check-", dir="/private/tmp"))
 shutil.copytree(root / "macOS/Foldpin", snapshot / "Foldpin", dirs_exist_ok=True)
 (snapshot / "Tests").mkdir(exist_ok=True)
-shutil.copy2(root / "scripts/checks/LibraryWindow.swift", snapshot / "Tests/LibraryWindow.swift")
+check_source = sys.argv[3] if len(sys.argv) > 3 else "LibraryWindow.swift"
+shutil.copy2(root / "scripts/checks" / check_source, snapshot / "Tests/LibraryWindow.swift")
 for old in (snapshot / "Tests").glob("*.swift"):
     if old.name != "LibraryWindow.swift": old.unlink()
 (snapshot / "Package.swift").write_text('''// swift-tools-version: 6.0

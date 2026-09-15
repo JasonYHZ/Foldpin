@@ -1,5 +1,10 @@
 # Foldpin
 
+2026-09-15：MCP 已接入开发版本，在「设置 → 连接 AI 工具」启用并授权客户端，提供 80 个工具。使用方式及验证边界见 [MCP 接入说明](docs/engineering/mcp-support.md)。
+
+2026-09-15：新增通用设置、首次启动自动打开的简短使用说明纸片、登录启动系统状态、Markdown 文件批量导入、只读存储用量与大附件定位、帮助及本地反馈模板。更新／发行与 AI 授权按用户指令暂缓；资源清理未开放，历史／剪贴板／共享来源保护仍需完善。实现、入口和验证见[非 AI 功能实现记录](docs/engineering/non-ai-readiness.md)。
+
+
 代码高亮已接入 highlight.js 11.11.1，通过本机 JavaScriptCore 后台解析，编辑器仍为原生 NSTextView。支持 29 个语言选择及自动识别，复用现有主题；实现、限制与来源见[语法引擎说明](docs/engineering/syntax-engine.md)。
 
 **Floating Sticky Notes for Mac**\

@@ -2,11 +2,21 @@ import AppKit
 import SwiftUI
 import Combine
 import AVFoundation
+import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private let languageSettings = LanguageSettings.shared
     let storage = LibraryLocationController()
+    let login = LoginItemSettings()
+    lazy var mcp = MCPServer(commands: FoldpinCommandService(library: { [unowned self] in self.library }, journal: MCPJournal(directory: storage.library.path.localDirectory.appendingPathComponent("mcp-receipts"))))
+    private let mcpApprovals = MCPApprovalCenter()
+    private let gettingStarted = GettingStartedNote()
+    private let feedbackController = FeedbackController()
+    private let markdownImporter = MarkdownFileImportController()
+    private var backgroundLaunch = false
+    private var launched = false
+    private var attemptedFirstNote = false
     var library: NoteLibrary { storage.library }
     private var libraryWindows: [ObjectIdentifier: [UUID: PaperWindowController]] = [:]
     private var windows: [UUID: PaperWindowController] = [:]
@@ -24,10 +34,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private let quickRecording = QuickRecordingFlow()
     private var recordingSaveRetryID: UUID?
 
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        backgroundLaunch = LoginItemSettings.isBackgroundLaunch
+    }
     func applicationDidFinishLaunching(_ notification: Notification) {
+        backgroundLaunch = backgroundLaunch || LoginItemSettings.isBackgroundLaunch
+        launched = true
+        if storage.firstRunCandidate { UserDefaults.standard.set(true, forKey: "gettingStarted.eligible") }
+        markdownImporter.onOpen = { [weak self] in self?.locateNote($0) }
         storage.prepare = { [weak self] in
             guard let self else { return }
-            guard LibraryFileActivity.exports == 0, !AudioBlockModel.requestingRecording,
+            guard LibraryFileActivity.exports == 0, LibraryFileActivity.imports == 0, !AudioBlockModel.requestingRecording,
                   windows.values.allSatisfy({ !$0.session.host.editor.hasPendingLibraryFileWork }) else { throw LibraryStorageError.busy }
             guard shelfWindow?.finish() != false else { throw LibraryStorageError.unavailable }
             for controller in windows.values {
@@ -56,10 +73,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
             applyLanguage(); updateEdge(); rebuildMenu()
             if shelfVisible { showShelf() }
+            considerGettingStarted()
         }
         storage.willRefresh = { [weak self] in
             guard let self else { return false }
-            guard windows.values.allSatisfy({ !$0.session.host.editor.hasPendingLibraryWork && !$0.session.host.editor.hasMarkedText()
+            guard LibraryFileActivity.imports == 0, windows.values.allSatisfy({ !$0.session.host.editor.hasPendingLibraryWork && !$0.session.host.editor.hasMarkedText()
                 && $0.session.host.editor.tableCellEditor?.hasMarkedText() != true }) else { return false }
             return (library.entries + library.deletedEntries).allSatisfy { !$0.store.isDirty || $0.store.flush() }
         }
@@ -93,12 +111,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             updateEdge()
         }
         configureShortcuts()
+        configureMCP()
+        mcp.start()
         for entry in library.entries where !entry.store.document.isShelved || entry.store.loadError != nil {
             controller(for: entry).showPaper(focus: false)
             lastActiveID = entry.id
         }
         updateEdge()
-        if library.failure != nil { DispatchQueue.main.async { [weak self] in self?.showShelf() } }
+        if library.failure != nil && !backgroundLaunch { DispatchQueue.main.async { [weak self] in self?.showShelf() } }
+        DispatchQueue.main.async { [weak self] in self?.considerGettingStarted() }
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        login.refresh()
+        if launched { considerGettingStarted() }
+    }
+    private func considerGettingStarted() {
+        guard !backgroundLaunch, !attemptedFirstNote, !gettingStarted.completed, storage.isGettingStartedLibrary,
+              !storage.isBusy, library.canCreate else { return }
+        attemptedFirstNote = true
+        do {
+            if let entry = try gettingStarted.createOnFirstLaunch(in: library, eligible: true,
+                bundle: languageSettings.bundle, shortcuts: shortcutSettings) { showGuideNote(entry) }
+        } catch { showGuideError(error) }
+    }
+    func showQuickStart() {
+        do { showGuideNote(try gettingStarted.open(in: library, bundle: languageSettings.bundle, shortcuts: shortcutSettings)) }
+        catch { showGuideError(error) }
+    }
+    private func showGuideNote(_ entry: NoteLibrary.Entry) {
+        if entry.store.document.deletedAt != nil { locateNote(entry.id); return }
+        let screen = workingScreen.visibleFrame
+        let width = min(520, screen.width), height = min(680, screen.height)
+        let frame = NSRect(x: screen.midX - width / 2, y: screen.midY - height / 2, width: width, height: height)
+        controller(for: entry, initialFrame: frame).showPaper(focus: true)
+    }
+    private func showGuideError(_ error: Error) {
+        let alert = NSAlert(); alert.messageText = readinessText("Could not open the guide note")
+        alert.informativeText = error.localizedDescription; alert.runModal()
+    }
+    func showFeedback() { feedbackController.show() }
+    func importMarkdown() {
+        markdownImporter.choose(storage: storage)
+    }
+    func locateNote(_ id: UUID) {
+        showShelf(); shelfWindow?.revealNote(id)
     }
 
     private func observe(_ name: Notification.Name, action: @escaping @MainActor () -> Void) {
@@ -240,6 +297,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                     updateEdge(); rebuildMenu()
                 })
         }
+        shelfWindow?.onImport = { [weak self] in self?.importMarkdown() }
         shelfWindow?.show()
     }
 
@@ -494,11 +552,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        backgroundLaunch = false
+        considerGettingStarted()
         if let current = currentPaper { current.showPaper(focus: true) } else { showShelf() }
         return false
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if LibraryFileActivity.exports > 0 || (LibraryFileActivity.imports > 0 && !markdownImporter.busy) { return .terminateCancel }
+        if markdownImporter.busy {
+            markdownImporter.show()
+            let alert = NSAlert(); alert.messageText = readinessText("Finish or cancel the import before quitting."); alert.runModal()
+            return .terminateCancel
+        }
         for entry in library.entries {
             let saved = windows[entry.id]?.prepareToTerminate() ?? (entry.store.loadError != nil || entry.store.flush())
             if !saved {
@@ -514,6 +580,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         return .terminateNow
     }
     func applicationWillTerminate(_ notification: Notification) {
+        mcp.stop()
         shortcutSettings.applyGlobals = nil
         if let localShortcutMonitor { NSEvent.removeMonitor(localShortcutMonitor) }
         shortcut.stop()
@@ -522,4 +589,278 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         for window in windows.values { window.dispose() }
     }
     @objc private func quit() { NSApp.terminate(nil) }
+}
+
+extension AppDelegate {
+    private func configureMCP() {
+        let service=mcp.commands
+        service.isBusy={ [weak self] id in
+            guard let self else{return true}
+            if storage.isBusy || storage.isRefreshing || LibraryFileActivity.imports>0 || LibraryFileActivity.exports>0 {return true}
+            if let id{return windows[id]?.session.host.editor.mcpInteractionBusy ?? false}
+            return false
+        }
+        service.commitContent={ [weak self] entry,content in
+            if let editor=self?.windows[entry.id]?.session.host.editor{try editor.applyCommandContent(content)}else{entry.store.edit(content)}
+            guard entry.store.flush() else{throw MCPFailure("save_failed")}
+        }
+        service.didChange={ [weak self] in
+            guard let self else{return}
+            let existingIDs=Set((library.entries + library.deletedEntries).map(\.id))
+            for (id,controller) in windows where controller.store.document.deletedAt != nil || !existingIDs.contains(id){controller.hideDeletedPaper()}
+            shelfWindow?.collections.reload();rebuildMenu();updateEdge()
+        }
+        service.native={ [weak self] name,args,grant in guard let self else{throw MCPFailure("library_unavailable")};return try await performMCP(name,args,grant) }
+        service.requestConfirmation={ [weak self] id,name,args,grant in
+            guard let self else{return};mcpApprovals.show(id:id,name:name,args:args,grant:grant,service:service)
+        }
+    }
+    private func performMCP(_ name:String,_ args:[String:Any],_ grant:MCPGrant) async throws -> [String:Any] {
+        let service=mcp.commands,op=String(name.dropFirst("foldpin_".count))
+        func target() throws -> NoteLibrary.Entry {try service.entry(args.uuid("noteId"),grant,deleted:false)}
+        func result(_ e:NoteLibrary.Entry) throws -> [String:Any]{["noteId":e.id.uuidString,"revision":try MCPJSON.revision(e.store.document)]}
+        switch op {
+        case "show_notes","shelve_notes":
+            guard let targets=args["targets"] as? [[String:Any]],!targets.isEmpty else{throw MCPFailure("invalid_input")}
+            var results:[[String:Any]]=[]
+            for t in targets{
+                let id=try t.uuid("noteId")
+                do {
+                    let e=try service.entry(id,grant,deleted:false);try service.check(e,revision:try t.string("expectedRevision"))
+                    if op=="show_notes"{controller(for:e).showPaper(focus:args.bool("activate"))}
+                    else if let c=windows[e.id]{guard c.shelvePaper(restoringFocus:false) else{throw MCPFailure("save_failed")}}
+                    else{e.store.setShelved(true)}
+                    guard e.store.flush() else{throw MCPFailure("save_failed")}
+                    var item=try result(e);item["status"]="completed";results.append(item)
+                } catch { results.append(["noteId":id.uuidString,"status":"failed","error":(error as? MCPFailure)?.code ?? "save_failed"]) }
+            };return ["results":results]
+        case "close_note":
+            let e=try target()
+            if e.store.document.content.isBlankForClosing{
+                guard grant.permissions.contains(.trash) else{throw MCPFailure("permission_denied")}
+                guard library.deleteNote(e.id) else{throw MCPFailure("save_failed")};windows[e.id]?.hideDeletedPaper()
+            }else if let c=windows[e.id]{guard c.shelvePaper(restoringFocus:false) else{throw MCPFailure("save_failed")}}
+            else{e.store.setShelved(true);guard e.store.flush() else{throw MCPFailure("save_failed")}}
+            return try result(e)
+        case "set_window_state":
+            let e=try target(),frame=try args["frame"].map{try MCPJSON.decode(NoteFrame.self,$0)}
+            if let c=windows[e.id]{try c.applyCommandWindowState(pinned:args["pinned"] as? Bool,collapsed:args["collapsed"] as? Bool,frame:frame)}
+            else{
+                if let v=args["pinned"] as? Bool{e.store.setPinned(v)};if let v=args["collapsed"] as? Bool{e.store.setCollapsed(v)}
+                if let frame{e.store.setFrame(frame.fitted(to:NSScreen.screens.map(\.visibleFrame),fallback:workingScreen.visibleFrame))}
+                guard e.store.flush() else{throw MCPFailure("save_failed")}
+            };return try result(e)
+        case "arrange_windows","undo_arrangement":
+            guard grant.noteIDs==nil else{throw MCPFailure("permission_denied")}
+            let candidates=windows.filter{$0.value.canArrange}
+            let before=candidates.mapValues{$0.paper.frame}
+            if op=="arrange_windows"{arrangePapers()}else{undoArrangement()}
+            return ["status":"completed","results":candidates.map{id,controller in
+                if controller.store.saveError != nil{return ["noteId":id.uuidString,"status":"failed","error":"save_failed"] as [String:Any]}
+                return ["noteId":id.uuidString,"status":"completed","moved":before[id] != controller.paper.frame] as [String:Any]
+            }]
+        case "show_shelf":showShelf();return ["status":"completed"]
+        case "show_settings":showSettings();return ["status":"accepted"]
+        case "update_settings":
+            guard try service.settings()["revision"] as? String == args.string("expectedRevision") else{throw MCPFailure("revision_conflict")}
+            if let value=args["theme"] as? String{ThemeSettings.shared.select(AppTheme(rawValue:value)!)}
+            if let value=args["language"] as? String{languageSettings.select(AppLanguage(rawValue:value)!)}
+            if let value=args["appearance"] as? String{UserDefaults.standard.set(value,forKey:NoteAppearance.preferenceKey)}
+            return try service.settings()
+        case "copy_content","copy_image","copy_block":
+            let e=try target();guard grant.permissions.contains(.read) else{throw MCPFailure("permission_denied")}
+            let content:NoteContent
+            if op=="copy_content"{content=e.store.document.content}
+            else{guard let b=e.store.document.content.blocks.first(where:{$0.id == (try? args.uuid("blockId"))}) else{throw MCPFailure("not_found_or_denied")};content=NoteContent(blocks:[b])}
+            if content.blocks.contains(where:{$0.image != nil || $0.audio != nil || $0.video != nil || $0.attachment != nil}),!grant.permissions.contains(.assets){throw MCPFailure("permission_denied")}
+            if op=="copy_image"{guard let image=content.blocks.first?.image else{throw MCPFailure("invalid_input")};try NoteClipboard.copyImage(image,file:e.store.file)}
+            else{try NoteClipboard.copy(content,file:e.store.file)}
+            return ["status":"completed"]
+        case "paste_clipboard":
+            guard grant.permissions.contains(.edit) else{throw MCPFailure("permission_denied")}
+            let e=try target()
+            let snapshot=try MCPClipboard.capture(.general,allowAssets:grant.permissions.contains(.assets)){block in
+                for entry in self.library.entries where service.allowed(entry.id,grant) {
+                    for existing in entry.store.document.content.blocks where existing.image==block.image && existing.audio==block.audio && existing.video==block.video && existing.attachment==block.attachment {
+                        if (try? service.assetURL(entry,blockID:existing.id)) != nil{return true}
+                    }
+                }
+                return false
+            }
+            let assets=e.store.file.assetsURL
+            LibraryFileActivity.imports+=1
+            let pasted:NoteContent
+            do{pasted=try await Task.detached{try await snapshot.prepare(assets:assets)}.value}
+            catch{LibraryFileActivity.imports-=1;throw error}
+            LibraryFileActivity.imports-=1
+            try service.ensureCurrent(grant,args:args)
+            var content=e.store.document.content;content.blocks += pasted.blocks
+            return try service.saveContent(content,e,grant)
+        case "play_media","pause_media","seek_media","set_playback":
+            let e=try target();guard grant.permissions.contains(.assets) else{throw MCPFailure("permission_denied")}
+            let id=try args.uuid("blockId");_ = try service.assetURL(e,blockID:id)
+            try controller(for:e).session.host.editor.commandMedia(op,blockID:id,position:(args["position"] as? NSNumber)?.doubleValue,rate:(args["rate"] as? NSNumber)?.floatValue)
+            return try result(e)
+        case "start_recording":
+            guard grant.permissions.contains(.edit),AudioBlockModel.recording==nil,!AudioBlockModel.requestingRecording else{throw MCPFailure("busy_editing")}
+            let e=try target();AudioBlockModel.requestingRecording=true
+            let allowed=await AVCaptureDevice.requestAccess(for:.audio);AudioBlockModel.requestingRecording=false
+            guard allowed else{throw MCPFailure("permission_denied")};try service.ensureCurrent(grant,args:args)
+            let c=controller(for:e);c.showPaper(focus:true);c.session.host.editor.startAuthorizedRecording(source:e.store.document.content.blocks.last)
+            guard let recording=AudioBlockModel.recording,recording.editor === c.session.host.editor else{throw MCPFailure("save_failed")}
+            var out=try result(e);out["recordingSessionId"]=recording.blockID.uuidString;return out
+        case "pause_recording","resume_recording":
+            let e=try target();guard let recording=AudioBlockModel.recording,recording.file.url == e.store.file.url else{throw MCPFailure("not_found_or_denied")}
+            let paused=op=="pause_recording"
+            if recording.isPaused != paused{recording.toggleRecordingPause()}
+            guard recording.isPaused==paused else{throw MCPFailure("save_failed")}
+            return ["status":"completed","paused":recording.isPaused,"recordingSessionId":recording.blockID.uuidString]
+        case "stop_recording":
+            let e=try target();guard let recording=AudioBlockModel.recording,recording.file.url == e.store.file.url else{throw MCPFailure("not_found_or_denied")}
+            guard recording.finish() else{throw MCPFailure("save_failed")};return try result(e)
+        case "open_attachment","reveal_file":
+            guard grant.permissions.contains(.assets) else{throw MCPFailure("permission_denied")}
+            let e=try target(),url=try service.assetURL(e,blockID:args.uuid("blockId"))
+            if op=="reveal_file"{NSWorkspace.shared.activateFileViewerSelecting([url])}
+            else{
+                let dangerous=Set(["app","command","sh","bash","zsh","scpt","workflow","pkg","dmg","webloc","url"])
+                guard !dangerous.contains(url.pathExtension.lowercased()) else{throw MCPFailure("unsupported")}
+                guard NSWorkspace.shared.open(url) else{throw MCPFailure("asset_unavailable")}
+            };return ["status":"completed"]
+        case "export_notes","export_asset":
+            guard grant.permissions.contains(.read) else{throw MCPFailure("permission_denied")}
+            let entries: [NoteLibrary.Entry]
+            if let targets=args["targets"] as? [[String:Any]], !targets.isEmpty, args["noteId"] == nil {
+                entries=try targets.map { try service.entry($0.uuid("noteId"),grant) }
+            } else { entries=[try target()] }
+            let sources=entries.map { NoteExportSource(document:$0.store.document,assets:$0.store.file.assetsURL) }
+            if sources.contains(where: \.hasResources) && !grant.permissions.contains(.assets){throw MCPFailure("permission_denied")}
+            let panel=NSSavePanel();panel.canCreateDirectories=true;let format=NoteExportFormat(rawValue:args["format"] as? String ?? "markdown")!
+            let media: MediaExport?
+            if op=="export_asset" {
+                let id=try args.uuid("blockId"),url=try service.assetURL(entries[0],blockID:id)
+                guard let block=entries[0].store.document.content.blocks.first(where:{$0.id==id}) else{throw MCPFailure("not_found_or_denied")}
+                if let image=block.image{media=try MediaExport.image(at:url,name:image.name,fallback:"Image",isSVG:image.isSVG == true)}
+                else if let audio=block.audio{media=try MediaExport.audio(at:url,audio:audio,fallback:"Audio")}
+                else if let video=block.video{media=try MediaExport.video(at:url,video:video,fallback:"Video")}
+                else if let attachment=block.attachment{media=try MediaExport.attachment(at:url,attachment:attachment)}
+                else{throw MCPFailure("asset_unavailable")}
+            } else { media=nil }
+            panel.nameFieldStringValue=media?.filename ?? (sources.count==1 ? NoteExport.filename(sources[0].title) : "Foldpin")+"."+(NoteExport.isArchive(sources) ? "zip" : format.fileExtension)
+            if let media{panel.allowedContentTypes=[media.contentType]}
+            service.cancelNative = { panel.cancel(nil) }
+            let answer=await panel.begin();guard answer == .OK,let url=panel.url else{throw MCPFailure("cancelled")}
+            try service.ensureCurrent(grant,args:args)
+            LibraryFileActivity.exports+=1;defer{LibraryFileActivity.exports-=1}
+            if let media{
+                try await Task.detached{try media.write(to:url)}.value
+            }else{try await Task.detached{try NoteExport.write(sources,format:format,to:url)}.value}
+            return ["status":"completed"]
+        case "import_asset":
+            let e=try target(),kind=try args.string("type")
+            let panel=NSOpenPanel();panel.canChooseDirectories=false;panel.allowsMultipleSelection=false
+            guard await panel.begin() == .OK,let url=panel.url else{throw MCPFailure("cancelled")}
+            try service.ensureCurrent(grant,args:args)
+            let assets=e.store.file.assetsURL
+            LibraryFileActivity.imports+=1
+            let block:NoteBlock
+            do{
+                block=try await Task.detached{() async throws -> NoteBlock in
+                    switch kind{
+                    case "image":return NoteBlock(kind:.image,image:try NoteImageImporter.prepare(url:url,directory:assets).image)
+                    case "audio":return NoteBlock(kind:.audio,audio:try NoteAudioImporter.prepare(url:url,directory:assets))
+                    case "video":return NoteBlock(kind:.video,video:try await NoteVideoImporter.prepare(url:url,directory:assets))
+                    default:return NoteBlock(kind:.file,attachment:try NoteAttachmentImporter.prepare(urls:[url],directory:assets.appendingPathComponent("files"))[0])
+                    }
+                }.value
+            }catch{LibraryFileActivity.imports-=1;throw error}
+            LibraryFileActivity.imports-=1
+            try service.ensureCurrent(grant,args:args)
+            var next=e.store.document.content;next.blocks.append(block);return try service.saveContent(next,e,grant)
+        case "get_shortcuts":
+            let bindings = try MCPJSON.object(shortcutSettings.overrides)
+            let resolved = try ShortcutSettings.allIDs.map { id in ["id":id,"title":shortcutSettings.title(id),"binding":try MCPJSON.object(shortcutSettings.binding(id))] as [String:Any] }
+            return ["status":"completed","shortcuts":resolved,"revision":try MCPJSON.hash(bindings)]
+        case "set_shortcut":
+            guard try MCPJSON.hash(MCPJSON.object(shortcutSettings.overrides)) == args.string("expectedRevision") else { throw MCPFailure("revision_conflict") }
+            let binding = args.bool("clear") ? ShortcutBinding.disabled : ShortcutBinding(code: UInt16(args.int("keyCode")), modifiers: NSEvent.ModifierFlags(rawValue:UInt(args.int("modifierBits"))))
+            guard binding.isValid, shortcutSettings.set(binding,for:try args.string("shortcutId")) else { throw MCPFailure("invalid_input") }
+            return ["revision":try MCPJSON.hash(MCPJSON.object(shortcutSettings.overrides))]
+        case "list_code_themes": return try mcpCodeThemes()
+        case "set_code_theme", "remove_code_theme":
+            let themes=CodeThemeSettings.shared
+            guard try mcpCodeThemes()["revision"] as? String == args.string("expectedRevision") else { throw MCPFailure("revision_conflict") }
+            if let id=args["themeId"] as? String {
+                guard let choice=themes.choices.first(where:{$0.id==id}),op != "remove_code_theme" || choice.imported else { throw MCPFailure("invalid_input") }
+                let previous=themes.selection
+                themes.select(id)
+                if op=="remove_code_theme" {
+                    defer{if previous != id{themes.select(previous)}}
+                    try themes.removeSelectedImport()
+                }
+            }
+            if let value=args["backgroundOpacity"] as? NSNumber { themes.setBackgroundOpacity(value.doubleValue) }
+            return try mcpCodeThemes()
+        case "import_code_theme":
+            let panel=NSOpenPanel();panel.canChooseDirectories=false;panel.allowsMultipleSelection=false
+            guard await panel.begin() == .OK,let url=panel.url else {throw MCPFailure("cancelled")}
+            try service.ensureCurrent(grant,args:args)
+            let scoped=url.startAccessingSecurityScopedResource();defer{if scoped{url.stopAccessingSecurityScopedResource()}}
+            let definition=try CodeThemeLoader.load(url,allowedDirectory:url.deletingLastPathComponent())
+            try CodeThemeSettings.shared.install(definition);return try mcpCodeThemes()
+        case "get_login_status": login.refresh();return ["status":"completed","enabled":login.enabled,"systemStatus":login.status.rawValue]
+        case "set_login_enabled":
+            await login.setEnabled(args.bool("enabled"))
+            if login.error != nil { throw MCPFailure("system_approval_required") }
+            return ["status":"completed","enabled":login.enabled,"systemStatus":login.status.rawValue]
+        case "show_help":guard grant.permissions.contains(.create),grant.noteIDs==nil else{throw MCPFailure("permission_denied")};showQuickStart();return ["status":"accepted"]
+        case "show_feedback":showFeedback();return ["status":"accepted"]
+        case "get_library_location":return ["status":"completed","libraryId":service.libraryID,"revision":String(library.path.writeSerial),"formatVersion":library.path.manifest?.version ?? 0]
+        case "change_library_location":
+            guard grant.noteIDs==nil,try args.string("expectedRevision")==String(library.path.writeSerial) else{throw MCPFailure("revision_conflict")}
+            let original=library,serial=library.path.writeSerial
+            try await storage.commandChangeLocation(try args.string("action")) {
+                try service.ensureCurrent(grant,args:args)
+                guard self.library === original, original.path.writeSerial == serial else { throw MCPFailure("revision_conflict") }
+            }
+            service.cancelNative = { [weak self] in self?.storage.cancel() }
+            while storage.isBusy { try await Task.sleep(for:.milliseconds(100)) }
+            if storage.failure != nil { throw MCPFailure("library_unavailable") }
+            return ["status":"completed","libraryId":service.libraryID]
+        case "scan_storage":
+            guard grant.noteIDs==nil else{throw MCPFailure("permission_denied")}
+            let root=library.directory,serial=library.path.writeSerial
+            let task=Task.detached{try LibraryUsage.scan(root:root)};service.cancelNative={task.cancel()}
+            let report=try await task.value
+            try service.ensureCurrent(grant,args:args);guard library.path.writeSerial==serial,library.directory==root else{throw MCPFailure("revision_conflict")}
+            return ["status":"completed","totalBytes":report.total,"incomplete":report.incomplete,
+                "categories":LibraryUsage.Category.allCases.map{["category":$0.rawValue,"bytes":report.bytes($0)] as [String:Any]},
+                "largeResources":report.largestResources.prefix(50).map{["bytes":$0.bytes,"noteIds":$0.references.map{ $0.noteID.uuidString }] as [String:Any]}]
+        case "import_markdown":
+            guard grant.noteIDs==nil,grant.permissions.contains(.edit),!markdownImporter.busy else{throw MCPFailure("permission_denied")}
+            let panel=NSOpenPanel();panel.allowsMultipleSelection=true;panel.canChooseDirectories=false
+            guard await panel.begin() == .OK,!panel.urls.isEmpty,panel.urls.count<=50 else{throw MCPFailure("cancelled")}
+            let sources=panel.urls;var resourceRoot:URL?
+            if args.bool("includeResources") {
+                let folder=NSOpenPanel();folder.canChooseFiles=false;folder.canChooseDirectories=true;folder.allowsMultipleSelection=false
+                guard await folder.begin() == .OK,let url=folder.url else{throw MCPFailure("cancelled")};resourceRoot=url
+            }
+            try service.ensureCurrent(grant,args:args)
+            markdownImporter.configure(sources:sources,storage:storage,resourceRoot:resourceRoot)
+            markdownImporter.skipUnresolved=args.bool("skipUnresolved");markdownImporter.run()
+            service.cancelNative={ [weak self] in self?.markdownImporter.cancel() }
+            while markdownImporter.busy { try await Task.sleep(for:.milliseconds(100)) }
+            return ["status":"completed","results":markdownImporter.rows.map{["noteId":$0.noteID.uuidString,"status":$0.state,"succeeded":$0.succeeded,"warningCount":$0.warnings.count] as [String:Any]}]
+        case "quit":DispatchQueue.main.asyncAfter(deadline:.now()+0.2){NSApp.terminate(nil)};return ["status":"accepted"]
+        default:throw MCPFailure("unsupported")
+        }
+    }
+}
+
+extension AppDelegate {
+    private func mcpCodeThemes() throws -> [String:Any] {
+        let t=CodeThemeSettings.shared
+        let value:[String:Any]=["themes":t.choices.map{["id":$0.id,"name":$0.name,"imported":$0.imported] as [String:Any]},"selected":t.selection,"backgroundOpacity":t.backgroundOpacity]
+        var result=value;result["revision"]=try MCPJSON.hash(value);result["status"]="completed";return result
+    }
 }

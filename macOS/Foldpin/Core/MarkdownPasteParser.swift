@@ -2,7 +2,7 @@ import Foundation
 
 /// Foundation parses Markdown; this adapter maps its semantic runs into the
 /// block types Foldpin can edit. No HTML view, network access or script engine.
-enum MarkdownPasteParser {
+nonisolated enum MarkdownPasteParser {
     private struct Piece {
         var text: String
         let intents: [PresentationIntent.IntentType]

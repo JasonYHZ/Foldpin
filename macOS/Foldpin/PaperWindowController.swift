@@ -353,6 +353,22 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
         return true
     }
 
+    func applyCommandWindowState(pinned: Bool?, collapsed: Bool?, frame: NoteFrame?) throws {
+        guard !session.host.editor.mcpInteractionBusy, AudioBlockModel.recording == nil else { throw MCPFailure("busy_editing") }
+        if let pinned { store.setPinned(pinned) }
+        if let collapsed { store.setCollapsed(collapsed) }
+        if let frame {
+            let fallback = (paper.screen ?? NSScreen.main ?? NSScreen.screens[0]).visibleFrame
+            store.setFrame(frame.fitted(to: NSScreen.screens.map(\.visibleFrame), fallback: fallback))
+        }
+        guard store.flush() else { throw MCPFailure("save_failed") }
+        paper.level = store.document.isPinned ? .floating : .normal
+        if let frame = store.document.frame { setFrame(NoteLayout.visibleFrame(expanded: frame.rect, collapsed: store.isCollapsed)) }
+        applyPaperPresentation()
+        if paper.isVisible { paperShadow?.show(below: paper) }
+        onStateChange?()
+    }
+
     @objc func togglePin() {
         guard store.loadError == nil else { return }
         store.setPinned(!store.document.isPinned)

@@ -13,6 +13,7 @@ final class NoteLibrary: ObservableObject {
         var version = 1
         let legacyID: UUID
     }
+    private let createsInitialNote: Bool
     let path: LibraryPath
     var directory: URL { path.root }
     @Published private(set) var entries: [Entry] = []
@@ -23,7 +24,8 @@ final class NoteLibrary: ObservableObject {
     private var assetsURL: URL { directory.appendingPathComponent("assets", isDirectory: true) }
 
     init(directory: URL? = nil, manifest: LibraryManifest? = nil, snapshot: LibrarySnapshot? = nil,
-         localDirectory: URL? = nil, initialError: Error? = nil) {
+         localDirectory: URL? = nil, initialError: Error? = nil, createsInitialNote: Bool = true) {
+        self.createsInitialNote = createsInitialNote
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         path = LibraryPath(directory ?? support.appendingPathComponent("Foldpin"), manifest: manifest,
             localDirectory: localDirectory ?? support.appendingPathComponent("FoldpinLocalState"))
@@ -83,12 +85,30 @@ final class NoteLibrary: ObservableObject {
             deletedEntries = loaded.filter { $0.store.document.deletedAt != nil }
                 .sorted { $0.store.document.deletedAt! > $1.store.document.deletedAt! }
             failure = nil
-            if entries.isEmpty && deletedEntries.isEmpty && !FileManager.default.fileExists(atPath: directory.appendingPathComponent("library-kept-empty").path) { _ = createNote() }
+            if !createsInitialNote && entries.isEmpty && deletedEntries.isEmpty {
+                let marker = directory.appendingPathComponent("library-kept-empty")
+                if !FileManager.default.fileExists(atPath: marker.path) { try Data().write(to: marker, options: .atomic) }
+            }
+            if createsInitialNote && entries.isEmpty && deletedEntries.isEmpty && !FileManager.default.fileExists(atPath: directory.appendingPathComponent("library-kept-empty").path) { _ = createNote() }
         } catch { failure = error }
     }
 
     @discardableResult func createNote() -> Entry? {
         persistNewNote(NoteDocument())
+    }
+
+    func importDocument(_ document: NoteDocument) throws -> Entry {
+        guard canCreate else { throw failure ?? LibraryStorageError.busy }
+        if let existing = (entries + deletedEntries).first(where: { $0.id == document.id }) { return existing }
+        let destination = file(for: document.id)
+        if path.snapshot.notes[document.id] == nil && !FileManager.default.fileExists(atPath: destination.url.path) {
+            try destination.save(document)
+        }
+        let store = NoteStore(file: destination)
+        if store.loadError != nil { throw NoteFileError.invalidContent }
+        let entry = Entry(id: document.id, store: store)
+        if store.document.deletedAt == nil { entries.append(entry) } else { deletedEntries.append(entry) }
+        return entry
     }
 
     @discardableResult func duplicateNote(_ id: UUID) -> Entry? {

@@ -1,5 +1,21 @@
 # M1 原生单纸片验证记录
 
+## 2026-09-15 MCP 实现验证
+
+- 核心完整回归：283 项测试通过（其中 15 项 MCP 定向测试；官方 SDK 用例默认不连网），日志 `/private/tmp/Foldpin-mcp-full-tests.log`。
+- MCP 定向覆盖：严格 schema、身份与范围、Host／Origin／HTTP 报文限制、过期修订／忙碌编辑、原生确认、取消／撤销授权、幂等与崩溃后收据恢复、表格和正文撤销、私有剪贴板附件与引用保护、失败保存重试。
+- 另启官方 SDK 实际网络测试：Python MCP 2.2.0、TypeScript SDK 1.30.0 均通过 initialize、80 个工具分页、读写、幂等、取消和会话重连；1 项集成测试通过。日志 `/private/tmp/Foldpin-mcp-sdk-check.log`。
+- 不可见原生窗口：同一个 NSTextView／UndoManager、MCP 修改可原生撤销、中文组合输入拒绝写入、设置页截图排版通过。日志 `/private/tmp/Foldpin-mcp-native-run.log`；截图 `/private/tmp/Foldpin-mcp-native/mcp-settings.png`。
+- Debug 应用构建通过，日志 `/private/tmp/Foldpin-mcp-build.log`。签名内同时保留 App Sandbox、麦克风、用户选择文件、既有 network.client 与新增 network.server；ad-hoc 构建提示不等于发行签名验证。无 App Intents 依赖时的元数据提取提示仍是构建工具提示。
+- 测试仅使用临时库、假凭据和独立命名剪贴板，未启动用户应用或操作真实笔记／系统剪贴板／麦克风。真实 Keychain 交互、原生文件面板、登录注册、iCloud 双机及发行沙盒内的网络监听仍待实机验收。
+
+范围与接入见 [MCP 实现记录](mcp-support.md)。
+
+2026-09-15 首次使用调整：移除独立欢迎视图，首次手动启动直接打开简短说明纸片。3 项创建／重开／删除保护测试、2 项不可见原生检查与 Debug 构建通过；已检查实际编辑器的中文说明排版。未启动用户应用或修改真实库，完整记录见[非 AI 功能实现记录](non-ai-readiness.md)。
+
+2026-09-15：新增通用设置、首次启动自动打开的简短使用说明纸片、登录启动系统状态、Markdown 文件批量导入、只读存储用量与大附件定位、帮助及本地反馈模板。更新／发行与 AI 授权按用户指令暂缓；资源清理未开放，历史／剪贴板／共享来源保护仍需完善。实现、入口和验证见[非 AI 功能实现记录](non-ai-readiness.md)。
+
+
 ## 2026-09-09 通透窗口点击激活与缩放
 
 用户确认问题在通透模式刚启动时出现，不以打开 Emoji 面板为前提。只读确认一个 Xcode DerivedData 运行实例。纸片创建移除非激活面板标志、关闭按需 key 行为，主动点击激活并前置为 key / main；通透补原生 2% 点击底层，保留玻璃与模糊；边缘直接按表面当前 bounds 判断。被动恢复仍不请求焦点，置顶规则不变。

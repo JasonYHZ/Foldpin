@@ -32,6 +32,41 @@ final class PaperTextView: NSTextView {
         breakUndoCoalescing()
     }
 
+    var mcpInteractionBusy: Bool {
+        hasMarkedText() || tableCellEditor != nil || imageCaptionBlock != nil || imageResize != nil || hasPendingLibraryFileWork
+    }
+    func applyCommandContent(_ next: NoteContent) throws {
+        guard isEditable, !mcpInteractionBusy, AudioBlockModel.recording == nil else { throw MCPFailure("busy_editing") }
+        try next.validate()
+        undoManager?.beginUndoGrouping()
+        replaceDocument(next, block: 0, preservingSelection: true)
+        undoManager?.endUndoGrouping()
+        let length = (string as NSString).length
+        if selectedRange().location > length { setSelectedRange(NSRange(location: length, length: 0)) }
+    }
+    func commandMedia(_ operation: String, blockID: UUID, position: Double?, rate: Float?) throws {
+        guard let block = content.blocks.first(where: { $0.id == blockID }), AudioBlockModel.recording == nil else { throw MCPFailure("busy_editing") }
+        if let audio = audioModel(for: block) {
+            switch operation {
+            case "play_media": if !audio.isPlaying { audio.togglePlayback() }; if !audio.isPlaying { throw MCPFailure("asset_unavailable") }
+            case "pause_media": audio.pause()
+            case "seek_media": guard let position, position <= audio.audio.duration else { throw MCPFailure("invalid_input") }; audio.seek(position / max(0.001, audio.audio.duration))
+            case "set_playback": guard let rate else { throw MCPFailure("invalid_input") }; audio.setRate(rate)
+            default: throw MCPFailure("unsupported")
+            }
+        } else if block.video != nil {
+            synchronizeVideoModels()
+            guard let video = videoModels[blockID] else { throw MCPFailure("asset_unavailable") }
+            switch operation {
+            case "play_media": guard video.play() != nil else { throw MCPFailure("asset_unavailable") }
+            case "pause_media": video.pause()
+            case "seek_media": guard let position, position <= video.video.duration, let player = video.player else { throw MCPFailure("invalid_input") }; player.seek(to: CMTime(seconds: position, preferredTimescale: 600))
+            case "set_playback": guard let rate, let player = video.player else { throw MCPFailure("invalid_input") }; if player.rate > 0 { player.rate = rate } else { player.defaultRate = rate }
+            default: throw MCPFailure("unsupported")
+            }
+        } else { throw MCPFailure("invalid_input") }
+    }
+
     private(set) var imageControls: ImageBlockControls?
     private var imageResize: (block: NoteBlock, width: CGFloat, side: CGFloat, preview: CGFloat)?
     private var imageCaptionBlock: NoteBlock?

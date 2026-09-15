@@ -335,4 +335,7 @@ nonisolated struct LibraryCollection: Codable, Equatable, Identifiable, Sendable
     }
 }
 
-@MainActor enum LibraryFileActivity { static var exports = 0 }
+@MainActor enum LibraryFileActivity {
+    static var exports = 0
+    static var imports = 0
+}

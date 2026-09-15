@@ -2,7 +2,7 @@ import Foundation
 
 /// Typing shortcuts for the block types Foldpin already stores. This does not
 /// parse documents or reinterpret imported / previously saved text.
-struct MarkdownBlockShortcut {
+nonisolated struct MarkdownBlockShortcut {
     enum Trigger { case space, newline }
 
     let kind: NoteBlockKind

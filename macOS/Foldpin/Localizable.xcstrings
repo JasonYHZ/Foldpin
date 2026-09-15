@@ -1,1319 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-  "You are already using the default library.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "You are already using the default library."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "当前已在使用默认资料库。"
-        }
-      }
-    }
-  },
-  "Open the default library?": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Open the default library?"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "打开默认资料库？"
-        }
-      }
-    }
-  },
-  "Foldpin will open the library saved in its default location and upgrade it automatically if needed. The original files are kept. Your current library will not be moved or merged.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Foldpin will open the library saved in its default location and upgrade it automatically if needed. The original files are kept. Your current library will not be moved or merged."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "将自动打开默认位置中保存的资料库，必要时自动升级并保留原文件。当前资料库不会迁移或合并，无需选择文件夹。"
-        }
-      }
-    }
-  },
-  "On other Macs, open the new location after this move. The original folder will not receive new changes.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "On other Macs, open the new location after this move. The original folder will not receive new changes."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "迁移后，请在其他 Mac 上打开新位置。原文件夹不会继续接收新的修改。"
-        }
-      }
-    }
-  },
-  "A checked copy will be created in the location you choose next. The original library and its files will be kept.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "A checked copy will be created in the location you choose next. The original library and its files will be kept."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "将在接下来选择的位置创建并校验一份副本，原资料库及其文件会保留。"
-        }
-      }
-    }
-  },
-  "A previous storage change was interrupted. Your original library is kept. Retry the move, or open the completed destination.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "A previous storage change was interrupted. Your original library is kept. Retry the move, or open the completed destination."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "上次更改存储位置时中断了，原资料库仍保留。可以重试迁移，或打开已完成的目标资料库。"
-        }
-      }
-    }
-  },
-  "All notes and attachments will be copied and checked. The original folder will be kept.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "All notes and attachments will be copied and checked. The original folder will be kept."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "将复制并校验全部纸片及附件，原文件夹会保留。"
-        }
-      }
-    }
-  },
-  "Change Storage Location…": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Change Storage Location…"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "更改存储位置…"
-        }
-      }
-    }
-  },
-  "Choose a parent folder. Foldpin Library will be created inside it. You can choose iCloud Drive.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Choose a parent folder. Foldpin Library will be created inside it. You can choose iCloud Drive."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "请选择上级文件夹，将在其中创建 Foldpin Library。可以选择 iCloud 云盘中的位置。"
-        }
-      }
-    }
-  },
-  "Choose a separate local or iCloud Drive folder without symbolic links.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Choose a separate local or iCloud Drive folder without symbolic links."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "请选择独立的本地或 iCloud 云盘文件夹，且其中不含符号链接。"
-        }
-      }
-    }
-  },
-  "Choose an existing Foldpin library, including a folder in iCloud Drive.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Choose an existing Foldpin library, including a folder in iCloud Drive."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "选择已有的 Foldpin 资料库，也可以选择 iCloud 云盘中的资料库。"
-        }
-      }
-    }
-  },
-  "Conflict copy": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Conflict copy"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "冲突副本"
-        }
-      }
-    }
-  },
-  "Contents and attachments are shared. Window positions and desktop visibility stay on each Mac. Concurrent edits are preserved as conflict copies.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Contents and attachments are shared. Window positions and desktop visibility stay on each Mac. Concurrent edits are preserved as conflict copies."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "正文和附件跨设备共享，窗口位置和桌面显示状态由各台 Mac 独立保存。同时修改的内容会保留为冲突副本。"
-        }
-      }
-    }
-  },
-  "Current Library": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Current Library"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "当前资料库"
-        }
-      }
-    }
-  },
-  "Data and Storage": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Data and Storage"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "数据与存储"
-        }
-      }
-    }
-  },
-  "Finish recording, importing, or exporting before changing libraries.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Finish recording, importing, or exporting before changing libraries."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "请先完成录音、导入或导出，再切换资料库。"
-        }
-      }
-    }
-  },
-  "Keep your library locally or in iCloud Drive. On another Mac, open the same library folder.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Keep your library locally or in iCloud Drive. On another Mac, open the same library folder."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "将资料库保存在本地或 iCloud 云盘。在另一台 Mac 上打开同一个资料库文件夹即可。"
-        }
-      }
-    }
-  },
-  "Library files are downloading from iCloud Drive. Try again when they are available.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Library files are downloading from iCloud Drive. Try again when they are available."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "资料库文件尚未从 iCloud 云盘下载完整，请下载完成后重试。"
-        }
-      }
-    }
-  },
-  "Library moved. The original folder has been kept.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Library moved. The original folder has been kept."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "资料库已迁移，原文件夹已保留。"
-        }
-      }
-    }
-  },
-  "Library opened. iCloud Drive transfers files in the background.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Library opened. iCloud Drive transfers files in the background."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "资料库已打开。位于 iCloud 云盘中的文件由系统在后台同步。"
-        }
-      }
-    }
-  },
-  "Library operations are paused while changing storage.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Library operations are paused while changing storage."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "正在更改存储位置，资料库操作已暂停。"
-        }
-      }
-    }
-  },
-  "Move Library": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Move Library"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "迁移资料库"
-        }
-      }
-    }
-  },
-  "Move this library?": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Move this library?"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "迁移此资料库？"
-        }
-      }
-    }
-  },
-  "Open This Library": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Open This Library"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "打开已有资料库"
-        }
-      }
-    }
-  },
-  "Open Existing Library…": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Open Existing Library…"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "打开已有资料库…"
-        }
-      }
-    }
-  },
-  "Opening it switches to that library's saved contents. It does not move your current notes back or merge the two libraries.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Opening it switches to that library's saved contents. It does not move your current notes back or merge the two libraries."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "打开后将切换到该资料库已保存的内容，不会把当前纸片迁回，也不会合并两个资料库。"
-        }
-      }
-    }
-  },
-  "Preparing library…": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Preparing library…"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "正在准备资料库…"
-        }
-      }
-    }
-  },
-  "Show in Finder": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Show in Finder"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "在访达中显示"
-        }
-      }
-    }
-  },
-  "Storage": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Storage"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "存储"
-        }
-      }
-    }
-  },
-  "Storage change cancelled. The original library is unchanged.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Storage change cancelled. The original library is unchanged."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "已取消更改存储位置，原资料库保持不变。"
-        }
-      }
-    }
-  },
-  "The default location contains an older library.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "The default location contains an older library."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "默认位置中已有之前的资料库。"
-        }
-      }
-    }
-  },
-  "The destination already exists. Open that library or choose another location.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "The destination already exists. Open that library or choose another location."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "目标已存在，请打开该资料库或选择其他位置。"
-        }
-      }
-    }
-  },
-  "The library changed during this operation. Existing files are preserved; try again.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "The library changed during this operation. Existing files are preserved; try again."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "操作期间资料库发生了变化。现有文件已保留，请重试。"
-        }
-      }
-    }
-  },
-  "The library is unavailable. Reauthorize its folder or try again.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "The library is unavailable. Reauthorize its folder or try again."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "无法访问资料库，请重新授权该文件夹或重试。"
-        }
-      }
-    }
-  },
-  "This folder is not a readable Foldpin library. Existing files are unchanged.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "This folder is not a readable Foldpin library. Existing files are unchanged."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "此文件夹不是可读取的 Foldpin 资料库，现有文件未更改。"
-        }
-      }
-    }
-  },
-  "This library is already open in another Foldpin process on this Mac.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "This library is already open in another Foldpin process on this Mac."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "本机的另一个 Foldpin 进程已打开此资料库。"
-        }
-      }
-    }
-  },
-  "This library requires a newer version of Foldpin.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "This library requires a newer version of Foldpin."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "此资料库需要更新版本的 Foldpin。"
-        }
-      }
-    }
-  },
-  "Upgrade and Open": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Upgrade and Open"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "升级并打开"
-        }
-      }
-    }
-  },
-  "Upgrade this older library?": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Upgrade this older library?"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "升级此旧版资料库？"
-        }
-      }
-    }
-  },
-  "Use Default Location…": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Use Default Location…"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "使用默认位置…"
-        }
-      }
-    }
-  },
-  "Some attachments are not available locally yet. Foldpin has requested their iCloud download.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Some attachments are not available locally yet. Foldpin has requested their iCloud download."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "部分附件在本机尚不可用，已尝试请求 iCloud 下载。"
-        }
-      }
-    }
-  },
-  "Attachments are available locally.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Attachments are available locally."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "附件已在本机就绪。"
-        }
-      }
-    }
-  },
+    "" : {
 
-  "Permanently delete %lld notes?": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Permanently delete %lld notes?"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "彻底删除 %lld 张纸片？"
-        }
-      }
-    }
-  },
-  "These notes will be removed from Recently Deleted and cannot be restored or undone.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "These notes will be removed from Recently Deleted and cannot be restored or undone."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "这些纸片将从最近删除中移除，无法恢复或撤销。"
-        }
-      }
-    }
-  },
-  "Delete Permanently": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Delete Permanently"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "彻底删除"
-        }
-      }
-    }
-  },
-  "Delete All Permanently": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Delete All Permanently"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "彻底删除所有"
-        }
-      }
-    }
-  },
-  "%lld permanently deleted, %lld failed": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "%lld permanently deleted, %lld failed"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "已彻底删除 %lld 张，失败 %lld 张"
-        }
-      }
-    }
-  }
-,
-
-  "Export Content…": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Export…"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "导出…"
-        }
-      }
-    }
-  },
-  "Export Notes": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Export Notes"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "导出纸片"
-        }
-      }
-    }
-  },
-  "Export": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Export"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "导出"
-        }
-      }
-    }
-  },
-  "Format": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Format"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "格式"
-        }
-      }
-    }
-  },
-  "Exporting notes…": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Exporting notes…"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "正在导出纸片…"
-        }
-      }
-    }
-  },
-  "Preparing documents and resources.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Preparing documents and resources."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "正在整理正文与资源文件。"
-        }
-      }
-    }
-  },
-  "Could not export notes": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Could not export notes"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "无法导出纸片"
-        }
-      }
-    }
-  },
-  "Finish importing or recording and check that all resource files are available. Existing notes and exports are unchanged.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Finish importing or recording and check that all resource files are available. Existing notes and exports are unchanged."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "请先完成导入或录音，并确认所有资源文件仍然可用。原有纸片和导出文件不会被覆盖。"
-        }
-      }
-    }
-  }
-,
-  "Attachment": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Attachment"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "附件"
-        }
-      }
-    }
-  },
-  "Attachments": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Attachments"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "附件"
-        }
-      }
-    }
-  },
-  "Import Attachments…": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Import Attachments…"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "导入附件…"
-        }
-      }
-    }
-  },
-  "Open Attachment": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Open Attachment"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "打开附件"
-        }
-      }
-    }
-  },
-  "Export Attachment…": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Export Attachment…"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "导出附件…"
-        }
-      }
-    }
-  },
-  "Importing attachments…": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Importing attachments…"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "正在导入附件…"
-        }
-      }
-    }
-  },
-  "An attachment is missing. The existing note has not been overwritten.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "An attachment is missing. The existing note has not been overwritten."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "附件文件丢失，已有纸片尚未被覆盖。"
-        }
-      }
-    }
-  },
-  "The insertion block changed. Paste the attachments again.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "The insertion block changed. Paste the attachments again."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "插入位置已改变，请重新粘贴附件。"
-        }
-      }
-    }
-  },
-  "The attachments could not be saved. Their files are kept; retry saving the note.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "The attachments could not be saved. Their files are kept; retry saving the note."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "附件未能保存，文件已保留，请重试保存纸片。"
-        }
-      }
-    }
-  },
-  "Could not import attachments. Choose up to 32 ordinary files totaling no more than 512 MB. Folders and app packages are not supported.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Could not import attachments. Choose up to 32 ordinary files totaling no more than 512 MB. Folders and app packages are not supported."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "无法导入附件。每次最多选择 32 个普通文件，总大小不超过 512 MB，暂不支持文件夹和应用包。"
-        }
-      }
-    }
-  },
-  "The attachment could not be opened. Its file may be missing or no app is available.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "The attachment could not be opened. Its file may be missing or no app is available."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "无法打开附件，文件可能已丢失，或没有可打开它的应用。"
-        }
-      }
-    }
-  },
-  "For attachments over 32 MB, use Export instead of copying.": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "For attachments over 32 MB, use Export instead of copying."
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "附件超过 32 MB 时，请使用导出功能。"
-        }
-      }
-    }
-  },
-  "Today": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Today"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "今天"
-        }
-      }
-    }
-  },
-  "Yesterday": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Yesterday"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "昨天"
-        }
-      }
-    }
-  },
-  "Previous 7 Days": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Previous 7 Days"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "过去 7 天"
-        }
-      }
-    }
-  },
-  "Previous 30 Days": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Previous 30 Days"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "过去 30 天"
-        }
-      }
-    }
-  },
-  "Earlier": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Earlier"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "更早"
-        }
-      }
-    }
-  },
-  "Group by Date": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Group by Date"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "按日期分组"
-        }
-      }
-    }
-  },
-  "Select a note": {
-    "extractionState": "manual",
-    "localizations": {
-      "en": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "Select a note"
-        }
-      },
-      "zh-Hans": {
-        "stringUnit": {
-          "state": "translated",
-          "value": "选择一张纸片"
-        }
-      }
-    }
-  },
-    "Modified": {
-  "extractionState": "manual",
-  "localizations": {
-    "en": {
-      "stringUnit": {
-        "state": "translated",
-        "value": "Modified"
-      }
     },
-    "zh-Hans": {
-      "stringUnit": {
-        "state": "translated",
-        "value": "修改时间"
-      }
-    }
-  }
-},
-    "Created": {
-  "extractionState": "manual",
-  "localizations": {
-    "en": {
-      "stringUnit": {
-        "state": "translated",
-        "value": "Created"
-      }
-    },
-    "zh-Hans": {
-      "stringUnit": {
-        "state": "translated",
-        "value": "创建时间"
-      }
-    }
-  }
-},
-    "Information": {
-  "extractionState": "manual",
-  "localizations": {
-    "en": {
-      "stringUnit": {
-        "state": "translated",
-        "value": "Information"
-      }
-    },
-    "zh-Hans": {
-      "stringUnit": {
-        "state": "translated",
-        "value": "信息"
-      }
-    }
-  }
-},
     "/ blocks · ⌘B bold" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1365,6 +55,16 @@
         }
       }
     },
+    "%lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
     "%lld completed, %lld failed" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1395,6 +95,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld 张纸片"
+          }
+        }
+      }
+    },
+    "%lld permanently deleted, %lld failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld permanently deleted, %lld failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已彻底删除 %lld 张，失败 %lld 张"
           }
         }
       }
@@ -1467,6 +184,227 @@
         }
       }
     },
+    "1. Capture a thought" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1. Capture a thought"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1. 随手记下来"
+          }
+        }
+      }
+    },
+    "2. Text, blocks and checklists" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2. Text, blocks and checklists"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2. 文字、区块与待办"
+          }
+        }
+      }
+    },
+    "3. Keep a note beside your work" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3. Keep a note beside your work"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3. 贴在工作窗口旁"
+          }
+        }
+      }
+    },
+    "4. Collect notes without losing them" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4. Collect notes without losing them"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4. 收起来，随时找回"
+          }
+        }
+      }
+    },
+    "5. Find and edit on the shelf" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5. Find and edit on the shelf"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5. 在收纳窗口里整理"
+          }
+        }
+      }
+    },
+    "6. Images, files, audio and video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6. Images, files, audio and video"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6. 图片、附件、录音与视频"
+          }
+        }
+      }
+    },
+    "7. Import and export" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7. Import and export"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7. 导入与导出"
+          }
+        }
+      }
+    },
+    "8. Delete and recover" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8. Delete and recover"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8. 删除与恢复"
+          }
+        }
+      }
+    },
+    "9. Make Foldpin yours" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "9. Make Foldpin yours"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "9. 调整为自己的习惯"
+          }
+        }
+      }
+    },
+    "10. Useful shortcuts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10. Useful shortcuts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10. 常用快捷键"
+          }
+        }
+      }
+    },
+    "A checked copy will be created in the location you choose next. The original library and its files will be kept." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A checked copy will be created in the location you choose next. The original library and its files will be kept."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将在接下来选择的位置创建并校验一份副本，原资料库及其文件会保留。"
+          }
+        }
+      }
+    },
+    "A little space for your thoughts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A little space for your thoughts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "给想法留一点空间"
+          }
+        }
+      }
+    },
+    "A previous storage change was interrupted. Your original library is kept. Retry the move, or open the completed destination." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A previous storage change was interrupted. Your original library is kept. Retry the move, or open the completed destination."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次更改存储位置时中断了，原资料库仍保留。可以重试迁移，或打开已完成的目标资料库。"
+          }
+        }
+      }
+    },
     "A theme dependency is outside the selected folder. Select their common parent folder." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1535,6 +473,23 @@
         }
       }
     },
+    "accepted" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "accepted"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已接受"
+          }
+        }
+      }
+    },
     "Actions" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1565,6 +520,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "活动"
+          }
+        }
+      }
+    },
+    "Add — Type / for headings, checklists and recording. Paste images or files directly." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add — Type / for headings, checklists and recording. Paste images or files directly."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加：输入 / 插入标题、待办或录音；图片和文件可直接粘贴。"
           }
         }
       }
@@ -1637,6 +609,23 @@
         }
       }
     },
+    "AI tool requests approval" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI tool requests approval"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 工具请求确认"
+          }
+        }
+      }
+    },
     "All content copied" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1671,6 +660,40 @@
         }
       }
     },
+    "All notes and attachments will be copied and checked. The original folder will be kept." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All notes and attachments will be copied and checked. The original folder will be kept."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将复制并校验全部纸片及附件，原文件夹会保留。"
+          }
+        }
+      }
+    },
+    "All notes in the current library" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All notes in the current library"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前资料库的全部纸片"
+          }
+        }
+      }
+    },
     "All Types" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1684,6 +707,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "全部类型"
+          }
+        }
+      }
+    },
+    "Allow AI tools you authorize to work with Foldpin. The service runs only on this Mac and stops when Foldpin quits." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow AI tools you authorize to work with Foldpin. The service runs only on this Mac and stops when Foldpin quits."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许你授权的 AI 工具操作 Foldpin。服务仅在本机运行，退出 Foldpin 后停止。"
           }
         }
       }
@@ -1705,6 +745,23 @@
         }
       }
     },
+    "Allow once" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow once"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许这一次"
+          }
+        }
+      }
+    },
     "Already assigned to %@." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1718,6 +775,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此组合已分配给「%@」。"
+          }
+        }
+      }
+    },
+    "An attachment is missing. The existing note has not been overwritten." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An attachment is missing. The existing note has not been overwritten."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附件文件丢失，已有纸片尚未被覆盖。"
           }
         }
       }
@@ -1769,6 +843,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "动物与自然"
+          }
+        }
+      }
+    },
+    "Another library" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another library"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他资料库"
           }
         }
       }
@@ -1878,6 +969,74 @@
         }
       }
     },
+    "At the start of a line, type # followed by a space for a heading, - followed by a space for a list, or three backticks followed by Return for code." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At the start of a line, type # followed by a space for a heading, - followed by a space for a list, or three backticks followed by Return for code."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在行首输入 # 后按空格可转成标题，输入 - 后按空格可转成列表，输入三个反引号后按回车可插入代码块。"
+          }
+        }
+      }
+    },
+    "Attachment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attachment"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附件"
+          }
+        }
+      }
+    },
+    "Attachments" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attachments"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附件"
+          }
+        }
+      }
+    },
+    "Attachments are available locally." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attachments are available locally."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附件已在本机就绪。"
+          }
+        }
+      }
+    },
     "Audio" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1963,6 +1122,91 @@
         }
       }
     },
+    "Authorization was revoked; its Keychain entry could not be removed." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorization was revoked; its Keychain entry could not be removed."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "授权已撤销，但未能移除钥匙串中的旧密钥。"
+          }
+        }
+      }
+    },
+    "Authorize" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorize"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "授权"
+          }
+        }
+      }
+    },
+    "Authorize a client" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorize a client"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "授权客户端"
+          }
+        }
+      }
+    },
+    "Authorize a client…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorize a client…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "授权客户端…"
+          }
+        }
+      }
+    },
+    "Authorized clients" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorized clients"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已授权客户端"
+          }
+        }
+      }
+    },
     "Auto · %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2027,6 +1271,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Foldpin 运行时，在其他应用中也能使用。每个快捷键都可以修改或清除。"
+          }
+        }
+      }
+    },
+    "awaiting_user" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "awaiting_user"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待确认"
           }
         }
       }
@@ -2235,6 +1496,23 @@
         }
       }
     },
+    "Call history stays in memory and contains no note content, file paths or access keys." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call history stays in memory and contains no note content, file paths or access keys."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "调用记录仅保留在本次运行中，不包含正文、文件路径或访问密钥。"
+          }
+        }
+      }
+    },
     "Cancel" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2248,6 +1526,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "取消"
+          }
+        }
+      }
+    },
+    "cancelled" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cancelled"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消"
+          }
+        }
+      }
+    },
+    "Cancelled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelled"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消"
           }
         }
       }
@@ -2268,6 +1580,40 @@
         }
       }
     },
+    "Capture a thought. Keep it beside you. Collect it for later." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture a thought. Keep it beside you. Collect it for later."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "随手记下来，贴在身边，收起来随时找回。"
+          }
+        }
+      }
+    },
+    "Capture a thought. Keep it in view. Collect it when you’re done." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture a thought. Keep it in view. Collect it when you’re done."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "随手记录，贴在眼前，用完收好。"
+          }
+        }
+      }
+    },
     "Change Icon" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2281,6 +1627,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更换图标"
+          }
+        }
+      }
+    },
+    "Change Storage Location…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change Storage Location…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改存储位置…"
           }
         }
       }
@@ -2319,6 +1682,23 @@
         }
       }
     },
+    "Changes save automatically. If a save error appears, keep the note open and use Retry before quitting." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes save automatically. If a save error appears, keep the note open and use Retry before quitting."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内容会自动保存。如果出现保存失败提示，请保留纸片窗口，点击重试，确认保存后再退出。"
+          }
+        }
+      }
+    },
     "Check that the original file is available and choose a writable location." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2349,6 +1729,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择喜欢的外观，随时可以切换。"
+          }
+        }
+      }
+    },
+    "Choose a parent folder. Foldpin Library will be created inside it. You can choose iCloud Drive." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a parent folder. Foldpin Library will be created inside it. You can choose iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请选择上级文件夹，将在其中创建 Foldpin Library。可以选择 iCloud 云盘中的位置。"
+          }
+        }
+      }
+    },
+    "Choose a resource folder to copy standalone Markdown images and file links. Other formatting and unresolved links are kept as source text. Remote resources are never downloaded." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a resource folder to copy standalone Markdown images and file links. Other formatting and unresolved links are kept as source text. Remote resources are never downloaded."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择附件所在文件夹后，可复制单独成行的 Markdown 图片和文件链接。不支持的格式和无法解析的链接保留为原文，不下载远程资源。"
+          }
+        }
+      }
+    },
+    "Choose a separate local or iCloud Drive folder without symbolic links." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a separate local or iCloud Drive folder without symbolic links."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请选择独立的本地或 iCloud 云盘文件夹，且其中不含符号链接。"
+          }
+        }
+      }
+    },
+    "Choose an existing Foldpin library, including a folder in iCloud Drive." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose an existing Foldpin library, including a folder in iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择已有的 Foldpin 资料库，也可以选择 iCloud 云盘中的资料库。"
+          }
+        }
+      }
+    },
+    "Choose Resource Folder…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Resource Folder…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择附件文件夹…"
+          }
+        }
+      }
+    },
+    "Clear call history" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear call history"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清除调用记录"
           }
         }
       }
@@ -2404,6 +1886,23 @@
         }
       }
     },
+    "Click a card to edit it directly in the right sidebar. There is no preview/edit switch. Drag either sidebar divider to adjust its width." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click a card to edit it directly in the right sidebar. There is no preview/edit switch. Drag either sidebar divider to adjust its width."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击卡片，就能直接在右侧栏编辑，不需要切换预览或编辑模式。拖动左右侧栏的分隔线可以调整宽度。"
+          }
+        }
+      }
+    },
     "Click and press a shortcut. Escape cancels; Delete clears." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2421,6 +1920,23 @@
         }
       }
     },
+    "Click anywhere in the body and start typing. Notes have no separate title field: their first nonempty line is the title shown on the shelf." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click anywhere in the body and start typing. Notes have no separate title field: their first nonempty line is the title shown on the shelf."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击正文就可以开始输入。纸片不需要单独填写标题，收纳窗口会用正文第一个非空行作为标题。"
+          }
+        }
+      }
+    },
     "Click for actions; drag to reorder." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2434,6 +1950,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "点击打开菜单，拖动调整顺序。"
+          }
+        }
+      }
+    },
+    "Click the magnifying glass to search. The toolbar switches between grid and list views; the filter and sort menus narrow results and control date grouping." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click the magnifying glass to search. The toolbar switches between grid and list views; the filter and sort menus narrow results and control date grouping."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击放大镜按钮展开搜索；工具栏可以切换网格和列表。类型筛选与排序菜单可缩小范围，也可以控制日期分组。"
+          }
+        }
+      }
+    },
+    "Client name" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Client name"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "客户端名称"
           }
         }
       }
@@ -2811,6 +2361,91 @@
         }
       }
     },
+    "completed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "completed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已完成"
+          }
+        }
+      }
+    },
+    "Configure in Settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configure in Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可在设置中配置"
+          }
+        }
+      }
+    },
+    "Conflict copy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conflict copy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "冲突副本"
+          }
+        }
+      }
+    },
+    "Connect AI Tools" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect AI Tools"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接 AI 工具"
+          }
+        }
+      }
+    },
+    "Connection address" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection address"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接地址"
+          }
+        }
+      }
+    },
     "Content blocks" : {
 
     },
@@ -2827,6 +2462,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "内容预览"
+          }
+        }
+      }
+    },
+    "Contents and attachments are shared. Window positions and desktop visibility stay on each Mac. Concurrent edits are preserved as conflict copies." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contents and attachments are shared. Window positions and desktop visibility stay on each Mac. Concurrent edits are preserved as conflict copies."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正文和附件跨设备共享，窗口位置和桌面显示状态由各台 Mac 独立保存。同时修改的内容会保留为冲突副本。"
           }
         }
       }
@@ -2916,6 +2568,23 @@
         }
       }
     },
+    "Copy Feedback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Feedback"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复制反馈"
+          }
+        }
+      }
+    },
     "Copy Image" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2984,6 +2653,23 @@
         }
       }
     },
+    "Could not create the example note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not create the example note"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法创建示例纸片"
+          }
+        }
+      }
+    },
     "Could not export audio. Try another location." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3018,6 +2704,40 @@
         }
       }
     },
+    "Could not export notes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not export notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法导出纸片"
+          }
+        }
+      }
+    },
+    "Could not import attachments. Choose up to 32 ordinary files totaling no more than 512 MB. Folders and app packages are not supported." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not import attachments. Choose up to 32 ordinary files totaling no more than 512 MB. Folders and app packages are not supported."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法导入附件。每次最多选择 32 个普通文件，总大小不超过 512 MB，暂不支持文件夹和应用包。"
+          }
+        }
+      }
+    },
     "Could not import audio. Choose a readable audio file under 500 MB." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3031,6 +2751,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法导入音频，请选择小于 500 MB 的可读取音频文件。"
+          }
+        }
+      }
+    },
+    "Could not import Markdown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not import Markdown"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法导入 Markdown"
           }
         }
       }
@@ -3069,6 +2806,23 @@
         }
       }
     },
+    "Could not listen on this port. Choose another port." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not listen on this port. Choose another port."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此端口无法监听，请换一个端口。"
+          }
+        }
+      }
+    },
     "Could not load" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3082,6 +2836,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "读取失败"
+          }
+        }
+      }
+    },
+    "Could not open the guide note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not open the guide note"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法打开使用说明纸片"
           }
         }
       }
@@ -3256,6 +3027,23 @@
         }
       }
     },
+    "Could not save the client key in Keychain." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not save the client key in Keychain."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法将客户端密钥保存到钥匙串。"
+          }
+        }
+      }
+    },
     "Could not start recording. Your draft is kept." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3269,6 +3057,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法开始录音，已创建的草稿会保留。"
+          }
+        }
+      }
+    },
+    "Could not start the local MCP service." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not start the local MCP service."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法启动本机 MCP 服务。"
+          }
+        }
+      }
+    },
+    "Create another note from the menu bar icon → New Note, or use the shortcut below while Foldpin is active. Each note is a separate window." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create another note from the menu bar icon → New Note, or use the shortcut below while Foldpin is active. Each note is a separate window."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击屏幕顶部的 Foldpin 菜单栏图标 →「新建纸片」，或者在 Foldpin 中使用下面的快捷键。每张纸片都是独立窗口。"
+          }
+        }
+      }
+    },
+    "Created" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建时间"
+          }
+        }
+      }
+    },
+    "Creating notes, managing collections and library-wide actions require authorization for all notes." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creating notes, managing collections and library-wide actions require authorization for all notes."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建纸片、管理集合及整个资料库的操作需要授权全部纸片。"
           }
         }
       }
@@ -3290,6 +3146,40 @@
         }
       }
     },
+    "Current library" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current library"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前资料库"
+          }
+        }
+      }
+    },
+    "Current Library" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current Library"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前资料库"
+          }
+        }
+      }
+    },
     "Current Note" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3303,6 +3193,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "当前纸片"
+          }
+        }
+      }
+    },
+    "Current notes and collections" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current notes and collections"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前纸片与集合"
           }
         }
       }
@@ -3337,6 +3244,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暗色"
+          }
+        }
+      }
+    },
+    "Data and Storage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data and Storage"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数据与存储"
+          }
+        }
+      }
+    },
+    "Delete All Permanently" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete All Permanently"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "彻底删除所有"
           }
         }
       }
@@ -3409,6 +3350,23 @@
         }
       }
     },
+    "Delete Permanently" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Permanently"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "彻底删除"
+          }
+        }
+      }
+    },
     "Delete Row" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3426,6 +3384,40 @@
         }
       }
     },
+    "Deny" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deny"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拒绝"
+          }
+        }
+      }
+    },
+    "Describe what happened and what you expected. Copy the template to share with the developer." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what happened and what you expected. Copy the template to share with the developer."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "描述遇到的情况和期望的效果，复制模板后发给开发者。"
+          }
+        }
+      }
+    },
     "Detecting…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3439,6 +3431,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "识别中…"
+          }
+        }
+      }
+    },
+    "Disable launch at login" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disable launch at login"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭登录时启动"
           }
         }
       }
@@ -3473,6 +3482,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "完成"
+          }
+        }
+      }
+    },
+    "Drag a selection box from empty space to select several cards. Command-click adds or removes cards; Shift-click selects a range. Command-A selects all visible results when browsing cards, or text when editing. Batch actions appear in the right sidebar." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drag a selection box from empty space to select several cards. Command-click adds or removes cards; Shift-click selects a range. Command-A selects all visible results when browsing cards, or text when editing. Batch actions appear in the right sidebar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从卡片之间的空白处拖出选择框，可以框选多张。按住 Command 点击可增减选择，Shift 点击可选择一段。在浏览卡片时按 ⌘A 全选当前结果；编辑文字时则全选文字。批量操作在右侧栏。"
           }
         }
       }
@@ -3562,6 +3588,23 @@
         }
       }
     },
+    "Earlier" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Earlier"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更早"
+          }
+        }
+      }
+    },
     "Edit" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3647,6 +3690,74 @@
         }
       }
     },
+    "Empty Note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty Note"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "空白纸片"
+          }
+        }
+      }
+    },
+    "Enable launch at login" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable launch at login"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用登录时启动"
+          }
+        }
+      }
+    },
+    "Enable MCP connections" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable MCP connections"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用 MCP 连接"
+          }
+        }
+      }
+    },
+    "executing" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "executing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "执行中"
+          }
+        }
+      }
+    },
     "Expand All Notes" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3681,6 +3792,40 @@
         }
       }
     },
+    "Export" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出"
+          }
+        }
+      }
+    },
+    "Export Attachment…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Attachment…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出附件…"
+          }
+        }
+      }
+    },
     "Export Audio…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3694,6 +3839,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "导出音频…"
+          }
+        }
+      }
+    },
+    "Export Content…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出…"
           }
         }
       }
@@ -3715,6 +3877,40 @@
         }
       }
     },
+    "Export Notes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出纸片"
+          }
+        }
+      }
+    },
+    "Export one note from its Actions menu, or select notes on the shelf and use the right sidebar’s actions. Choose Markdown or HTML. Notes with attachments, and multi-note exports, are packaged as ZIP archives with their resources." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export one note from its Actions menu, or select notes on the shelf and use the right sidebar’s actions. Choose Markdown or HTML. Notes with attachments, and multi-note exports, are packaged as ZIP archives with their resources."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单张纸片可从「操作」菜单导出；在收纳窗口选中单张或多张后，也可以从右侧栏操作。支持 Markdown 和 HTML；含附件或多张纸片时，会将正文与资源打包为 ZIP。"
+          }
+        }
+      }
+    },
     "Export Video…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3728,6 +3924,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "导出视频…"
+          }
+        }
+      }
+    },
+    "Exporting notes…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporting notes…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在导出纸片…"
+          }
+        }
+      }
+    },
+    "failed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失败"
+          }
+        }
+      }
+    },
+    "Failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失败"
           }
         }
       }
@@ -3762,6 +4009,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "收藏"
+          }
+        }
+      }
+    },
+    "Feedback Title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feedback"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反馈"
+          }
+        }
+      }
+    },
+    "Feedback…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feedback…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反馈…"
           }
         }
       }
@@ -3815,6 +4096,23 @@
         }
       }
     },
+    "Find collected notes in the shelf." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find collected notes in the shelf."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在收纳窗口找回已收好的纸片。"
+          }
+        }
+      }
+    },
     "Find in Note" : {
       "localizations" : {
         "en" : {
@@ -3827,6 +4125,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在纸片内查找"
+          }
+        }
+      }
+    },
+    "Find later — Collect from the top right. Open Shelf from the menu bar to search and edit." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find later — Collect from the top right. Open Shelf from the menu bar to search and edit."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收纳：右上角收起纸片，从菜单栏「打开收纳」查找和编辑。"
+          }
+        }
+      }
+    },
+    "Finish importing or recording and check that all resource files are available. Existing notes and exports are unchanged." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish importing or recording and check that all resource files are available. Existing notes and exports are unchanged."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先完成导入或录音，并确认所有资源文件仍然可用。原有纸片和导出文件不会被覆盖。"
+          }
+        }
+      }
+    },
+    "Finish or cancel the import before quitting." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish or cancel the import before quitting."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先完成或取消导入，再退出 Foldpin。"
           }
         }
       }
@@ -3844,6 +4193,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "完成录音"
+          }
+        }
+      }
+    },
+    "Finish recording, importing, or exporting before changing libraries." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish recording, importing, or exporting before changing libraries."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先完成录音、导入或导出，再切换资料库。"
           }
         }
       }
@@ -3916,6 +4282,40 @@
         }
       }
     },
+    "Floating notes for your Mac." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Floating notes for your Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "随手记，眼前贴，一键收。"
+          }
+        }
+      }
+    },
+    "Fold it into a strip, or collect it on the shelf." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fold it into a strip, or collect it on the shelf."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "折叠成一条，或者收进收纳窗口。"
+          }
+        }
+      }
+    },
     "Foldpin" : {
 
     },
@@ -3932,6 +4332,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Foldpin · 纸片与设置"
+          }
+        }
+      }
+    },
+    "Foldpin · User Guide" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin · User Guide"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin · 使用说明"
           }
         }
       }
@@ -3987,6 +4404,23 @@
         }
       }
     },
+    "Foldpin will open the library saved in its default location and upgrade it automatically if needed. The original files are kept. Your current library will not be moved or merged." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin will open the library saved in its default location and upgrade it automatically if needed. The original files are kept. Your current library will not be moved or merged."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将自动打开默认位置中保存的资料库，必要时自动升级并保留原文件。当前资料库不会迁移或合并，无需选择文件夹。"
+          }
+        }
+      }
+    },
     "Follow System" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4000,6 +4434,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "跟随系统"
+          }
+        }
+      }
+    },
+    "Follow the local system dialog to choose the file or approve the action." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Follow the local system dialog to choose the file or approve the action."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在本机系统对话框中选择文件或确认操作。"
           }
         }
       }
@@ -4021,6 +4472,23 @@
         }
       }
     },
+    "For attachments over 32 MB, use Export instead of copying." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For attachments over 32 MB, use Export instead of copying."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附件超过 32 MB 时，请使用导出功能。"
+          }
+        }
+      }
+    },
     "For media over 32 MB, use Export instead of copying." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4034,6 +4502,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "媒体总大小超过 32 MB，请使用导出功能。"
+          }
+        }
+      }
+    },
+    "Format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Format"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "格式"
+          }
+        }
+      }
+    },
+    "General" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通用"
+          }
+        }
+      }
+    },
+    "General contains launch at login, this guide and feedback. Data and Storage shows the current library, location controls, storage usage and large attachments." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General contains launch at login, this guide and feedback. Data and Storage shows the current library, location controls, storage usage and large attachments."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「通用」里有登录启动、这份使用说明和反馈入口。「数据与存储」可以查看当前资料库、更换位置、统计用量并定位大附件。"
           }
         }
       }
@@ -4187,6 +4706,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "网格"
+          }
+        }
+      }
+    },
+    "Group by Date" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group by Date"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按日期分组"
           }
         }
       }
@@ -4411,6 +4947,57 @@
         }
       }
     },
+    "Historical revisions, recovery copies, undo and clipboard can still need attachments. Cleanup is unavailable until their references and sharing history can be verified." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historical revisions, recovery copies, undo and clipboard can still need attachments. Cleanup is unavailable until their references and sharing history can be verified."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "历史修订、恢复副本、撤销和剪贴板仍可能使用附件。在完整引用与共享记录可核实前，暂不开放资源清理。"
+          }
+        }
+      }
+    },
+    "History" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "历史引用"
+          }
+        }
+      }
+    },
+    "Hover beside a block to reveal its six-dot handle. Click it for block actions, or drag it to rearrange the block. In a table, the + buttons add rows and columns." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hover beside a block to reveal its six-dot handle. Click it for block actions, or drag it to rearrange the block. In a table, the + buttons add rows and columns."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把鼠标移到区块旁边，会出现六点手柄。点击可以操作该区块，拖动可以调整顺序。表格下方和右侧的 + 可以增加行和列。"
+          }
+        }
+      }
+    },
     "Image" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4496,6 +5083,23 @@
         }
       }
     },
+    "Import Attachments…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Attachments…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入附件…"
+          }
+        }
+      }
+    },
     "Import Audio…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4530,6 +5134,57 @@
         }
       }
     },
+    "Import Markdown Title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Markdown"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入 Markdown"
+          }
+        }
+      }
+    },
+    "Import Markdown…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Markdown…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入 Markdown…"
+          }
+        }
+      }
+    },
+    "Import Remaining Files" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Remaining Files"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入剩余文件"
+          }
+        }
+      }
+    },
     "Import theme…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4543,6 +5198,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "导入主题…"
+          }
+        }
+      }
+    },
+    "Import up to 50 Markdown files. Each file becomes a collected note." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import up to 50 Markdown files. Each file becomes a collected note."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一次最多导入 50 个 Markdown 文件，每个文件生成一张已收纳纸片。"
           }
         }
       }
@@ -4581,6 +5253,23 @@
         }
       }
     },
+    "Importing attachments…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importing attachments…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在导入附件…"
+          }
+        }
+      }
+    },
     "Importing image…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4598,6 +5287,23 @@
         }
       }
     },
+    "Importing…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importing…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在导入…"
+          }
+        }
+      }
+    },
     "In App" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4611,6 +5317,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "窗口内"
+          }
+        }
+      }
+    },
+    "Include local resources?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include local resources?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同时导入本地附件？"
+          }
+        }
+      }
+    },
+    "Information" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Information"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "信息"
           }
         }
       }
@@ -4734,6 +5474,23 @@
         }
       }
     },
+    "interrupted" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "interrupted"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "执行中断"
+          }
+        }
+      }
+    },
     "Italic" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4764,6 +5521,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "随手记，眼前贴，一键收。"
+          }
+        }
+      }
+    },
+    "Keep Links" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Links"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留链接"
+          }
+        }
+      }
+    },
+    "Keep nearby — Drag the top to move, an edge to resize. Use the pin to stay on top or the arrow to fold." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep nearby — Drag the top to move, an edge to resize. Use the pin to stay on top or the arrow to fold."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "贴放：拖动顶部移动，拖动边缘缩放；图钉置顶，箭头折叠。"
           }
         }
       }
@@ -4802,6 +5593,57 @@
         }
       }
     },
+    "Keep your library locally or in iCloud Drive. On another Mac, open the same library folder." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep your library locally or in iCloud Drive. On another Mac, open the same library folder."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将资料库保存在本地或 iCloud 云盘。在另一台 Mac 上打开同一个资料库文件夹即可。"
+          }
+        }
+      }
+    },
+    "Large Resources" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Large Resources"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "较大的附件"
+          }
+        }
+      }
+    },
+    "Launch Foldpin at login" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Launch Foldpin at login"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时启动 Foldpin"
+          }
+        }
+      }
+    },
     "Library" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4815,6 +5657,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "资料库"
+          }
+        }
+      }
+    },
+    "Library files are downloading from iCloud Drive. Try again when they are available." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library files are downloading from iCloud Drive. Try again when they are available."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "资料库文件尚未从 iCloud 云盘下载完整，请下载完成后重试。"
+          }
+        }
+      }
+    },
+    "Library moved. The original folder has been kept." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library moved. The original folder has been kept."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "资料库已迁移，原文件夹已保留。"
+          }
+        }
+      }
+    },
+    "Library opened. iCloud Drive transfers files in the background." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library opened. iCloud Drive transfers files in the background."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "资料库已打开。位于 iCloud 云盘中的文件由系统在后台同步。"
+          }
+        }
+      }
+    },
+    "Library operations are paused while changing storage." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library operations are paused while changing storage."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在更改存储位置，资料库操作已暂停。"
           }
         }
       }
@@ -4887,6 +5797,40 @@
         }
       }
     },
+    "Local App Data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local App Data"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本机应用数据"
+          }
+        }
+      }
+    },
+    "Local resource links were kept as text." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local resource links were kept as text."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本地附件链接已保留为原文。"
+          }
+        }
+      }
+    },
     "Locate Desktop Note" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4900,6 +5844,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "定位桌面纸片"
+          }
+        }
+      }
+    },
+    "Locate Note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locate Note"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "定位纸片"
           }
         }
       }
@@ -4933,6 +5894,550 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "区分大小写"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_change_library_location" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change the library location"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改资料库位置"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_export_asset" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export this attachment"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出这个附件"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_export_notes" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export these notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出这些纸片"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_import_asset" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a file to insert"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择文件插入纸片"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_import_code_theme" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a code theme to import"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择并导入代码主题"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_import_markdown" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Markdown files to import"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择并导入 Markdown 文件"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_open_attachment" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open this attachment in another app"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用外部应用打开附件"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_purge_notes" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permanently delete these notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "彻底删除这些纸片"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_quit" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit Foldpin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出 Foldpin"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_reveal_file" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show this resource in Finder"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在访达中显示这个资源"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_set_login_enabled" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change launch at login"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改登录启动设置"
+          }
+        }
+      }
+    },
+    "MCP action: foldpin_start_recording" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start recording in this note"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在这张纸片中开始录音"
+          }
+        }
+      }
+    },
+    "MCP location action: default" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MCP location action: default"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用默认存储位置"
+          }
+        }
+      }
+    },
+    "MCP location action: move" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MCP location action: move"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "迁移当前资料库"
+          }
+        }
+      }
+    },
+    "MCP location action: open" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MCP location action: open"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开已有资料库"
+          }
+        }
+      }
+    },
+    "MCP permission: application" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Help and application actions"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帮助与应用操作"
+          }
+        }
+      }
+    },
+    "MCP permission: assets" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read attachments"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读取附件"
+          }
+        }
+      }
+    },
+    "MCP permission: clipboardRead" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read clipboard once"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单次读取剪贴板"
+          }
+        }
+      }
+    },
+    "MCP permission: clipboardWrite" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write clipboard"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "写入剪贴板"
+          }
+        }
+      }
+    },
+    "MCP permission: collections" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage collections"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理集合"
+          }
+        }
+      }
+    },
+    "MCP permission: create" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建纸片"
+          }
+        }
+      }
+    },
+    "MCP permission: edit" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修改纸片"
+          }
+        }
+      }
+    },
+    "MCP permission: export" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export files"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出文件"
+          }
+        }
+      }
+    },
+    "MCP permission: external" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open external apps and Finder"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开外部应用与访达"
+          }
+        }
+      }
+    },
+    "MCP permission: media" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play media"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放媒体"
+          }
+        }
+      }
+    },
+    "MCP permission: purge" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permanently delete notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "彻底删除纸片"
+          }
+        }
+      }
+    },
+    "MCP permission: read" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read note text"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读取纸片文字"
+          }
+        }
+      }
+    },
+    "MCP permission: recording" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record audio"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录音"
+          }
+        }
+      }
+    },
+    "MCP permission: settings" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change app settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修改应用设置"
+          }
+        }
+      }
+    },
+    "MCP permission: storage" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage library storage"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理资料库存储"
+          }
+        }
+      }
+    },
+    "MCP permission: trash" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete and restore notes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除与恢复纸片"
+          }
+        }
+      }
+    },
+    "MCP permission: windows" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Control desktop windows"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "控制桌面窗口"
           }
         }
       }
@@ -4971,6 +6476,23 @@
         }
       }
     },
+    "Modified" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modified"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修改时间"
+          }
+        }
+      }
+    },
     "More" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4984,6 +6506,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更多"
+          }
+        }
+      }
+    },
+    "More — Use Actions below for colors, export and deletion. Appearance and shortcuts are in Settings." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More — Use Actions below for colors, export and deletion. Appearance and shortcuts are in Settings."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多：右下角「操作」可换色、导出和删除；外观与快捷键在设置中。"
           }
         }
       }
@@ -5035,6 +6574,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "上移内容块"
+          }
+        }
+      }
+    },
+    "Move Foldpin to Applications before enabling launch at login." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Foldpin to Applications before enabling launch at login."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先将 Foldpin 移到「应用程序」，再启用登录启动。"
+          }
+        }
+      }
+    },
+    "Move Library" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Library"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "迁移资料库"
+          }
+        }
+      }
+    },
+    "Move the pointer over a note to reveal its top buttons. Drag the blank top area to move the window; drag an edge or corner to resize it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move the pointer over a note to reveal its top buttons. Drag the blank top area to move the window; drag an edge or corner to resize it."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鼠标进入纸片时，上沿按钮会显示。拖动上沿空白区域可以移动窗口，拖动边缘或四角可以调整大小。"
+          }
+        }
+      }
+    },
+    "Move this library?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move this library?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "迁移此资料库？"
           }
         }
       }
@@ -5136,6 +6743,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "还没有写下内容"
+          }
+        }
+      }
+    },
+    "No disk reference found. Undo history and clipboard may still use this resource." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No disk reference found. Undo history and clipboard may still use this resource."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未找到磁盘引用，撤销历史或剪贴板仍可能使用此附件。"
           }
         }
       }
@@ -5513,6 +7137,23 @@
         }
       }
     },
+    "On other Macs, open the new location after this move. The original folder will not receive new changes." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On other Macs, open the new location after this move. The original folder will not receive new changes."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "迁移后，请在其他 Mac 上打开新位置。原文件夹不会继续接收新的修改。"
+          }
+        }
+      }
+    },
     "On Shelf" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5526,6 +7167,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已收纳"
+          }
+        }
+      }
+    },
+    "On this Mac" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On this Mac"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本机实际占用"
+          }
+        }
+      }
+    },
+    "Only the text above will be copied." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the text above will be copied."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "只会复制上方显示的文字。"
+          }
+        }
+      }
+    },
+    "Only these targets will be used. Changes made after this request will cancel the operation." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only these targets will be used. Changes made after this request will cancel the operation."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅操作下列目标。请求后目标发生变化时，操作将被取消。"
           }
         }
       }
@@ -5547,6 +7239,23 @@
         }
       }
     },
+    "Open Attachment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Attachment"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开附件"
+          }
+        }
+      }
+    },
     "Open Entire Collection" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5564,6 +7273,40 @@
         }
       }
     },
+    "Open Example" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Example"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开使用示例"
+          }
+        }
+      }
+    },
+    "Open Existing Library…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Existing Library…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开已有资料库…"
+          }
+        }
+      }
+    },
     "Open image link" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5577,6 +7320,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "打开图片链接"
+          }
+        }
+      }
+    },
+    "Open Login Items Settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Login Items Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开系统登录项设置"
           }
         }
       }
@@ -5615,6 +7375,23 @@
         }
       }
     },
+    "Open Settings from the menu bar icon. Appearance controls the paper/glass material, light/dark theme and interface language. Shortcuts lets you customize supported note and global shortcuts." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings from the menu bar icon. Appearance controls the paper/glass material, light/dark theme and interface language. Shortcuts lets you customize supported note and global shortcuts."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从菜单栏图标打开设置。「外观」可以切换纸感或通透材质、明暗主题和界面语言；「快捷键」可以修改支持的纸片内与全局快捷键。"
+          }
+        }
+      }
+    },
     "Open Shelf" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5649,6 +7426,91 @@
         }
       }
     },
+    "Open the default library?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the default library?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开默认资料库？"
+          }
+        }
+      }
+    },
+    "Open the shelf from the menu bar icon → Open Shelf. Collecting preserves content, appearance and the desktop layout; it does not delete the note." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the shelf from the menu bar icon → Open Shelf. Collecting preserves content, appearance and the desktop layout; it does not delete the note."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击菜单栏图标 →「打开收纳」就能找回纸片。收纳会保留内容、外观和桌面布局，不等于删除。"
+          }
+        }
+      }
+    },
+    "Open the shelf to find and edit your notes." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the shelf to find and edit your notes."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开收纳，找回并继续编辑纸片。"
+          }
+        }
+      }
+    },
+    "Open This Library" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open This Library"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开已有资料库"
+          }
+        }
+      }
+    },
+    "Opening it switches to that library's saved contents. It does not move your current notes back or merge the two libraries." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening it switches to that library's saved contents. It does not move your current notes back or merge the two libraries."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开后将切换到该资料库已保存的内容，不会把当前纸片迁回，也不会合并两个资料库。"
+          }
+        }
+      }
+    },
     "Original" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5662,6 +7524,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "原色"
+          }
+        }
+      }
+    },
+    "Other library files" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other library files"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他资料库文件"
           }
         }
       }
@@ -5734,6 +7613,23 @@
         }
       }
     },
+    "Partial result. Some files are unavailable or could not be read; the total is a lower bound." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partial result. Some files are unavailable or could not be read; the total is a lower bound."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "统计尚不完整，部分文件未就绪或无法读取；总量仅包含已确认的部分。"
+          }
+        }
+      }
+    },
     "Paste" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5764,6 +7660,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "粘贴为纯文本"
+          }
+        }
+      }
+    },
+    "Paste or drag a local image or file into a note to keep a copy with it. Images can have captions and can be resized. File attachments can be opened or exported from their menus." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste or drag a local image or file into a note to keep a copy with it. Images can have captions and can be resized. File attachments can be opened or exported from their menus."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把本地图片或文件粘贴、拖入纸片，就能保存一份副本。图片可以添加标题和调整显示大小，普通附件可以从菜单打开或导出。"
           }
         }
       }
@@ -5802,6 +7715,40 @@
         }
       }
     },
+    "Permanent deletion, recording, external files and quitting still require confirmation here. Authorization cannot be changed by AI tools." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permanent deletion, recording, external files and quitting still require confirmation here. Authorization cannot be changed by AI tools."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "彻底删除、录音、外部文件和退出仍需在 Foldpin 中确认。AI 工具不能修改自己的授权。"
+          }
+        }
+      }
+    },
+    "Permanently delete %lld notes?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permanently delete %lld notes?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "彻底删除 %lld 张纸片？"
+          }
+        }
+      }
+    },
     "Pin Note" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5815,6 +7762,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "置顶纸片"
+          }
+        }
+      }
+    },
+    "Pin notes beside your work, or fold them into a strip." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin notes beside your work, or fold them into a strip."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把纸片置顶在工作窗口旁，或折叠成一条。"
+          }
+        }
+      }
+    },
+    "Pin this note beside your work." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin this note beside your work."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把这张纸片置顶在工作窗口旁。"
           }
         }
       }
@@ -5887,6 +7868,57 @@
         }
       }
     },
+    "Port" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Port"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端口"
+          }
+        }
+      }
+    },
+    "Preparing documents and resources." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing documents and resources."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在整理正文与资源文件。"
+          }
+        }
+      }
+    },
+    "Preparing library…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing library…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在准备资料库…"
+          }
+        }
+      }
+    },
     "Press shortcut…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5900,6 +7932,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请按下快捷键…"
+          }
+        }
+      }
+    },
+    "Previous 7 Days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous 7 Days"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "过去 7 天"
+          }
+        }
+      }
+    },
+    "Previous 30 Days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous 30 Days"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "过去 30 天"
           }
         }
       }
@@ -5988,6 +8054,23 @@
         }
       }
     },
+    "Quick Start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Start"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快速入门"
+          }
+        }
+      }
+    },
     "Quit" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6052,6 +8135,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "随机表情"
+          }
+        }
+      }
+    },
+    "Reading notes may send their contents to the external AI service configured in your client. MCP does not guarantee offline inference." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading notes may send their contents to the external AI service configured in your client. MCP does not guarantee offline inference."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读取纸片可能会将内容发送给客户端配置的外部 AI 服务。MCP 并不代表离线推理。"
+          }
+        }
+      }
+    },
+    "Recent calls" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent calls"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近调用"
           }
         }
       }
@@ -6158,6 +8275,23 @@
         }
       }
     },
+    "Recovery files" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recovery files"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复文件"
+          }
+        }
+      }
+    },
     "Redo" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6188,6 +8322,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "远程图片 · 点击加载"
+          }
+        }
+      }
+    },
+    "Remote images were kept as links; nothing was downloaded." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remote images were kept as links; nothing was downloaded."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "远程图片已保留为链接，没有下载资源。"
           }
         }
       }
@@ -6256,6 +8407,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "移除导入主题"
+          }
+        }
+      }
+    },
+    "Remove Login Registration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Login Registration"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除登录启动注册"
           }
         }
       }
@@ -6512,23 +8680,40 @@
         }
       }
     },
-    "Retry": {
-  "extractionState": "manual",
-  "localizations": {
-    "en": {
-      "stringUnit": {
-        "state": "translated",
-        "value": "Retry"
+    "Restore your desktop notes quietly when you log in." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore your desktop notes quietly when you log in."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录后恢复桌面纸片，不打断当前操作。"
+          }
+        }
       }
     },
-    "zh-Hans": {
-      "stringUnit": {
-        "state": "translated",
-        "value": "重试"
+    "Retry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
       }
-    }
-  }
-},
+    },
     "Retry image download" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6580,6 +8765,40 @@
         }
       }
     },
+    "Revision history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revision history"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "历史修订"
+          }
+        }
+      }
+    },
+    "Revoke" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revoke"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撤销授权"
+          }
+        }
+      }
+    },
     "Right-click a note’s title bar to choose a color for that note." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6614,6 +8833,23 @@
         }
       }
     },
+    "Rotate key" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate key"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更换密钥"
+          }
+        }
+      }
+    },
     "Save" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6644,6 +8880,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "保存状态：%@"
+          }
+        }
+      }
+    },
+    "Save this access key" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save this access key"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存访问密钥"
           }
         }
       }
@@ -6695,6 +8948,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "保存中…"
+          }
+        }
+      }
+    },
+    "Scan Storage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan Storage"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "扫描用量"
           }
         }
       }
@@ -6796,6 +9066,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在查找…"
+          }
+        }
+      }
+    },
+    "Select a note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a note"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择一张纸片"
           }
         }
       }
@@ -7140,6 +9427,23 @@
         }
       }
     },
+    "Show in Finder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in Finder"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在访达中显示"
+          }
+        }
+      }
+    },
     "Show or shelve your note. Change the shortcut in the menu bar." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7169,6 +9473,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "展开替换"
+          }
+        }
+      }
+    },
+    "Shown only now. Paste it into your client's Authorization header as Bearer followed by a space and this key. Keep it private." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shown only now. Paste it into your client's Authorization header as Bearer followed by a space and this key. Keep it private."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密钥仅在此时显示。请在客户端的 Authorization 请求头中填写 Bearer、一个空格和此密钥，并妥善保管。"
+          }
+        }
+      }
+    },
+    "Skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跳过"
+          }
+        }
+      }
+    },
+    "Skip files with unresolved resources or formatting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip files with unresolved resources or formatting"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跳过含未解析附件或格式的文件"
+          }
+        }
+      }
+    },
+    "Skipped" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已跳过"
           }
         }
       }
@@ -7207,6 +9579,91 @@
         }
       }
     },
+    "Some attachments are not available locally yet. Foldpin has requested their iCloud download." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some attachments are not available locally yet. Foldpin has requested their iCloud download."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分附件在本机尚不可用，已尝试请求 iCloud 下载。"
+          }
+        }
+      }
+    },
+    "Some local resources could not be copied. Their original links were kept." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some local resources could not be copied. Their original links were kept."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分本地附件无法复制，已保留原始链接。"
+          }
+        }
+      }
+    },
+    "Some Markdown was kept as source text." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some Markdown was kept as source text."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分 Markdown 格式已保留为原文。"
+          }
+        }
+      }
+    },
+    "Standalone local images become image blocks. Standalone file links, including audio and video, become file attachments. Inline resources and unsupported syntax stay as source text." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standalone local images become image blocks. Standalone file links, including audio and video, become file attachments. Inline resources and unsupported syntax stay as source text."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单独成行的本地图片会转成图片区块；文件链接（含音视频）会转成文件附件。行内资源和不支持的语法保留为原文。"
+          }
+        }
+      }
+    },
+    "Start Writing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Writing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始记录"
+          }
+        }
+      }
+    },
     "Status Menu Settings" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7220,6 +9677,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "设置"
+          }
+        }
+      }
+    },
+    "Storage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storage"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "存储"
+          }
+        }
+      }
+    },
+    "Storage change cancelled. The original library is unchanged." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storage change cancelled. The original library is unchanged."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消更改存储位置，原资料库保持不变。"
+          }
+        }
+      }
+    },
+    "Storage Usage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storage Usage"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "存储用量"
+          }
+        }
+      }
+    },
+    "Streamable HTTP · Bearer authorization header · protocol 2025-11-25. OAuth and stdio-only clients are not supported." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streamable HTTP · Bearer authorization header · protocol 2025-11-25. OAuth and stdio-only clients are not supported."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streamable HTTP · Bearer 请求头授权 · 协议 2025-11-25。暂不支持 OAuth 或仅支持 stdio 的客户端。"
           }
         }
       }
@@ -7393,6 +9918,108 @@
         }
       }
     },
+    "The attachment could not be opened. Its file may be missing or no app is available." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The attachment could not be opened. Its file may be missing or no app is available."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法打开附件，文件可能已丢失，或没有可打开它的应用。"
+          }
+        }
+      }
+    },
+    "The attachments could not be saved. Their files are kept; retry saving the note." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The attachments could not be saved. Their files are kept; retry saving the note."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附件未能保存，文件已保留，请重试保存纸片。"
+          }
+        }
+      }
+    },
+    "The collect button at the top right stores the note on the shelf. Closing a note with content also collects it. Closing a blank note moves it to Recently Deleted." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The collect button at the top right stores the note on the shelf. Closing a note with content also collects it. Closing a blank note moves it to Recently Deleted."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右上角的收起按钮可以把纸片收进收纳窗口。有内容的纸片点击左上角关闭或按 ⌘W，也会收纳；空白纸片关闭后会进入最近删除。"
+          }
+        }
+      }
+    },
+    "The default location contains an older library." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The default location contains an older library."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "默认位置中已有之前的资料库。"
+          }
+        }
+      }
+    },
+    "The destination already exists. Open that library or choose another location." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The destination already exists. Open that library or choose another location."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标已存在，请打开该资料库或选择其他位置。"
+          }
+        }
+      }
+    },
+    "The import results show failures and formatting kept as source text. Remote images are not downloaded automatically. Files with unresolved content can be skipped or imported with their original links." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The import results show failures and formatting kept as source text. Remote images are not downloaded automatically. Files with unresolved content can be skipped or imported with their original links."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入结果会列出失败项，以及保留为原文的格式。远程图片不会自动下载；遇到未解析内容，可以跳过文件，或保留原始链接导入。"
+          }
+        }
+      }
+    },
     "The insertion block changed. Import the audio again; the source file is unchanged." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7427,6 +10054,23 @@
         }
       }
     },
+    "The insertion block changed. Paste the attachments again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The insertion block changed. Paste the attachments again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "插入位置已改变，请重新粘贴附件。"
+          }
+        }
+      }
+    },
     "The insertion block changed. Please insert the image again." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7440,6 +10084,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "插入位置已变化，请重新插入图片。"
+          }
+        }
+      }
+    },
+    "The installed app could not be found. Move Foldpin to Applications and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The installed app could not be found. Move Foldpin to Applications and try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到已安装的应用，请将 Foldpin 移到「应用程序」后重试。"
+          }
+        }
+      }
+    },
+    "The library changed during this operation. Existing files are preserved; try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The library changed during this operation. Existing files are preserved; try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作期间资料库发生了变化。现有文件已保留，请重试。"
+          }
+        }
+      }
+    },
+    "The library is unavailable. Reauthorize its folder or try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The library is unavailable. Reauthorize its folder or try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法访问资料库，请重新授权该文件夹或重试。"
           }
         }
       }
@@ -7474,6 +10169,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "纸片的位置数据无效。原文件已保留。"
+          }
+        }
+      }
+    },
+    "The pin button keeps the note above ordinary windows. Click it again to unpin. The arrow button folds the note into a single strip; click again to expand it. Folding keeps all content." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pin button keeps the note above ordinary windows. Click it again to unpin. The arrow button folds the note into a single strip; click again to expand it. Folding keeps all content."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右上角的图钉可以让纸片置顶，再点一次取消置顶。箭头按钮可以把纸片折叠成一条，再点一次展开；折叠不会删除内容。"
           }
         }
       }
@@ -7580,6 +10292,57 @@
         }
       }
     },
+    "These notes will be removed from Recently Deleted and cannot be restored or undone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These notes will be removed from Recently Deleted and cannot be restored or undone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这些纸片将从最近删除中移除，无法恢复或撤销。"
+          }
+        }
+      }
+    },
+    "These shortcuts reflect your settings when this guide was created. If you change them later, check Settings → Shortcuts for the current bindings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These shortcuts reflect your settings when this guide was created. If you change them later, check Settings → Shortcuts for the current bindings."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下列快捷键是创建这张说明时的设置快照。以后修改快捷键时，请以「设置 → 快捷键」为准。"
+          }
+        }
+      }
+    },
+    "This folder is not a readable Foldpin library. Existing files are unchanged." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This folder is not a readable Foldpin library. Existing files are unchanged."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此文件夹不是可读取的 Foldpin 资料库，现有文件未更改。"
+          }
+        }
+      }
+    },
     "This is not a supported VS Code or TextMate theme file." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7597,6 +10360,57 @@
         }
       }
     },
+    "This is your first note. You can edit it, try the examples below, collect it, or delete it. Foldpin will not add it again on later launches." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is your first note. You can edit it, try the examples below, collect it, or delete it. Foldpin will not add it again on later launches."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这是你的第一张纸片。你可以直接编辑，试试下面的操作，也可以把它收起来或删除。以后启动软件，不会反复添加这张说明。"
+          }
+        }
+      }
+    },
+    "This library is already open in another Foldpin process on this Mac." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This library is already open in another Foldpin process on this Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本机的另一个 Foldpin 进程已打开此资料库。"
+          }
+        }
+      }
+    },
+    "This library requires a newer version of Foldpin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This library requires a newer version of Foldpin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此资料库需要更新版本的 Foldpin。"
+          }
+        }
+      }
+    },
     "This note is open on your desktop." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7610,6 +10424,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "这张纸片已在桌面打开。"
+          }
+        }
+      }
+    },
+    "This note is yours to edit, collect or delete." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This note is yours to edit, collect or delete."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这张说明也可以自由修改、收纳或删除。"
           }
         }
       }
@@ -7665,6 +10496,23 @@
         }
       }
     },
+    "To put a collected note back on the desktop, use its Actions menu on the shelf. A note already on the desktop can be located from the same menu." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To put a collected note back on the desktop, use its Actions menu on the shelf. A note already on the desktop can be located from the same menu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要把已收纳纸片放回桌面，可使用右侧栏的「操作」菜单；纸片已在桌面上时，也可以从这里定位。"
+          }
+        }
+      }
+    },
     "To-do" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7678,6 +10526,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "待办事项"
+          }
+        }
+      }
+    },
+    "Today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天"
           }
         }
       }
@@ -7766,6 +10631,40 @@
         }
       }
     },
+    "Try checking this item." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try checking this item."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "试着勾选这一项。"
+          }
+        }
+      }
+    },
+    "Try typing your own task here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try typing your own task here."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "试着在这里改写一条自己的待办。"
+          }
+        }
+      }
+    },
     "Turn into" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7779,6 +10678,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "转换为"
+          }
+        }
+      }
+    },
+    "Type / for blocks. Paste text, images or files." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type / for blocks. Paste text, images or files."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入 / 插入区块，也可以粘贴文字、图片或文件。"
+          }
+        }
+      }
+    },
+    "Type / to choose a heading, checklist, code block, table, image or media block. You can also paste Markdown to convert supported formatting into editable blocks." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type / to choose a heading, checklist, code block, table, image or media block. You can also paste Markdown to convert supported formatting into editable blocks."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入 / 可以选择标题、待办、代码、表格、图片和媒体区块。粘贴 Markdown 时，支持的格式会自动转成可编辑区块。"
           }
         }
       }
@@ -7851,6 +10784,23 @@
         }
       }
     },
+    "Undo restores your edits, including supported block operations. Standard copy, paste and undo shortcuts work inside the editor." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo restores your edits, including supported block operations. Standard copy, paste and undo shortcuts work inside the editor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑器支持撤销文字和区块操作。复制、粘贴、撤销继续使用系统常用快捷键。"
+          }
+        }
+      }
+    },
     "Unfinished Recording" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7885,6 +10835,57 @@
         }
       }
     },
+    "Upgrade and Open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade and Open"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "升级并打开"
+          }
+        }
+      }
+    },
+    "Upgrade this older library?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade this older library?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "升级此旧版资料库？"
+          }
+        }
+      }
+    },
+    "Use / to insert a recording or import supported audio and video. Microphone permission is requested only when you start recording. Finish a recording before moving to another library." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use / to insert a recording or import supported audio and video. Microphone permission is requested only when you start recording. Finish a recording before moving to another library."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通过 / 可以开始录音，或导入支持的音频、视频。只有主动开始录音时才会请求麦克风权限。切换资料库前，请先完成录音。"
+          }
+        }
+      }
+    },
     "Use a unique, nonempty collection name." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7902,6 +10903,23 @@
         }
       }
     },
+    "Use Actions at the bottom right for pinning, folding, copying all content, duplicating, changing the icon or color, and exporting." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Actions at the bottom right for pinning, folding, copying all content, duplicating, changing the icon or color, and exporting."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右下角「操作」可以置顶、折叠、复制全部内容、创建副本、更换图标或颜色，以及导出纸片。"
+          }
+        }
+      }
+    },
     "Use Command or Control with a letter, number, arrow, or punctuation key." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7915,6 +10933,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请使用 Command 或 Control 搭配字母、数字、方向键或标点键。"
+          }
+        }
+      }
+    },
+    "Use Default Location…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Default Location…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用默认位置…"
+          }
+        }
+      }
+    },
+    "Use Delete Note to move a note to Recently Deleted. Restore it there if you change your mind. Permanent deletion requires confirmation and cannot be undone from Recently Deleted." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Delete Note to move a note to Recently Deleted. Restore it there if you change your mind. Permanent deletion requires confirmation and cannot be undone from Recently Deleted."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用「删除当前纸片」会把纸片移到最近删除，误删后可以在那里恢复。彻底删除需要确认，执行后不能再从最近删除恢复。"
+          }
+        }
+      }
+    },
+    "Use File → Import Markdown, or the shelf’s New Note menu, to import .md or .markdown files. Each file becomes one collected note. Choose a resource folder if you want to copy local attachments." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use File → Import Markdown, or the shelf’s New Note menu, to import .md or .markdown files. Each file becomes one collected note. Choose a resource folder if you want to copy local attachments."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通过「文件 → 导入 Markdown」或收纳右上角的新建菜单，可以导入 .md、.markdown 文件。每个文件生成一张已收纳纸片；需要复制本地附件时，选择附件所在文件夹。"
+          }
+        }
+      }
+    },
+    "Use the left sidebar to browse all notes, desktop notes, collected notes, favorites and Recently Deleted. Collections help you group notes." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the left sidebar to browse all notes, desktop notes, collected notes, favorites and Recently Deleted. Collections help you group notes."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "左侧栏可以查看所有纸片、桌面上、已收纳、收藏和最近删除，也可以用集合整理纸片。"
+          }
+        }
+      }
+    },
+    "User Guide" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "User Guide"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用说明"
+          }
+        }
+      }
+    },
+    "Version" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "版本"
           }
         }
       }
@@ -8004,6 +11124,57 @@
         }
       }
     },
+    "Waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待导入"
+          }
+        }
+      }
+    },
+    "Waiting for approval in System Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for approval in System Settings."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待在系统设置中批准。"
+          }
+        }
+      }
+    },
+    "Welcome to Foldpin" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to Foldpin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "欢迎使用 Foldpin"
+          }
+        }
+      }
+    },
     "Window" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8017,6 +11188,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "窗口"
+          }
+        }
+      }
+    },
+    "Window positions, folder access and recovery records. These are required data, not disposable cache." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Window positions, folder access and recovery records. These are required data, not disposable cache."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "包含窗口位置、目录授权和恢复记录，属于必要数据，不是可随意清理的缓存。"
+          }
+        }
+      }
+    },
+    "Write — Click and type; changes save automatically." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write — Click and type; changes save automatically."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "记录：点击正文就能写，内容自动保存。"
+          }
+        }
+      }
+    },
+    "Write here, paste Markdown, or type / to insert a block." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write here, paste Markdown, or type / to insert a block."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在这里随手写，粘贴 Markdown，或输入 / 插入区块。"
           }
         }
       }
@@ -8038,6 +11260,74 @@
         }
       }
     },
+    "Yesterday" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yesterday"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "昨天"
+          }
+        }
+      }
+    },
+    "You are already using the default library." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You are already using the default library."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前已在使用默认资料库。"
+          }
+        }
+      }
+    },
+    "You are ready. Create a new note for your own ideas, or keep writing right here. This guide is also available from Help → User Guide." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You are ready. Create a new note for your own ideas, or keep writing right here. This guide is also available from Help → User Guide."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "现在可以新建一张纸片记录自己的内容，也可以直接接着在这里写。需要时，还能从「帮助 → 使用说明」打开这份说明。"
+          }
+        }
+      }
+    },
+    "You can edit or delete this example like any other note. Current shortcuts are in Settings → Shortcuts." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can edit or delete this example like any other note. Current shortcuts are in Settings → Shortcuts."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这张示例可以自由编辑或删除。当前快捷键可在「设置 → 快捷键」查看。"
+          }
+        }
+      }
+    },
     "Your content, position, and pin setting are kept." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8051,6 +11341,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "内容、位置和置顶偏好都会保留"
+          }
+        }
+      }
+    },
+    "Your feedback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your feedback"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的反馈"
           }
         }
       }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LibraryStorageSettingsView: View {
     @ObservedObject var storage: LibraryLocationController
+    var locate: (UUID) -> Void = { _ in }
     @ObservedObject private var language = LanguageSettings.shared
     private func text(_ key: String) -> String { language.bundle.localizedString(forKey: key, value: key, table: nil) }
     var body: some View {
@@ -34,6 +35,8 @@ struct LibraryStorageSettingsView: View {
             }
             Text(text("Contents and attachments are shared. Window positions and desktop visibility stay on each Mac. Concurrent edits are preserved as conflict copies."))
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Divider()
+            LibraryUsageView(storage: storage, locate: locate)
             Spacer(minLength: 0)
         }.padding(24)
         }.frame(width: 560, height: 460).environment(\.locale, language.locale)

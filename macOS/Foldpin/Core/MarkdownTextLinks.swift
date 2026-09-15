@@ -2,7 +2,7 @@ import Foundation
 
 /// Converts only explicit text links, retaining the surrounding block and marks.
 /// Bounded, on paste or explicit action; never run while drawing or loading notes.
-enum MarkdownTextLinks {
+nonisolated enum MarkdownTextLinks {
     struct Conversion {
         let block: NoteBlock
         let removed: [NSRange]

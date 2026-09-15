@@ -10,7 +10,7 @@ let package = Package(
                 exclude: ["AppDelegate.swift", "AppearanceSettingsView.swift", "ApplicationMenuLocalization.swift",
                           "ContentView.swift", "CodeThemeSettingsView.swift", "FoldpinApp.swift", "NoteAppearance.swift",
                           "NoteEditor.swift", "NoteIconPicker.swift", "NoteActionsView.swift", "NoteWindowSurface.swift", "ShelfView.swift", "PaperWindowController.swift", "PaperPanel.swift",
-                          "LibraryLocationController.swift", "LibraryStorageSettingsView.swift", "Foldpin.entitlements",
+                          "LibraryLocationController.swift", "LibraryStorageSettingsView.swift", "ReadinessFeatures.swift", "MCPSettingsView.swift", "MarkdownFileImportController.swift", "LibraryUsageView.swift", "Foldpin.entitlements",
                           "Assets.xcassets", "Localizable.xcstrings", "InfoPlist.xcstrings", "ThirdPartyNotices.txt"],
                 sources: ["Core", "Editor", "NoteWindowDecoration.swift", "GlobalShortcut.swift", "ShortcutSettingsView.swift", "LanguageSettings.swift", "ThemeSettings.swift"],
                 resources: [.copy("CodeThemes"), .copy("SyntaxResources"), .copy("EmojiResources")]),

@@ -193,6 +193,7 @@ final class ShelfPreviewWindow: NSObject, NSWindowDelegate, ObservableObject, NS
     private let resolve: (UUID) -> PaperWindowController?
     private let existingController: (UUID) -> PaperWindowController?
     private let onPermanentlyDeleted: (UUID) -> Void
+    var onImport: (() -> Void)?
     private let onNew: () -> Void
     private let onRetry: () -> Void
     private var subscriptions: [AnyCancellable] = []
@@ -645,7 +646,22 @@ final class ShelfPreviewWindow: NSObject, NSWindowDelegate, ObservableObject, NS
             sidebar = true
         } else { sidebar.toggle() }
     }
+    func revealNote(_ id: UUID) {
+        guard finish() else { return }
+        navigate(library.deletedEntries.contains(where: { $0.id == id }) ? .deleted : .all)
+        query = ""; search.stringValue = ""; typeFilter = "All Types"
+        rebuild(); select(id, modifiers: [])
+    }
     @objc private func newNote() { onNew() }
+    @objc private func importMarkdown() { onImport?() }
+    private func newNoteMenu() -> NSMenu {
+        let menu = NSMenu()
+        for (title, action) in [("New Note", #selector(newNote)), ("Import Markdown…", #selector(importMarkdown))] {
+            let item = NSMenuItem(title: shelfText(title), action: action, keyEquivalent: "")
+            item.target = self; menu.addItem(item)
+        }
+        return menu
+    }
     @objc private func changeView() { grid = viewSwitch.selectedSegment == 0 }
     func retry() { onRetry(); collections.reload(); rebuild() }
 
@@ -655,7 +671,7 @@ final class ShelfPreviewWindow: NSObject, NSWindowDelegate, ObservableObject, NS
         if id == separatorID {
             return NSTrackingSeparatorToolbarItem(identifier: id, splitView: splitController.splitView, dividerIndex: 0)
         }
-        let item = NSToolbarItem(itemIdentifier: id)
+        let item: NSToolbarItem = id == newID ? NSMenuToolbarItem(itemIdentifier: id) : NSToolbarItem(itemIdentifier: id)
         switch id {
         case sidebarID:
             item.image = NSImage(systemSymbolName: "sidebar.left", accessibilityDescription: shelfText("Toggle Sidebar"))
@@ -682,6 +698,7 @@ final class ShelfPreviewWindow: NSObject, NSWindowDelegate, ObservableObject, NS
         case newID:
             item.image = NSImage(systemSymbolName: "square.and.pencil", accessibilityDescription: shelfText("New Note"))
             item.label = shelfText("New Note"); item.target = self; item.action = #selector(newNote)
+            (item as? NSMenuToolbarItem)?.menu = newNoteMenu()
         default: return nil
         }
         return item
@@ -729,6 +746,7 @@ final class ShelfPreviewWindow: NSObject, NSWindowDelegate, ObservableObject, NS
         window.title = title; toolbarTitle.stringValue = title
         search.placeholderString = shelfText("Search notes…")
         for item in window.toolbar?.items ?? [] {
+            if item.itemIdentifier == newID { (item as? NSMenuToolbarItem)?.menu = newNoteMenu() }
             if item.itemIdentifier == searchID { item.label = shelfText("Search notes…"); item.toolTip = item.label }
             if item.itemIdentifier == newID { item.label = shelfText("New Note"); item.toolTip = item.label; item.isEnabled = library.canCreate }
             if item.itemIdentifier == sidebarID { item.label = shelfText("Toggle Sidebar"); item.toolTip = item.label }
