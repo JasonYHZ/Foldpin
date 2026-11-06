@@ -1,22 +1,22 @@
 # Universal macOS distribution
 
-Foldpin uses GPL-3.0-only source distribution and universal GitHub Release packages. The first regular release is 0.1.0, initially application build 2, followed by the build 3 shortcut-settings fix; historical Preview 1 uses build 1. The maintainer recreated the GitHub repository as public after cleanup. Only the clean main branch and regular release tag are uploaded to the new repository; the Preview 1 release is not recreated. Homebrew uses the project-maintained tap.
+Foldpin uses GPL-3.0-only source distribution and universal GitHub Release packages. The first regular release is 0.1.0, initially application build 2, followed by the 0.1.1 / build 3 shortcut-settings fix; historical Preview 1 uses build 1. The maintainer recreated the GitHub repository as public after cleanup. Only the clean main branch and regular release tag are uploaded to the new repository; the Preview 1 release is not recreated. Homebrew uses the project-maintained tap.
 
 ## Build
 
 From a clean source commit, run:
 
 ```sh
-python3 scripts/package-release.py --version 0.1.0 --build 3 --label 0.1.0
+python3 scripts/package-release.py --version 0.1.1 --build 3 --label 0.1.1
 ```
 
 Requirements: Xcode, Python 3, and macOS tools ditto, codesign, and hdiutil. The script freezes application source, tests, scripts, licenses, and selected documentation. It builds outside the checkout, maps compiler source paths, and uses an ad-hoc signature with no development team or debug entitlement. It does not launch the app, commit, tag, or upload.
 
-The ignored output directory `dist/Foldpin-0.1.0/` contains five public files:
+The ignored output directory `dist/Foldpin-0.1.1/` contains five public files:
 
-- `Foldpin-0.1.0-universal.dmg`: recommended installer, arm64 and x86_64.
-- `Foldpin-0.1.0-universal.zip`: the same application and notices.
-- `Foldpin-0.1.0-source.zip`: the matching source snapshot and licenses.
+- `Foldpin-0.1.1-universal.dmg`: recommended installer, arm64 and x86_64.
+- `Foldpin-0.1.1-universal.zip`: the same application and notices.
+- `Foldpin-0.1.1-source.zip`: the matching source snapshot and licenses.
 - `build-info.json`: source commit, source hashes, toolchain, architectures, and normalized build arguments.
 - `SHA256SUMS`: hashes of the four preceding files.
 
@@ -32,7 +32,7 @@ The regular release in the recreated public repository contains all five cleaned
 
 The application is not Developer ID signed or notarized. Users may need the system's Privacy & Security approval after verifying the source; do not disable Gatekeeper or remove system protections. The minimum system is macOS 26.5, including for Intel Macs.
 
-Universal compilation does not establish Intel hardware, minimum-OS hardware, fresh-user, real Gatekeeper, upgrade, live-media, or full accessibility validation. See [release assessment](release-0.1.0.md).
+Universal compilation does not establish Intel hardware, minimum-OS hardware, fresh-user, real Gatekeeper, upgrade, live-media, or full accessibility validation. See [release assessment](release-0.1.1.md).
 
 ## Homebrew
 

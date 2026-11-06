@@ -35,10 +35,10 @@ def sha(path):
     return digest.hexdigest()
 
 
-def source_files():
+def source_files(version):
     files = [ROOT / n for n in ('LICENSE', 'README.md', 'README.zh-CN.md', 'CONTRIBUTING.md',
                                'docs/engineering/distribution.md',
-                               'docs/engineering/release-0.1.0.md', 'docs/releases/0.1.0.md')]
+                               f'docs/engineering/release-{version}.md', f'docs/releases/{version}.md')]
     for name in ('macOS', 'scripts'):
         for directory, dirs, names in os.walk(ROOT / name, followlinks=False):
             dirs[:] = sorted(d for d in dirs if d not in SKIP and not d.startswith('.')
@@ -58,7 +58,7 @@ def source_files():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version', default='0.1.0')
+    parser.add_argument('--version', default='0.1.1')
     parser.add_argument('--build', default='3')
     parser.add_argument('--label', help='Release label; defaults to --version')
     parser.add_argument('--derived-data', type=Path,
@@ -92,7 +92,7 @@ def main():
         result = work / 'result'
         result.mkdir()
         hashes = {}
-        for path in source_files():
+        for path in source_files(args.version):
             relative = path.relative_to(ROOT)
             target = snapshot / relative
             target.parent.mkdir(parents=True, exist_ok=True)

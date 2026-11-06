@@ -21,9 +21,9 @@ Notes and attachments are stored locally. Link previews contact the target websi
 
 **Requires macOS 26.5 or later.** One universal app supports both **Apple Silicon (arm64) and Intel (x86_64)**. An Intel Mac must also support the required macOS version.
 
-[Download Foldpin 0.1.0](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0)
+[Download Foldpin 0.1.1](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.1)
 
-1. Download `Foldpin-0.1.0-universal.dmg` from the release assets.
+1. Download `Foldpin-0.1.1-universal.dmg` from the release assets.
 2. Open the DMG and drag **Foldpin.app** to **Applications**.
 3. Open Foldpin. Back up your complete note library before upgrading an existing installation.
 
@@ -33,13 +33,13 @@ The app is **ad-hoc signed and not notarized by Apple**. macOS may block the fir
 
 | File | Purpose |
 | --- | --- |
-| `Foldpin-0.1.0-universal.dmg` | Recommended installer for both chip families |
-| `Foldpin-0.1.0-universal.zip` | The same app in ZIP format |
-| `Foldpin-0.1.0-source.zip` | Source snapshot used to build this release |
+| `Foldpin-0.1.1-universal.dmg` | Recommended installer for both chip families |
+| `Foldpin-0.1.1-universal.zip` | The same app in ZIP format |
+| `Foldpin-0.1.1-source.zip` | Source snapshot used to build this release |
 | `SHA256SUMS` | Download checksums |
 | `build-info.json` | Source commit, toolchain, and file hashes |
 
-Automated tests, universal compilation, code-signature integrity, and compiled translations are checked. Intel hardware, minimum-OS hardware, fresh-user installs, downloaded-app Gatekeeper behavior, and upgrade flows have not completed manual validation. See [release validation](docs/engineering/release-0.1.0.md).
+Automated tests, universal compilation, code-signature integrity, and compiled translations are checked. Intel hardware, minimum-OS hardware, fresh-user installs, downloaded-app Gatekeeper behavior, and upgrade flows have not completed manual validation. See [release validation](docs/engineering/release-0.1.1.md).
 
 ## Getting started
 
@@ -54,7 +54,7 @@ Use Xcode with a macOS SDK that supports the deployment target. Open `macOS/Fold
 From the repository root, create a universal release:
 
 ```sh
-python3 scripts/package-release.py --version 0.1.0 --build 3 --label 0.1.0
+python3 scripts/package-release.py --version 0.1.1 --build 3 --label 0.1.1
 ```
 
 The script freezes the current source, builds a Release app for both architectures, and generates DMG, ZIP, corresponding source, and checksums under `dist/`. It does not commit, tag, or upload. Build from a clean commit when preparing a published release.

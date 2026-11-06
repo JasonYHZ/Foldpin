@@ -21,9 +21,9 @@ Foldpin 是一款原生 macOS 桌面随手记工具，使用 SwiftUI、AppKit �
 
 最低 **macOS 26.5**。一个通用包同时支持 **Apple Silicon（arm64）和 Intel（x86_64）**；Intel Mac 也需要满足最低系统要求。
 
-[下载 Foldpin 0.1.0](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0)
+[下载 Foldpin 0.1.1](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.1)
 
-1. 在 Release 附件中下载 `Foldpin-0.1.0-universal.dmg`。
+1. 在 Release 附件中下载 `Foldpin-0.1.1-universal.dmg`。
 2. 打开 DMG，将 **Foldpin.app** 拖到 **Applications（应用程序）**。
 3. 启动 Foldpin。升级已有版本前，请先备份完整纸片库。
 
@@ -31,13 +31,13 @@ Foldpin 是一款原生 macOS 桌面随手记工具，使用 SwiftUI、AppKit �
 
 | 文件 | 用途 |
 | --- | --- |
-| `Foldpin-0.1.0-universal.dmg` | 推荐安装包，两种芯片通用 |
-| `Foldpin-0.1.0-universal.zip` | 同一应用的 ZIP 版本 |
-| `Foldpin-0.1.0-source.zip` | 本安装包实际使用的源码快照 |
+| `Foldpin-0.1.1-universal.dmg` | 推荐安装包，两种芯片通用 |
+| `Foldpin-0.1.1-universal.zip` | 同一应用的 ZIP 版本 |
+| `Foldpin-0.1.1-source.zip` | 本安装包实际使用的源码快照 |
 | `SHA256SUMS` | 下载校验清单 |
 | `build-info.json` | 源码提交、工具链与文件哈希 |
 
-发行检查涵盖自动测试、双架构构建、签名完整性和编译后翻译。Intel 实机、最低系统实机、全新用户、真实下载后的 Gatekeeper 及升级流程尚未完成手动验收，详见[版本验证记录](docs/engineering/release-0.1.0.md)。
+发行检查涵盖自动测试、双架构构建、签名完整性和编译后翻译。Intel 实机、最低系统实机、全新用户、真实下载后的 Gatekeeper 及升级流程尚未完成手动验收，详见[版本验证记录](docs/engineering/release-0.1.1.md)。
 
 ## 开始使用
 
@@ -52,7 +52,7 @@ Foldpin 是一款原生 macOS 桌面随手记工具，使用 SwiftUI、AppKit �
 在仓库根目录生成通用发行包：
 
 ```sh
-python3 scripts/package-release.py --version 0.1.0 --build 3 --label 0.1.0
+python3 scripts/package-release.py --version 0.1.1 --build 3 --label 0.1.1
 ```
 
 脚本冻结当前源码，为两种架构构建 Release，生成 DMG、ZIP、对应源码和校验清单，输出到被 Git 忽略的 `dist/`。脚本不会提交、打标签或上传；发布时应从干净提交构建。
