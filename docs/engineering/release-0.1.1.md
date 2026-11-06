@@ -9,3 +9,11 @@ Build from a clean commit with `python3 scripts/package-release.py --version 0.1
 The maintainer will manually upload the five public files. Keep the new release as a regular-release draft until the files are uploaded and verified. Update the live Cask only when the public 0.1.1 download is available, so existing installations remain usable meanwhile.
 
 Ad-hoc signing is not Apple notarization. Intel hardware, minimum OS, fresh-user launch, actual Gatekeeper launch, upgrades, live media, and full accessibility remain unverified.
+
+## Prepared artifacts and draft
+
+The universal packages were built from clean commit `b309eea8db38eb4238028036ff0c9c6a9b77e2ae`, which is the pushed v0.1.1 tag target. Both CPU deployment targets are macOS 26.5. Strict extracted-app signing, all 5,920 compiled translations, 225 corresponding-source hashes, ZIP/DMG integrity, manifest checksums, and tested personal-path scans passed without launching the app.
+
+The English GitHub Release draft was saved with tag v0.1.1, title Foldpin 0.1.1, and Latest selected (not Pre-release). The maintainer will upload the five public files from the local 0.1.1 output; build.log is excluded. The release has not been published, and the live Cask still points to the available 0.1.0 package.
+
+The new universal ZIP SHA-256 is `8e48074e5741c9ad357759538425004624c91541251ae0c2cf15a49ca110b2dc`.
