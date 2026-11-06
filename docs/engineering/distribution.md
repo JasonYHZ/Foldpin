@@ -1,46 +1,39 @@
-# 通用包与开源发行
+# Universal macOS distribution
 
-2026-11-06 后续：已按用户要求发布常规 [v0.1.0](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0)，标记为 Latest，5 个附件的 GitHub SHA-256 与本地一致，应用版本 0.1.0、构建 2。根 README 以英文为主，中文入口为 README.zh-CN.md；发行评估与未测范围见 [0.1.0 assessment](release-0.1.0.md)，发行说明使用[英文版本](../releases/0.1.0.md)。仓库继续私有，开源后再推进 Homebrew 分发。以下旧预览记录保留为历史。
+Foldpin uses GPL-3.0-only source distribution and universal GitHub Release packages. The first regular release is 0.1.0, application build 2; historical Preview 1 uses build 1. The repository remains private during cleanup and replacement-asset verification. Homebrew distribution follows the public launch.
 
-当前方案：GPL-3.0-only 源码 + GitHub Releases 通用正式包；后续再接自建 Homebrew tap。发行版已在私有仓库发布，目前下载仍需仓库访问权限。
+## Build
 
-2026-11-06 更新：已从干净提交 `dd3c3ed` 重建并发布 [v0.1.0-preview.1](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0-preview.1)。5 个附件的 GitHub SHA-256 与本地一致；标签指向同一提交。用户决定先保持仓库私有，处理资料后再公开。根目录 `Casks/foldpin.rb` 已准备自建 tap，详见 [Homebrew](homebrew.md) 与公开资料待办。
-
-## 生成
-
-在仓库根目录执行：
+From a clean source commit, run:
 
 ```sh
 python3 scripts/package-release.py --version 0.1.0 --build 2 --label 0.1.0
 ```
 
-需要 Xcode、Python 3、macOS 自带的 ditto / codesign / hdiutil。脚本固定 arm64 + x86_64、Release、ad-hoc 签名，关闭基础调试权限注入；不使用开发者证书。保持 Bundle ID，不改项目内的开发签名配置。发行版本作为构建参数传给 Xcode，不改工程版本。
+Requirements: Xcode, Python 3, and macOS tools ditto, codesign, and hdiutil. The script freezes application source, tests, scripts, licenses, and selected documentation. It builds outside the checkout, maps compiler source paths, and uses an ad-hoc signature with no development team or debug entitlement. It does not launch the app, commit, tag, or upload.
 
-输出目录 dist/Foldpin-0.1.0/：
+The ignored output directory `dist/Foldpin-0.1.0/` contains five public files:
 
-- Foldpin-…-universal.zip 与 .dmg：同一款通用应用及许可、安装说明。
-- Foldpin-…-source.zip：构建实际使用的源码快照，包含脚本、测试、内置第三方资源及许可。
-- build-info.json：基准 Git 提交、工作区是否有改动、Xcode 版本、两个架构、最低系统与源码文件哈希。
-- SHA256SUMS：以上产物的 SHA-256。
-- build.log：本地诊断日志，可能含本机路径，不应直接上传。
+- `Foldpin-0.1.0-universal.dmg`: recommended installer, arm64 and x86_64.
+- `Foldpin-0.1.0-universal.zip`: the same application and notices.
+- `Foldpin-0.1.0-source.zip`: the matching source snapshot and licenses.
+- `build-info.json`: source commit, source hashes, toolchain, architectures, and normalized build arguments.
+- `SHA256SUMS`: hashes of the four preceding files.
 
-源码快照会包含工作区未提交的应用文件，不能用 HEAD 的源码压缩包替换。脚本只冻结 macOS/、scripts/、根许可与使用/贡献说明和本发行说明，排除构建缓存及 Git 用户状态；不收集个人环境文件、研究、聊天档案、营销 ZIP。输出目录存在时拒绝覆盖。
+`build.log` is local diagnostic output and must not be uploaded. It may contain local paths. The script refuses to overwrite an existing output directory; preserve old packages privately when rebuilding.
 
-脚本在临时快照上构建，检查双架构、签名、无调试权限、许可和八语言的编译资源，成功后才交付目录。它不运行应用，不验证真实录音、窗口操作、Intel 实机、Gatekeeper 或跨版本升级。
+## Verify and publish
 
-## 发布前
+Verify universal architectures, both deployment targets, strict signature integrity, sandbox entitlements, absence of debug permissions, version/build, all eight compiled languages, matching source hashes, ZIP extraction, DMG integrity, checksums, and absence of personal paths or private identifiers in package members. A tag must point to the clean source commit recorded in its build-info.json. Publish the matching source archive alongside the binaries.
 
-1. 在独立用户环境验收真实浏览器下载、首次放行、重启保留、导入导出、目录授权及升级；验证最低系统和 Intel 实机。
-2. 复核应用图标等正式资源的授权，以及准备公开的历史资料、截图、压缩包和 Git 历史。已有正则密钥检查不等同完整隐私审计。
-3. 将准备发行的源码完整提交并打标签，在干净快照上重新生成同版本产物；不直接发布工作区预览产物作为稳定版。
-4. 同时上传安装包、对应源码 ZIP、build-info.json 与 SHA256SUMS，保留源码与二进制的一一对应。不要上传 build.log。
+The privacy cleanup requires replacing all five files in both existing releases; the previous executables embedded personal build paths. Keep the old packages only in the private local backup. Compare GitHub's SHA-256 for every replacement attachment before making the repository public. See the [cleanup record](public-repository-preparation.md).
 
-## 签名与 Homebrew
+## Signing and validation limits
 
-ad-hoc 签名可以用于本地校验代码完整性，但不是 Developer ID 签名或 Apple 公证。用户系统可能阻止首次打开。安装说明不要求关闭 Gatekeeper 或移除整个系统的安全设置。
+The application is not Developer ID signed or notarized. Users may need the system's Privacy & Security approval after verifying the source; do not disable Gatekeeper or remove system protections. The minimum system is macOS 26.5, including for Intel Macs.
 
-自建 Homebrew tap 配置已添加：ZIP 内应用位于根目录 Foldpin.app，两种芯片共用一个 URL 与 SHA。最低系统约束保持 macOS 26.5，不能写成所有 macOS 26 均兼容。当前仓库保持私有，未向公众提供 tap，也未向官方 homebrew/cask 提交收录 PR。
+Universal compilation does not establish Intel hardware, minimum-OS hardware, fresh-user, real Gatekeeper, upgrade, live-media, or full accessibility validation. See [release assessment](release-0.1.0.md).
 
-## 仓库整理
+## Homebrew
 
-根 README 面向用户，旧版内容保存在 project-history.md；根目录的设计 QA 归入本目录，output/imagegen/ 与 tmp/imagegen/ 的现有素材归入 docs/design/generated/。不删除研究原件，不重写 Git 历史，不把归档搬动当作隐私清理。
+The prepared [Cask](../../Casks/foldpin.rb) uses the regular universal ZIP. Update its checksum after rebuilding. Do not advertise public installation while the repository is private or replacement attachments are pending. See [Homebrew preparation](homebrew.md).

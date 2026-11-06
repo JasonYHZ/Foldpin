@@ -22,3 +22,5 @@ Back up the entire note library before upgrading. Exporting notes is not a compl
 ## Rebuilt packages
 
 See each release's build-info.json for the exact clean source commit and per-file source hashes, and SHA256SUMS for current package digests. The original private packages and history are retained only in a separate local backup. Existing downloads must not be used as the cleaned public packages.
+
+The regular privacy rebuild completed from clean source commit `83d150970478d86e1998ebbd2e1a940816f7b0ec`. Both architectures target macOS 26.5; strict extracted-app signing, 5,920 compiled translations, 225 corresponding-source file hashes, all manifest checksums, and scans of every ZIP member passed. Remote replacement remains pending.

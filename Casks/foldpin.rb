@@ -1,6 +1,6 @@
 cask "foldpin" do
   version "0.1.0"
-  sha256 "b52042e5eaba404b47c64168d1a98da52912f4a6097155e6dc522729bd96c831"
+  sha256 "b4e74c92774ca06b61f945d9562b16b945eb53dd10f3ae182fdb4e8d08e9ce68"
 
   url "https://github.com/JasonYHZ/Foldpin/releases/download/v#{version}/Foldpin-#{version}-universal.zip"
   name "Foldpin"
