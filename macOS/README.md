@@ -47,7 +47,7 @@ Emoji 连续滚动现使用单一懒加载列表与固定行高，分类指示�
 
 区块书写现支持类型占位提示、空标题回车返回正文与 Shift+Enter 块内换行；占位文字不会保存。菜单提示去掉「+ 空格」，代码围栏也接受 `···` / `｀｀｀` 加空格或回车。换行规则、原生存储方式及块手柄 / 排序建议见[区块书写说明](../docs/engineering/block-writing-behavior.md)。
 
-`/` 建议菜单已按 Notion 参考优化分组、图标、输入提示与选中样式，支持中英文、明暗和短视口滚动。保持原生非激活浮层及 Backspace / 回车 / Esc 行为，只展示已支持区块；引用新增 `"` + 空格并兼容 `>`。截图和范围见[原生菜单记录](../docs/design/native-block-menu/README.md)。
+`/` 建议菜单已按 Notion 参考优化分组、图标、输入提示与选中样式，支持中英文、明暗和短视口滚动。保持原生非激活浮层及 Backspace / 回车 / Esc 行为，只展示已支持区块；引用新增 `"` + 空格并兼容 `>`。截图和范围见原生菜单记录。
 
 代码高亮已升级为 highlight.js 11.11.1 + 系统 JavaScriptCore，本机后台处理；编辑器仍为 NSTextView / TextKit 2。29 个语言选择、自动识别和现有主题共用同一引擎。资源随 Xcode / SwiftPM 打包，构建不需下载新依赖。见[语法引擎说明](../docs/engineering/syntax-engine.md)，下方旧词法扫描器描述为历史状态。
 
@@ -153,7 +153,7 @@ Git 仓库根目录是产品目录 `../`，统一管理本文、工程、PRD 与
 
 代码采用 [GitHub 主题](https://github.com/primer/github-vscode-theme)风格配色：关键字、字符串、注释、数字与函数名分别着色，整个块使用圆角底色、细边线和留白，颜色跟随当前主题。语言为纯文本时保留等宽和块背景；在代码块菜单选择 Swift、JavaScript / TypeScript、Python、JSON、SQL 或 Shell 后显示相应高亮。所有渲染在本机完成，留白不改变原始代码；并非 GitHub 语法引擎的完整移植。许可随应用打包，见 [ThirdPartyNotices.txt](Foldpin/ThirdPartyNotices.txt)。
 
-离屏原生编辑器样例：[明亮](../docs/engineering/screenshots/github-code-light.png) · [暗色](../docs/engineering/screenshots/github-code-dark.png)。仅使用示例文字，不是用户当前窗口截图。
+离屏原生编辑器样例：明亮 · 暗色。仅使用示例文字，不是用户当前窗口截图。
 
 ## 界面语言
 
@@ -178,7 +178,7 @@ macOS 自带的服务、拼写、窗口排列等子菜单，以及系统生成�
 - 主题使用 Foldpin 自身的 `appTheme` 偏好，启动时应用。跟随系统移除应用覆盖，后续系统明暗变化自动继承；不改全局系统偏好或笔记 JSON。
 - 两种材质都支持明暗主题；减少透明度或增强对比度开启时通透使用实色背景。切换只更新外观，正文编辑器不重建，光标、选区、组合输入和撤销记录保留。
 
-[整张玻璃设置窗口截图](../docs/engineering/screenshots/whole-glass-settings.png)。
+整张玻璃设置窗口截图。
 
 ## 命令行构建
 
@@ -298,7 +298,7 @@ Java 已支持自动识别、手动选择及 java 围栏，原生高亮包括关
 
 「打开收纳」现打开可复用的普通窗口。选择已收纳纸片后点「编辑」，可在原生块编辑器中继续写；「打开到桌面」交回同一会话，保留撤销历史。桌面纸片只读预览并提供定位。完整收纳与 AI 尚未完成。
 
-直接在当前 Xcode 工程按 ⌘R 运行，沿用现有笔记库，无需额外配置。步骤与离屏检查命令见[编辑会话交接说明](../docs/engineering/editor-session-handoff.md)。
+直接在当前 Xcode 工程按 ⌘R 运行，沿用现有笔记库，无需额外配置。步骤与离屏检查命令见编辑会话交接说明。
 
 ### 收纳布局重做（2026-09-12）
 

@@ -4,7 +4,7 @@
 
 当前方案：GPL-3.0-only 源码 + GitHub Releases 通用正式包；后续再接自建 Homebrew tap。发行版已在私有仓库发布，目前下载仍需仓库访问权限。
 
-2026-11-06 更新：已从干净提交 `dd3c3ed` 重建并发布 [v0.1.0-preview.1](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0-preview.1)。5 个附件的 GitHub SHA-256 与本地一致；标签指向同一提交。用户决定先保持仓库私有，处理资料后再公开。根目录 `Casks/foldpin.rb` 已准备自建 tap，详见 [Homebrew](homebrew.md) 与[公开资料待办](public-repository-preparation.md)。
+2026-11-06 更新：已从干净提交 `dd3c3ed` 重建并发布 [v0.1.0-preview.1](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0-preview.1)。5 个附件的 GitHub SHA-256 与本地一致；标签指向同一提交。用户决定先保持仓库私有，处理资料后再公开。根目录 `Casks/foldpin.rb` 已准备自建 tap，详见 [Homebrew](homebrew.md) 与公开资料待办。
 
 ## 生成
 

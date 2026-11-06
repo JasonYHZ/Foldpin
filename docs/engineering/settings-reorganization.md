@@ -12,9 +12,9 @@
 
 独立临时 App 的实际 WindowServer 显示已检查：暗色通用／外观、明亮外观、类别鼠标切换、主题菜单切换均正常。首次实机检查发现侧栏顶端空隙和重复标题，已通过 full-size 布局及跟踪工具栏分区修复，并重新截取实机图。正式应用没有启动或替换，测试仅使用空库、模拟登录状态和独立偏好；未注册登录项或打开 MCP。VoiceOver 完整朗读、所有辅助功能组合和多屏拖动仍未实机验收。完整对照见[标题栏视觉检查](settings-header-visual-qa.md)。
 
-![最终暗色原生窗口](screenshots/settings-s1/reference-dark-live.png)
 
-![最终明亮原生窗口](screenshots/settings-s1/reference-light-live.png)
+
+
 
 以下是此前 S1 初版的过程记录；涉及窗口尺寸与玻璃结构的描述以本节为准。
 
@@ -46,9 +46,9 @@ python3 scripts/check-library-window.py /private/tmp/Foldpin-settings-s1-native 
 
 以下是不可见原生窗口的内容截图，不包含系统标题栏；失焦侧栏和玻璃合成不等同于真实桌面激活态。真实指针／键盘遍历、VoiceOver 播报、系统授权面板和 Settings scene 的重开体验仍待新版实际使用验收。没有启动或替换用户正在运行的 Foldpin。
 
-![中文外观页](screenshots/settings-s1/appearance-zh.png)
 
-![英文编辑设置](screenshots/settings-s1/editing-en.png)
+
+
 
 [开发方案](settings-reorganization-plan.md)
 

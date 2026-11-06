@@ -1,6 +1,6 @@
 # 单块选择与操作菜单
 
-2026-09-08，用户确认先实现六点手柄、单块选中和操作菜单，随后要求补齐拖动排序。参考此前提供的[块操作截图](../design/native-block-menu/reference-block-actions.png)。
+2026-09-08，用户确认先实现六点手柄、单块选中和操作菜单，随后要求补齐拖动排序。参考此前提供的块操作截图。
 
 ## 当前行为
 
@@ -43,7 +43,7 @@ TextKit 2 提供块和第一行的几何信息；只有可见块参与手柄定�
 
 | 明亮 | 暗色 |
 | --- | --- |
-| ![明亮下选中标题块](../design/block-actions/selection-light.png) | ![暗色下选中标题块](../design/block-actions/selection-dark.png) |
+|  |  |
 
 ## 验证
 
@@ -53,7 +53,7 @@ TextKit 2 提供块和第一行的几何信息；只有可见块参与手柄定�
 
 | 明亮 | 暗色 |
 | --- | --- |
-| ![明亮拖动落点](../design/block-actions/drag-light.png) | ![暗色拖动落点](../design/block-actions/drag-dark.png) |
+|  |  |
 
 macOS 26.6.2 / Xcode 26.6：13 项不同的相关离屏检查通过（首轮 12 项，收尾补充一项键盘 / 异步语法检查，并复查相关悬浮定位），最终 Debug 构建通过。新增五条文案的中英打包翻译与源码匹配，明暗原生截图已查看。日志为 `/private/tmp/Foldpin-block-actions-tests.log`、`/private/tmp/Foldpin-block-actions-final-tests.log` 与 `/private/tmp/Foldpin-block-actions-build.log`。
 

@@ -69,7 +69,7 @@ python3 scripts/package-release.py --version 0.1.0 --build 2 --label 0.1.0
 
 欢迎通过 [GitHub Issues](https://github.com/JasonYHZ/Foldpin/issues) 报告问题，附上系统版本、芯片类型、Foldpin 版本和复现步骤。请移除私人笔记、凭据及个人路径，见[贡献说明](CONTRIBUTING.md)。
 
-Foldpin 原创应用代码和构建脚本采用 **GPL-3.0-only**，按许可提供且不作担保，完整条款见 [LICENSE](LICENSE)。第三方代码、主题和 Unicode 数据保留各自条款，见[第三方声明](macOS/Foldpin/ThirdPartyNotices.txt)。外部研究与参考素材不会因进入本仓库而获得额外授权。
+Foldpin 原创应用代码和构建脚本采用 **GPL-3.0-only**，按许可提供且不作担保，完整条款见 [LICENSE](LICENSE)。第三方代码、主题和 Unicode 数据保留各自条款，见[第三方声明](macOS/Foldpin/ThirdPartyNotices.txt)。私人研究、设计参考和营销档案不纳入公开源码。
 
 ## 仓库导航
 
@@ -78,8 +78,5 @@ Foldpin 原创应用代码和构建脚本采用 **GPL-3.0-only**，按许可提�
 | [macOS](macOS/README.md) | 原生应用、资源与测试 |
 | [scripts](scripts) | 打包、校验及资源生成脚本 |
 | [docs/engineering](docs/engineering) | 实现说明与验证记录 |
-| [docs/design](docs/design/ui-v0.1/README.md) | 设计资料，生成素材归档在 docs/design/generated/ |
-| [PRD.md](PRD.md) | 产品方向，包含尚未实现的规划 |
-| [开发历史](docs/engineering/project-history.md) | 按阶段保留的开发记录 |
 
-多数工程与历史文档目前为中文。[公开资料待办](docs/engineering/public-repository-preparation.md)记录隐私与素材授权复核范围；移动文件不会移除 Git 历史中的内容。
+多数工程文档目前为中文。复用旧克隆前，请阅读仓库清理记录，避免重新引入已移除的资料。

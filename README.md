@@ -71,7 +71,7 @@ A Cask configuration is being prepared for a project-maintained tap. Public Home
 
 Report bugs in [GitHub Issues](https://github.com/JasonYHZ/Foldpin/issues) with your macOS version, chip type, Foldpin version, and reproduction steps. Remove private notes, credentials, and personal paths from examples. See [contributing guidelines (Chinese)](CONTRIBUTING.md).
 
-Original Foldpin application code and build scripts are licensed under **GPL-3.0-only**, without warranty. See [LICENSE](LICENSE). Third-party code, themes, and Unicode data retain their own terms; see [ThirdPartyNotices.txt](macOS/Foldpin/ThirdPartyNotices.txt). External research and reference materials are not granted additional rights merely by being present in this repository.
+Original Foldpin application code and build scripts are licensed under **GPL-3.0-only**, without warranty. See [LICENSE](LICENSE). Third-party code, themes, and Unicode data retain their own terms; see [ThirdPartyNotices.txt](macOS/Foldpin/ThirdPartyNotices.txt). Private research, design references, and marketing archives are excluded from the public source tree.
 
 ## Repository guide
 
@@ -80,8 +80,5 @@ Original Foldpin application code and build scripts are licensed under **GPL-3.0
 | [macOS](macOS/README.md) | Native app, resources, and tests |
 | [scripts](scripts) | Packaging, checks, and resource generation |
 | [docs/engineering](docs/engineering) | Implementation details and validation records |
-| [docs/design](docs/design/ui-v0.1/README.md) | Design materials; generated assets live in `docs/design/generated/` |
-| [PRD.md](PRD.md) | Product direction, including features not yet implemented |
-| [Project history](docs/engineering/project-history.md) | Historical development updates |
 
-Most engineering and historical documents are currently in Chinese. The [public-repository checklist (Chinese)](docs/engineering/public-repository-preparation.md) tracks the remaining privacy and asset-permission review; moving files does not remove them from Git history.
+Most engineering documents are currently in Chinese. See the repository cleanup record before reusing an older clone.

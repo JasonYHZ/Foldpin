@@ -178,7 +178,7 @@ OpenAI 兼容适配负责 Bearer、messages、stream、tool_calls/tool 结果；
 开始实施前再次读取当前 MCP 代码和收纳预览生命周期。本文是内部聊天的最新方案，覆盖旧资料中“不做内置聊天”的阶段决定；不覆盖 CLI 沙盒实验的真实结论。先 C1–C5，再按外部服务实测推进 C6。
 
 - [现有 MCP 实现](mcp-support.md)与[工具表](mcp-tool-coverage.md)。
-- [图标与 CLI 实验交接](icon-and-agent-cli-handoff.md)。
+- 图标与 CLI 实验交接。
 - [OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)：工具调用需应用执行并回传结果。
 - [Anthropic 流式消息](https://platform.claude.com/docs/en/build-with-claude/streaming)：事件增量、终止与错误需按协议处理。
 - [Apple Toolbars](https://developer.apple.com/design/human-interface-guidelines/toolbars)：使用原生工具栏组织窗口主要操作。

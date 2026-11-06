@@ -1,6 +1,6 @@
 # 区块换行、占位提示与下一阶段编辑能力
 
-2026-09-08，按用户提供的 [空块占位截图](../design/native-block-menu/reference-empty-blocks.png)、[块操作截图](../design/native-block-menu/reference-block-actions.png)与换行 / 占位 / 块编辑问题整理。
+2026-09-08，按用户提供的 空块占位截图、块操作截图与换行 / 占位 / 块编辑问题整理。
 
 ## 参考依据与边界
 

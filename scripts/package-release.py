@@ -84,7 +84,9 @@ def main():
     except subprocess.CalledProcessError:
         commit, dirty = None, None  # Also buildable from the distributed source ZIP.
     xcode = output(['xcodebuild', '-version'], env=env)
-    with tempfile.TemporaryDirectory(prefix='.foldpin-', dir=destination.parent) as work:
+    # Keep the build outside the checkout and map source paths in compiler output.
+    # Swift may embed source directories even in optimized release executables.
+    with tempfile.TemporaryDirectory(prefix='foldpin-release-', dir='/private/tmp') as work:
         work = Path(work)
         snapshot = work / 'source'
         result = work / 'result'
@@ -102,6 +104,8 @@ def main():
                    'ONLY_ACTIVE_ARCH=NO', 'CODE_SIGNING_ALLOWED=YES', 'CODE_SIGN_IDENTITY=-',
                    'CODE_SIGN_STYLE=Manual', 'DEVELOPMENT_TEAM=',
                    'CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO',
+                   f'OTHER_SWIFT_FLAGS=$(inherited) -file-prefix-map {snapshot}=/Foldpin -debug-prefix-map {snapshot}=/Foldpin',
+                   f'OTHER_CFLAGS=$(inherited) -ffile-prefix-map={snapshot}=/Foldpin',
                    f'MARKETING_VERSION={args.version}', f'CURRENT_PROJECT_VERSION={args.build}', 'build']
         print('Building frozen source for arm64 + x86_64…', flush=True)
         log = result / 'build.log'
@@ -116,6 +120,8 @@ def main():
         architectures = output(['lipo', '-archs', app / 'Contents/MacOS/Foldpin']).split()
         if set(architectures) != {'arm64', 'x86_64'}:
             raise RuntimeError(f'Unexpected architectures: {architectures}')
+        if re.search(rb'/Users/[^/\x00\s]+/', (app / 'Contents/MacOS/Foldpin').read_bytes()):
+            raise RuntimeError('Release executable contains a personal home-directory path')
         run(['codesign', '--verify', '--deep', '--strict', app])
         entitlements = plistlib.loads(run(['codesign', '--display', '--entitlements', '-',
                                           '--xml', app], stdout=subprocess.PIPE,
@@ -138,6 +144,8 @@ def main():
                         buildArguments=command[1:])
         # Absolute local cache paths are not public release metadata.
         metadata['buildArguments'][metadata['buildArguments'].index('-derivedDataPath') + 1] = '<DERIVED_DATA>'
+        metadata['buildArguments'] = [arg.replace(str(snapshot), '<SOURCE>')
+                                      for arg in metadata['buildArguments']]
         (result / 'build-info.json').write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + '\n')
         basename = f'Foldpin-{args.label}'
         source_name = f'{basename}-source.zip'

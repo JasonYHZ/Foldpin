@@ -1,6 +1,6 @@
 # 参与 Foldpin
 
-请先阅读 [README](README.md)、[原生工程说明](macOS/README.md) 和 [AGENTS.md](AGENTS.md)。PRD 包含未来规划，不代表当前版本已实现全部功能。
+请先阅读 [README](README.md)、[原生工程说明](macOS/README.md) 和 [AGENTS.md](AGENTS.md)。工程文档包含阶段验证边界，不代表已完成所有实机验收。
 
 报告问题时，请提供 macOS 版本、Intel / Apple Silicon、Foldpin 版本、复现步骤和预期行为。截图、日志和示例纸片请先移除个人内容、文件路径与凭据；不要上传真实纸片库。
 
