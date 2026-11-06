@@ -29,8 +29,6 @@ Notes and attachments are stored locally. Link previews contact the target websi
 
 The app is **ad-hoc signed and not notarized by Apple**. macOS may block the first launch. After verifying the download source, check **System Settings → Privacy & Security → Open Anyway**; availability depends on your system policy. Do not disable system-wide security protections.
 
-The repository currently remains private while historical materials are reviewed. Release downloads require repository access until the repository is made public.
-
 ### Release files
 
 | File | Purpose |
@@ -65,7 +63,16 @@ See the [native project guide (Chinese)](macOS/README.md) for development and te
 
 ## Homebrew
 
-A Cask configuration is being prepared for a project-maintained tap. Public Homebrew distribution will follow the repository's open-source launch. Foldpin is **not currently listed in the official Homebrew Cask repository**. See [Homebrew preparation (Chinese)](docs/engineering/homebrew.md).
+Install from the project-maintained tap:
+
+```sh
+brew tap jasonyhz/foldpin https://github.com/JasonYHZ/Foldpin.git
+brew install --cask jasonyhz/foldpin/foldpin
+```
+
+The explicit Git URL is required because this repository is named `Foldpin`, rather than `homebrew-foldpin`. The fully qualified install command trusts only this Cask in current Homebrew. Review the Cask before installing. The app remains ad-hoc signed and not notarized; the first launch may require approval in macOS Privacy & Security.
+
+Foldpin is **not listed in the official Homebrew Cask repository**. See [Homebrew distribution (Chinese)](docs/engineering/homebrew.md).
 
 ## Contributing and license
 

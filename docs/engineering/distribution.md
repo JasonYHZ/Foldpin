@@ -1,6 +1,6 @@
 # Universal macOS distribution
 
-Foldpin uses GPL-3.0-only source distribution and universal GitHub Release packages. The first regular release is 0.1.0, application build 2; historical Preview 1 uses build 1. The repository remains private during cleanup and replacement-asset verification. Homebrew distribution follows the public launch.
+Foldpin uses GPL-3.0-only source distribution and universal GitHub Release packages. The first regular release is 0.1.0, application build 2; historical Preview 1 uses build 1. The maintainer recreated the GitHub repository as public after cleanup. Only the clean main branch and regular release tag are uploaded to the new repository; the Preview 1 release is not recreated. Homebrew uses the project-maintained tap.
 
 ## Build
 
@@ -26,7 +26,7 @@ The ignored output directory `dist/Foldpin-0.1.0/` contains five public files:
 
 Verify universal architectures, both deployment targets, strict signature integrity, sandbox entitlements, absence of debug permissions, version/build, all eight compiled languages, matching source hashes, ZIP extraction, DMG integrity, checksums, and absence of personal paths or private identifiers in package members. A tag must point to the clean source commit recorded in its build-info.json. Publish the matching source archive alongside the binaries.
 
-The privacy cleanup requires replacing all five files in both existing releases; the previous executables embedded personal build paths. Keep the old packages only in the private local backup. Compare GitHub's SHA-256 for every replacement attachment before making the repository public. See the [cleanup record](public-repository-preparation.md).
+The new repository does not inherit old release assets. Recreate the regular release with all five cleaned files; the earlier executables embedded personal build paths. Keep the old packages only in the private local backup. Compare GitHub's SHA-256 for every attachment before recommending installation. See the [cleanup record](public-repository-preparation.md).
 
 ## Signing and validation limits
 
@@ -36,4 +36,4 @@ Universal compilation does not establish Intel hardware, minimum-OS hardware, fr
 
 ## Homebrew
 
-The prepared [Cask](../../Casks/foldpin.rb) uses the regular universal ZIP. Update its checksum after rebuilding. Do not advertise public installation while the repository is private or replacement attachments are pending. See [Homebrew preparation](homebrew.md).
+The prepared [Cask](../../Casks/foldpin.rb) uses the regular universal ZIP. Update its checksum after rebuilding. Verify anonymous downloads and installation after the new release attachments have been uploaded. See [Homebrew preparation](homebrew.md).

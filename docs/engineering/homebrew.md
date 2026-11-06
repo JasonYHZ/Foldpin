@@ -1,6 +1,6 @@
-# Homebrew 分发准备
+# Homebrew 分发
 
-Foldpin 是图形应用，本轮准备 Cask，配置位于根目录 `Casks/foldpin.rb`。它引用0.1.0 常规 Release 的通用 ZIP，两个架构共用同一个下载地址和 SHA-256；最低系统精确限制为 macOS 26.5。
+Foldpin 是图形应用，通过项目自建 tap 提供 Cask，配置位于根目录 `Casks/foldpin.rb`。它引用0.1.0 常规 Release 的通用 ZIP，两个架构共用同一个下载地址和 SHA-256；最低系统精确限制为 macOS 26.5。
 
 Homebrew 7 不再接受数字形式的最低系统比较，因此使用 `depends_on macos: :tahoe` 声明主版本，再在安装前检查 26.5 的小版本下限；检查失败不会安装应用。
 
@@ -12,7 +12,7 @@ Homebrew 7 不再接受数字形式的最低系统比较，因此使用 `depends
 
 ## 发布后使用
 
-先确认仓库与 Release 已公开，下载地址无需登录即可访问。当前仓库名不是 `homebrew-*`，因此添加 tap 时必须明确给出 Git URL：
+用户已重新建立公开仓库。发布新 Release 后，需核对下载地址无需登录即可访问。当前仓库名不是 `homebrew-*`，因此添加 tap 时必须明确给出 Git URL：
 
 ```sh
 brew tap jasonyhz/foldpin https://github.com/JasonYHZ/Foldpin.git
@@ -21,7 +21,7 @@ brew install --cask jasonyhz/foldpin/foldpin
 
 用户应先检查并信任自己要安装的第三方 tap。Homebrew 安装不会赋予 Apple 公证，不能保证首次启动通过 Gatekeeper。本 Cask 没有移除隔离属性或关闭系统安全保护的脚本，也没有删除用户纸片库的卸载步骤。
 
-上面的命令是分发配置，不能在仓库仍为私有或 Release 附件尚未发布时宣称已经可供公众安装。不得为了测试覆盖开发者正在使用的 Foldpin.app 或操作真实纸片库。
+上面的命令通过自建 tap 分发，不代表官方收录；新仓库的 Release 附件需要重新上传并核验后才能完成安装。不得为了测试覆盖开发者正在使用的 Foldpin.app 或操作真实纸片库。
 
 ## 后续维护
 

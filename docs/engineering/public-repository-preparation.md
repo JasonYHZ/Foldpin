@@ -34,3 +34,7 @@ Clone the cleaned repository again. Do not merge or force-push an older clone, b
 - The maintainer chose to keep the existing repository and overwrite its published Git history with the locally cleaned history. No repository rename or replacement repository will be created. Main and both release tags have been force-updated and their remote object IDs verified against the local refs. This choice does not erase GitHub-retained unreachable objects or replace release attachments. The repository remains private; regular-release attachment replacement has now been verified.
 
 Current source and the regular release are ready for open-source distribution under the maintainer-selected force-push approach. This readiness statement covers the cleaned published refs and current release assets, not guaranteed deletion of GitHub-retained unreachable commits. No repository visibility change was performed during verification.
+
+## Repository recreation
+
+The maintainer deleted the previous GitHub repository and created a new empty public repository at the same URL on November 6, 2026. The empty remote was verified before upload. Upload only the cleaned main branch and regular v0.1.0 tag; do not push local checkpoint refs, backup refs, or the private archive. Recreate the regular English release with the five already validated privacy-rebuilt assets. The old Preview 1 release is not recreated. The previous retained-object finding belongs to the deleted repository and must be retested against this new repository.

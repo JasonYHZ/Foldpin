@@ -11,6 +11,6 @@ Foldpin is a native macOS app built with SwiftUI, AppKit, NSTextView, and TextKi
 - Public documentation is English-first, with a separate `README.zh-CN.md`. Preserve GPL-3.0-only and third-party notices.
 - Do not commit private research, chat links, screenshots of personal data, local paths, credentials, build caches, or `dist/` artifacts.
 - Build public packages with `scripts/package-release.py` from a clean commit. Verify both architectures, signatures, corresponding source, translations, checksums, and absence of personal paths. Compilation does not establish Intel hardware, Gatekeeper, accessibility, or live-device validation.
-- Repository visibility, destructive remote actions, and release publication require maintainer authorization. The repository remains private during the current cleanup; Homebrew follows the public launch.
+- Repository visibility, destructive remote actions, and release publication require maintainer authorization. The maintainer recreated the repository as public on 2026-11-06 and authorized uploading the clean main branch, regular release, and project-maintained Homebrew tap. Keep the current About description; add the product-page URL only after the maintainer provides it.
 
 The maintainer authorized cleanup of public files and Git history on 2026-11-06. Original private material is preserved outside this repository. Do not merge an old clone back into the cleaned history.

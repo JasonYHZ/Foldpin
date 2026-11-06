@@ -15,7 +15,7 @@ Required checks: arm64 and x86_64, per-architecture macOS 26.5 deployment target
 - Ad-hoc signature only, without Developer ID signing or Apple notarization. Gatekeeper may block a downloaded app.
 - Intel hardware, minimum-OS hardware, fresh-user installs, real downloaded-app Gatekeeper behavior, upgrade flows, live recording/playback, and full VoiceOver coverage remain unverified.
 - A regular GitHub release does not establish complete implementation or validation on every system.
-- The repository remains private during cleanup and remote attachment verification. Homebrew distribution follows the public launch; no official Homebrew submission has been made.
+- The maintainer recreated the repository as public after cleanup. The regular release is being recreated with the same validated packages; no official Homebrew submission has been made.
 
 Back up the entire note library before upgrading. Exporting notes is not a complete library backup.
 

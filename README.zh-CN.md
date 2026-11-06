@@ -29,8 +29,6 @@ Foldpin 是一款原生 macOS 桌面随手记工具，使用 SwiftUI、AppKit �
 
 应用采用 **ad-hoc 签名，未经 Apple 公证**，首次打开可能被系统阻止。确认下载来源后，可在「系统设置 → 隐私与安全性」查看「仍要打开」，具体取决于系统策略。无需全局关闭系统安全保护。
 
-目前仓库仍为私有，正在复核历史资料。转为公开之前，下载需要仓库访问权限。
-
 | 文件 | 用途 |
 | --- | --- |
 | `Foldpin-0.1.0-universal.dmg` | 推荐安装包，两种芯片通用 |
@@ -63,7 +61,16 @@ python3 scripts/package-release.py --version 0.1.0 --build 2 --label 0.1.0
 
 ## Homebrew
 
-项目自建 tap 的 Cask 配置正在准备，公众安装留到仓库开源之后。目前没有被官方 Homebrew Cask 收录，见 [Homebrew 分发准备](docs/engineering/homebrew.md)。
+通过项目自建 tap 安装：
+
+```sh
+brew tap jasonyhz/foldpin https://github.com/JasonYHZ/Foldpin.git
+brew install --cask jasonyhz/foldpin/foldpin
+```
+
+仓库名是 Foldpin，而非 homebrew-foldpin，因此添加 tap 时需要完整 Git URL。新版 Homebrew 的完整名称安装命令仅信任此 Cask；请先查看配置。应用仍采用 ad-hoc 签名且未公证，首次启动可能需要在系统「隐私与安全性」中批准。
+
+当前通过自建 tap 分发，尚未被官方 Homebrew Cask 收录，见 [Homebrew 分发说明](docs/engineering/homebrew.md)。
 
 ## 参与与许可
 
