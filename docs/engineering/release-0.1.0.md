@@ -14,6 +14,10 @@ The universal ZIP SHA-256 is `b52042e5eaba404b47c64168d1a98da52912f4a6097155e6dc
 
 The available automated checks have not identified a blocking functional defect. The maintainer requested a regular 0.1.0 release after review. A regular release is appropriate for this initial feature scope while documenting the limitations below; it is not a claim that all environments have been tested or that the full PRD is implemented.
 
+## Publication
+
+Published [v0.1.0](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0) on November 6, 2026 as a regular release, marked Latest. All five uploaded assets have GitHub SHA-256 digests matching the local artifacts, including SHA256SUMS itself. The English historical preview description links to this release; its tag and binaries remain unchanged. The repository remains private.
+
 ## Known limitations
 
 - Ad-hoc signature only, without Developer ID signing or Apple notarization. Gatekeeper may block a downloaded copy. A regular GitHub release does not change macOS security behavior.

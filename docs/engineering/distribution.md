@@ -1,8 +1,8 @@
 # 通用包与开源发行
 
-2026-11-06 后续：按用户要求准备常规 `v0.1.0`，应用版本 0.1.0、构建 2。根 README 以英文为主，中文入口为 README.zh-CN.md；发行评估与未测范围见 [0.1.0 assessment](release-0.1.0.md)，发行说明使用[英文版本](../releases/0.1.0.md)。仓库继续私有，开源后再推进 Homebrew 分发。以下旧预览记录保留为历史。
+2026-11-06 后续：已按用户要求发布常规 [v0.1.0](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0)，标记为 Latest，5 个附件的 GitHub SHA-256 与本地一致，应用版本 0.1.0、构建 2。根 README 以英文为主，中文入口为 README.zh-CN.md；发行评估与未测范围见 [0.1.0 assessment](release-0.1.0.md)，发行说明使用[英文版本](../releases/0.1.0.md)。仓库继续私有，开源后再推进 Homebrew 分发。以下旧预览记录保留为历史。
 
-当前方案：GPL-3.0-only 源码 + GitHub Releases 通用预览包；后续再接自建 Homebrew tap。此文描述已准备的本地流程，不表示已经公开发布。
+当前方案：GPL-3.0-only 源码 + GitHub Releases 通用正式包；后续再接自建 Homebrew tap。发行版已在私有仓库发布，目前下载仍需仓库访问权限。
 
 2026-11-06 更新：已从干净提交 `dd3c3ed` 重建并发布 [v0.1.0-preview.1](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0-preview.1)。5 个附件的 GitHub SHA-256 与本地一致；标签指向同一提交。用户决定先保持仓库私有，处理资料后再公开。根目录 `Casks/foldpin.rb` 已准备自建 tap，详见 [Homebrew](homebrew.md) 与[公开资料待办](public-repository-preparation.md)。
 
