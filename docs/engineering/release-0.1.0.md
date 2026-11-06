@@ -8,6 +8,10 @@ The existing 310 tests across 10 suites passed in a fresh serial run on November
 
 The earlier universal build, package extraction, signature integrity, eight-language compiled-resource checks, and matching-source checks passed. The 0.1.0 artifacts must be rebuilt from the committed release source and rechecked before upload; changing only the GitHub title or checkbox is insufficient.
 
+The regular 0.1.0 artifacts have now been rebuilt from clean commit `816591915ada0f6e183815247ec51ac4177f2bc9`, tagged `v0.1.0`. Validation passed for both architectures and their 26.5 deployment targets, the extracted ZIP's strict signature, application version 0.1.0/build 2, expected entitlements with no debug permission, bundled GPL text, 5,920 compiled translations, corresponding source hashes, DMG integrity, and every SHA256SUMS entry. The source ZIP includes both README languages. No application was launched or real library accessed.
+
+The universal ZIP SHA-256 is `b52042e5eaba404b47c64168d1a98da52912f4a6097155e6dc522729bd96c831`. The prepared Cask parses with Homebrew 7 and matches the regular release URL, version, and local ZIP checksum; installation and an official Homebrew audit have not been performed.
+
 The available automated checks have not identified a blocking functional defect. The maintainer requested a regular 0.1.0 release after review. A regular release is appropriate for this initial feature scope while documenting the limitations below; it is not a claim that all environments have been tested or that the full PRD is implemented.
 
 ## Known limitations

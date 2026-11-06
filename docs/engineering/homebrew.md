@@ -1,6 +1,6 @@
 # Homebrew 分发准备
 
-Foldpin 是图形应用，本轮准备 Cask，配置位于根目录 `Casks/foldpin.rb`。它引用首个预览 Release 的通用 ZIP，两个架构共用同一个下载地址和 SHA-256；最低系统精确限制为 macOS 26.5。
+Foldpin 是图形应用，本轮准备 Cask，配置位于根目录 `Casks/foldpin.rb`。它引用0.1.0 常规 Release 的通用 ZIP，两个架构共用同一个下载地址和 SHA-256；最低系统精确限制为 macOS 26.5。
 
 Homebrew 7 不再接受数字形式的最低系统比较，因此使用 `depends_on macos: :tahoe` 声明主版本，再在安装前检查 26.5 的小版本下限；检查失败不会安装应用。
 
@@ -30,7 +30,7 @@ brew install --cask jasonyhz/foldpin/foldpin
 3. 检查下载、Cask 解析及实际安装/卸载行为；使用独立测试用户，保留真实数据。
 4. 有 Developer ID 签名、公证及 Gatekeeper 验收后，再复核官方完整收录要求、项目关注度等条件并提交 PR。
 
-当前仅准备一个预览渠道，没有自动更新器、后台更新服务或自动清除数据。
+当前仅准备一个常规发行渠道，没有自动更新器、后台更新服务或自动清除数据。
 
 ## 本轮验证
 

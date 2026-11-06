@@ -1,6 +1,6 @@
 cask "foldpin" do
-  version "0.1.0-preview.1"
-  sha256 "423294f6ee12d9c7ae6287aa751ca75fb4224e5a8414a49d95f11c4ecea9a566"
+  version "0.1.0"
+  sha256 "b52042e5eaba404b47c64168d1a98da52912f4a6097155e6dc522729bd96c831"
 
   url "https://github.com/JasonYHZ/Foldpin/releases/download/v#{version}/Foldpin-#{version}-universal.zip"
   name "Foldpin"
@@ -24,7 +24,7 @@ cask "foldpin" do
   end
 
   caveats <<~EOS
-    This is a preview build, ad-hoc signed and not notarized by Apple.
+    This app is ad-hoc signed and not notarized by Apple.
     macOS Gatekeeper may block the first launch.
     Back up your complete note library before upgrading.
     Removing this cask does not remove your notes or library.
