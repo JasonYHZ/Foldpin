@@ -1,4 +1,6 @@
-# 通用预览包与开源发行
+# 通用包与开源发行
+
+2026-11-06 后续：按用户要求准备常规 `v0.1.0`，应用版本 0.1.0、构建 2。根 README 以英文为主，中文入口为 README.zh-CN.md；发行评估与未测范围见 [0.1.0 assessment](release-0.1.0.md)，发行说明使用[英文版本](../releases/0.1.0.md)。仓库继续私有，开源后再推进 Homebrew 分发。以下旧预览记录保留为历史。
 
 当前方案：GPL-3.0-only 源码 + GitHub Releases 通用预览包；后续再接自建 Homebrew tap。此文描述已准备的本地流程，不表示已经公开发布。
 
@@ -9,12 +11,12 @@
 在仓库根目录执行：
 
 ```sh
-python3 scripts/package-release.py --version 0.1.0 --build 1 --label 0.1.0-preview.1
+python3 scripts/package-release.py --version 0.1.0 --build 2 --label 0.1.0
 ```
 
 需要 Xcode、Python 3、macOS 自带的 ditto / codesign / hdiutil。脚本固定 arm64 + x86_64、Release、ad-hoc 签名，关闭基础调试权限注入；不使用开发者证书。保持 Bundle ID，不改项目内的开发签名配置。发行版本作为构建参数传给 Xcode，不改工程版本。
 
-输出目录 dist/Foldpin-0.1.0-preview.1/：
+输出目录 dist/Foldpin-0.1.0/：
 
 - Foldpin-…-universal.zip 与 .dmg：同一款通用应用及许可、安装说明。
 - Foldpin-…-source.zip：构建实际使用的源码快照，包含脚本、测试、内置第三方资源及许可。

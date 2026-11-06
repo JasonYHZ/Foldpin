@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build an ad-hoc universal preview from a frozen working-tree source snapshot."""
+"""Build an ad-hoc universal release from a frozen working-tree source snapshot."""
 import argparse
 import hashlib
 import json
@@ -36,8 +36,9 @@ def sha(path):
 
 
 def source_files():
-    files = [ROOT / n for n in ('LICENSE', 'README.md', 'CONTRIBUTING.md',
-                               'docs/engineering/distribution.md')]
+    files = [ROOT / n for n in ('LICENSE', 'README.md', 'README.zh-CN.md', 'CONTRIBUTING.md',
+                               'docs/engineering/distribution.md',
+                               'docs/engineering/release-0.1.0.md', 'docs/releases/0.1.0.md')]
     for name in ('macOS', 'scripts'):
         for directory, dirs, names in os.walk(ROOT / name, followlinks=False):
             dirs[:] = sorted(d for d in dirs if d not in SKIP and not d.startswith('.')
@@ -58,11 +59,12 @@ def source_files():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', default='0.1.0')
-    parser.add_argument('--build', default='1')
-    parser.add_argument('--label', default='0.1.0-preview.1')
+    parser.add_argument('--build', default='2')
+    parser.add_argument('--label', help='Release label; defaults to --version')
     parser.add_argument('--derived-data', type=Path,
                         default=Path(tempfile.gettempdir()) / 'Foldpin-Release-DerivedData')
     args = parser.parse_args()
+    args.label = args.label or args.version
     if not re.fullmatch(r'\d+\.\d+\.\d+', args.version):
         parser.error('--version must be three numeric components')
     if not re.fullmatch(r'[1-9]\d*', args.build):
@@ -148,7 +150,7 @@ def main():
         shutil.copy2(snapshot / 'LICENSE', stage / 'LICENSE.txt')
         shutil.copy2(snapshot / 'macOS/Foldpin/ThirdPartyNotices.txt', stage / 'ThirdPartyNotices.txt')
         (stage / 'README.txt').write_text(
-            f'Foldpin {args.label} — Universal macOS preview\n\n'
+            f'Foldpin {args.label} — Universal macOS release\n\n'
             f'Requires macOS {info["LSMinimumSystemVersion"]} or later; Apple Silicon and Intel.\n'
             'Copy Foldpin.app to Applications. Back up your note library before upgrading.\n'
             'Ad-hoc signed, NOT Apple notarized. macOS may block the first launch.\n'

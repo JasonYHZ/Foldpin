@@ -1,59 +1,87 @@
 # Foldpin
 
-**Floating sticky notes for Mac · 随手记，眼前贴，一键收。**
+**Floating sticky notes for Mac. Capture an idea, pin it in view, put it away, and find it again.**
 
-Foldpin 是一款原生 macOS 桌面随手记工具。每张纸片都是独立窗口：记录想法、置顶参照、折叠或收纳，再按需找回。
+English · [简体中文](README.zh-CN.md)
 
-当前处于**开源预览准备阶段**，尚未发布正式版本。已创建 [0.1.0 Preview 1](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0-preview.1)，仓库按维护者决定暂时保持私有，需有访问权限才能下载。实现状态和待验收项见[发行说明](docs/engineering/distribution.md)。
+Foldpin is a native macOS note-taking app built with SwiftUI, AppKit, and NSTextView. Each note lives in its own window, so your tasks, snippets, and reference material can stay beside your work.
 
-## 已有功能
+## Features
 
-- 多张独立纸片，置顶、折叠、排列、收纳、搜索与最近删除。
-- 原生区块编辑：标题、列表、待办、表格、代码、图片、链接卡片及 Markdown 粘贴。
-- 本地录音、音视频与文件附件；Markdown / HTML 导出。
-- 纸感与液态玻璃外观，明暗主题、颜色、字体和自定义快捷键。
-- 简体中文、繁体中文、英文、日语、韩语、德语、法语与西班牙语。
-- 可选的本机 MCP 服务，默认关闭，启用后需授权客户端。见[MCP 说明](docs/engineering/mcp-support.md)。
+- **Independent notes:** pin, collapse, arrange, and shelve windows; find notes in the shelf and restore recently deleted notes.
+- **Native block editing:** headings, lists, tasks, tables, code, images, link cards, and Markdown paste.
+- **Local media and files:** record audio, attach audio/video/files, and export notes as Markdown or HTML.
+- **Personal appearance:** paper and Liquid Glass surfaces, light/dark themes, note colors, fonts, and custom shortcuts.
+- **Eight interface languages:** English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish.
+- **Optional local MCP server:** disabled by default, with client authorization and access controls. See the [MCP guide (Chinese)](docs/engineering/mcp-support.md).
 
-笔记及附件保存在本机。链接预览会请求目标网站；启用 MCP 后，获授权的外部客户端可以读取授权内容，其后续处理由该客户端决定。尚无云同步、内置 AI 整理或语音转写。
+Notes and attachments are stored locally. Link previews contact the target website. If you enable MCP, authorized external clients can access the content you permit; their subsequent use of that content is controlled by those clients. Cloud sync, built-in AI organization, and speech transcription are not included.
 
-## 系统与安装
+## Download and install
 
-最低 **macOS 26.5**。通用构建同时包含 **Apple Silicon（arm64）和 Intel（x86_64）**，两种芯片使用同一个安装包；Intel Mac 也需要满足最低系统要求。
+**Requires macOS 26.5 or later.** One universal app supports both **Apple Silicon (arm64) and Intel (x86_64)**. An Intel Mac must also support the required macOS version.
 
-预览包采用 ad-hoc 签名，**未经 Apple 公证**，下载后可能被 Gatekeeper 阻止。确认来源后可尝试在「系统设置 → 隐私与安全性」使用「仍要打开」；具体提示取决于系统策略。无需全局关闭系统安全保护。尚未完成真实下载、全新用户及 Intel 实机验收。
+[Download Foldpin 0.1.0](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0)
 
-预览安装包、对应源码和校验清单已上传至 Release。自建 tap 的 Cask 配置已准备好，仓库与附件公开后才能供公众安装；命令和当前限制见 [Homebrew 分发说明](docs/engineering/homebrew.md)。当前未被官方 homebrew/cask 收录。
+1. Download `Foldpin-0.1.0-universal.dmg` from the release assets.
+2. Open the DMG and drag **Foldpin.app** to **Applications**.
+3. Open Foldpin. Back up your complete note library before upgrading an existing installation.
 
-## 从源码构建
+The app is **ad-hoc signed and not notarized by Apple**. macOS may block the first launch. After verifying the download source, check **System Settings → Privacy & Security → Open Anyway**; availability depends on your system policy. Do not disable system-wide security protections.
 
-使用支持 macOS 26.5 SDK 的 Xcode，打开 `macOS/Foldpin.xcodeproj`，选择 Foldpin / My Mac 后运行。现有工程使用 `.xcodeproj`，无需另外创建 `.xcworkspace`。
+The repository currently remains private while historical materials are reviewed. Release downloads require repository access until the repository is made public.
 
-在仓库根目录生成一个带对应源码和校验值的通用预览包：
+### Release files
+
+| File | Purpose |
+| --- | --- |
+| `Foldpin-0.1.0-universal.dmg` | Recommended installer for both chip families |
+| `Foldpin-0.1.0-universal.zip` | The same app in ZIP format |
+| `Foldpin-0.1.0-source.zip` | Source snapshot used to build this release |
+| `SHA256SUMS` | Download checksums |
+| `build-info.json` | Source commit, toolchain, and file hashes |
+
+Automated tests, universal compilation, code-signature integrity, and compiled translations are checked. Intel hardware, minimum-OS hardware, fresh-user installs, downloaded-app Gatekeeper behavior, and upgrade flows have not completed manual validation. See [release validation](docs/engineering/release-0.1.0.md).
+
+## Getting started
+
+Create a note with **⌘N**, keep it visible with the pin button, and use the shelf to put notes away and find them later. Type `/` for blocks or press **⌘K** for note actions. Change the interface language in **Settings → General → Language**.
+
+Closing a blank note moves it to Recently Deleted; closing a note with content shelves it. Export is useful for sharing content, but it is not a substitute for backing up the entire library.
+
+## Build from source
+
+Use Xcode with a macOS SDK that supports the deployment target. Open `macOS/Foldpin.xcodeproj`, select **Foldpin / My Mac**, and run. No separate `.xcworkspace` is required.
+
+From the repository root, create a universal release:
 
 ```sh
-python3 scripts/package-release.py --version 0.1.0 --build 1 --label 0.1.0-preview.1
+python3 scripts/package-release.py --version 0.1.0 --build 2 --label 0.1.0
 ```
 
-脚本从当前工作目录冻结源码（包含未提交的新文件），以 Release 构建两个架构，生成 ZIP、DMG、对应源码 ZIP 和 SHA-256 清单。输出位于 `dist/`，不纳入 Git。它不会提交、打标签或上传。
+The script freezes the current source, builds a Release app for both architectures, and generates DMG, ZIP, corresponding source, and checksums under `dist/`. It does not commit, tag, or upload. Build from a clean commit when preparing a published release.
 
-开发、测试与数据目录说明见[原生工程说明](macOS/README.md)。升级前建议备份整个纸片库；导出适合交换内容，不能代替完整库备份。
+See the [native project guide (Chinese)](macOS/README.md) for development and testing commands, and the [distribution guide (Chinese)](docs/engineering/distribution.md) for packaging details.
 
-## 参与开发与许可
+## Homebrew
 
-欢迎通过 [GitHub Issues](https://github.com/JasonYHZ/Foldpin/issues) 报告问题，请附系统版本、芯片类型、版本号及复现步骤，避免提交私人笔记。见[贡献说明](CONTRIBUTING.md)。
+A Cask configuration is being prepared for a project-maintained tap. Public Homebrew distribution will follow the repository's open-source launch. Foldpin is **not currently listed in the official Homebrew Cask repository**. See [Homebrew preparation (Chinese)](docs/engineering/homebrew.md).
 
-Foldpin 原创应用代码和构建脚本采用 **GPL-3.0-only**，完整条款见 [LICENSE](LICENSE)，按许可提供且不作担保。第三方代码、主题和 Unicode 数据保留各自许可，见[第三方声明](macOS/Foldpin/ThirdPartyNotices.txt)。研究引用、参考截图和外部设计资料不因进入本仓库而取得额外授权。
+## Contributing and license
 
-## 仓库导航
+Report bugs in [GitHub Issues](https://github.com/JasonYHZ/Foldpin/issues) with your macOS version, chip type, Foldpin version, and reproduction steps. Remove private notes, credentials, and personal paths from examples. See [contributing guidelines (Chinese)](CONTRIBUTING.md).
 
-| 路径 | 内容 |
+Original Foldpin application code and build scripts are licensed under **GPL-3.0-only**, without warranty. See [LICENSE](LICENSE). Third-party code, themes, and Unicode data retain their own terms; see [ThirdPartyNotices.txt](macOS/Foldpin/ThirdPartyNotices.txt). External research and reference materials are not granted additional rights merely by being present in this repository.
+
+## Repository guide
+
+| Path | Contents |
 | --- | --- |
-| [macOS](macOS/README.md) | 原生应用、资源与测试 |
-| [scripts](scripts) | 构建、校验和资源生成脚本 |
-| [docs/engineering](docs/engineering) | 实现说明、验证边界与历史记录 |
-| [docs/design](docs/design/ui-v0.1/README.md) | 设计资料，生成产物集中在 docs/design/generated/ |
-| [PRD.md](PRD.md) | 产品目标与分期，包含尚未实现的规划 |
-| [开发历史](docs/engineering/project-history.md) | 原 README 中按日期保留的开发记录 |
+| [macOS](macOS/README.md) | Native app, resources, and tests |
+| [scripts](scripts) | Packaging, checks, and resource generation |
+| [docs/engineering](docs/engineering) | Implementation details and validation records |
+| [docs/design](docs/design/ui-v0.1/README.md) | Design materials; generated assets live in `docs/design/generated/` |
+| [PRD.md](PRD.md) | Product direction, including features not yet implemented |
+| [Project history](docs/engineering/project-history.md) | Historical development updates |
 
-公开整个仓库前仍需复核历史研究资料、截图与压缩包的隐私及授权范围；源码发行包仅包含应用构建所需文件和相关说明，不包含研究与营销档案。目录整理不会移除 Git 历史中的资料。
+Most engineering and historical documents are currently in Chinese. The [public-repository checklist (Chinese)](docs/engineering/public-repository-preparation.md) tracks the remaining privacy and asset-permission review; moving files does not remove them from Git history.
