@@ -30,3 +30,5 @@ Homebrew 7.0.12 downloaded and installed the public universal ZIP into a tempora
 ## Build 3 replacement
 
 The maintainer requested new 0.1.0 packages after the scope-selector fix. The targeted isolated native regression and Debug build passed. Build 3 uses the same universal packaging process; publication and the release tag/Cask checksum must be synchronized with the new artifacts after manual upload. Do not mix build 2 and build 3 files. Existing Homebrew users may need `brew reinstall --cask jasonyhz/foldpin/foldpin` after publication because the public version remains 0.1.0.
+
+Build 3 packaging completed from clean commit `679a5033dadc55c875ae829e28bd43f763715e4c`. The extracted ZIP app passed strict signing, both architectures target macOS 26.5, all 5,920 compiled translations and 225 corresponding-source hashes passed, and ZIP integrity, DMG integrity, manifest digests, and tested personal-path scans passed. The new universal ZIP SHA-256 is `520e62d8c1436cab5bba88ba3b43e5a45f0f22e5c0299894af957fe1975296cf`. These files are local; the published tag, Release assets, and live Cask still refer to build 2 until the replacement is coordinated.
