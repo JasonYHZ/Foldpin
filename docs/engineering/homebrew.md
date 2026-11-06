@@ -34,4 +34,4 @@ brew install --cask jasonyhz/foldpin/foldpin
 
 ## 本轮验证
 
-Homebrew 7.0.12 的实际 Cask DSL 解析通过（从内容加载，仅解析，不安装）。核对 version、ZIP URL、SHA-256、应用路径与安装前步骤；当前 Cask SHA 已更新为隐私重建后的本地 ZIP；远程附件替换并复核前，不宣称已与当前 GitHub 下载一致。系统版本检查分别覆盖 25.9、26.0、26.4、26.5、26.10、27.0 和空值，均按预期允许或拒绝。未执行安装、卸载、完整 brew audit 或真实升级验收，未改动现有 Foldpin 应用及纸片库。
+Homebrew 7.0.12 的实际 Cask DSL 解析通过（从内容加载，仅解析，不安装）。核对 version、ZIP URL、SHA-256、应用路径与安装前步骤；当前 Cask SHA 已更新为隐私重建后的 ZIP，并与用户重新上传的 GitHub 正式版附件摘要核对一致。系统版本检查分别覆盖 25.9、26.0、26.4、26.5、26.10、27.0 和空值，均按预期允许或拒绝。未执行安装、卸载、完整 brew audit 或真实升级验收，未改动现有 Foldpin 应用及纸片库。
