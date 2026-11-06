@@ -4,7 +4,7 @@
 
 Foldpin 是一款原生 macOS 桌面随手记工具。每张纸片都是独立窗口：记录想法、置顶参照、折叠或收纳，再按需找回。
 
-当前处于**开源预览准备阶段**，尚未发布正式版本。实现状态和待验收项见[发行说明](docs/engineering/distribution.md)。
+当前处于**开源预览准备阶段**，尚未发布正式版本。已创建 [0.1.0 Preview 1](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0-preview.1)，仓库按维护者决定暂时保持私有，需有访问权限才能下载。实现状态和待验收项见[发行说明](docs/engineering/distribution.md)。
 
 ## 已有功能
 
@@ -23,7 +23,7 @@ Foldpin 是一款原生 macOS 桌面随手记工具。每张纸片都是独立�
 
 预览包采用 ad-hoc 签名，**未经 Apple 公证**，下载后可能被 Gatekeeper 阻止。确认来源后可尝试在「系统设置 → 隐私与安全性」使用「仍要打开」；具体提示取决于系统策略。无需全局关闭系统安全保护。尚未完成真实下载、全新用户及 Intel 实机验收。
 
-当前没有公开下载链接或可安装的 Homebrew Cask；发布产物及地址确定后再提供。自建 tap 的规划见[发行说明](docs/engineering/distribution.md)。
+预览安装包、对应源码和校验清单已上传至 Release。自建 tap 的 Cask 配置已准备好，仓库与附件公开后才能供公众安装；命令和当前限制见 [Homebrew 分发说明](docs/engineering/homebrew.md)。当前未被官方 homebrew/cask 收录。
 
 ## 从源码构建
 

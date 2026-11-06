@@ -2,6 +2,8 @@
 
 当前方案：GPL-3.0-only 源码 + GitHub Releases 通用预览包；后续再接自建 Homebrew tap。此文描述已准备的本地流程，不表示已经公开发布。
 
+2026-11-06 更新：已从干净提交 `dd3c3ed` 重建并发布 [v0.1.0-preview.1](https://github.com/JasonYHZ/Foldpin/releases/tag/v0.1.0-preview.1)。5 个附件的 GitHub SHA-256 与本地一致；标签指向同一提交。用户决定先保持仓库私有，处理资料后再公开。根目录 `Casks/foldpin.rb` 已准备自建 tap，详见 [Homebrew](homebrew.md) 与[公开资料待办](public-repository-preparation.md)。
+
 ## 生成
 
 在仓库根目录执行：
@@ -35,7 +37,7 @@ python3 scripts/package-release.py --version 0.1.0 --build 1 --label 0.1.0-previ
 
 ad-hoc 签名可以用于本地校验代码完整性，但不是 Developer ID 签名或 Apple 公证。用户系统可能阻止首次打开。安装说明不要求关闭 Gatekeeper 或移除整个系统的安全设置。
 
-自建 Homebrew tap 可在真实 Release URL 和 SHA-256 确定后添加 Cask：ZIP 内应用位于根目录 Foldpin.app，两种芯片共用一个 URL 与 SHA。最低系统约束保持 macOS 26.5，不能写成所有 macOS 26 均兼容。当前没有创建 tap、发布 Cask，也未承诺进入官方 homebrew/cask。
+自建 Homebrew tap 配置已添加：ZIP 内应用位于根目录 Foldpin.app，两种芯片共用一个 URL 与 SHA。最低系统约束保持 macOS 26.5，不能写成所有 macOS 26 均兼容。当前仓库保持私有，未向公众提供 tap，也未向官方 homebrew/cask 提交收录 PR。
 
 ## 仓库整理
 
