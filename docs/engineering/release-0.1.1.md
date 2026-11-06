@@ -14,6 +14,10 @@ Ad-hoc signing is not Apple notarization. Intel hardware, minimum OS, fresh-user
 
 The universal packages were built from clean commit `b309eea8db38eb4238028036ff0c9c6a9b77e2ae`, which is the pushed v0.1.1 tag target. Both CPU deployment targets are macOS 26.5. Strict extracted-app signing, all 5,920 compiled translations, 225 corresponding-source hashes, ZIP/DMG integrity, manifest checksums, and tested personal-path scans passed without launching the app.
 
-The English GitHub Release draft was saved with tag v0.1.1, title Foldpin 0.1.1, and Latest selected (not Pre-release). The maintainer will upload the five public files from the local 0.1.1 output; build.log is excluded. The release has not been published, and the live Cask still points to the available 0.1.0 package.
+The English GitHub Release draft was saved with tag v0.1.1, title Foldpin 0.1.1, and Latest selected (not Pre-release). The maintainer will upload the five public files from the local 0.1.1 output; build.log is excluded. At draft creation, the release had not been published and the live Cask still pointed to 0.1.0.
 
 The new universal ZIP SHA-256 is `8e48074e5741c9ad357759538425004624c91541251ae0c2cf15a49ca110b2dc`.
+
+## Published download and Homebrew update
+
+The public v0.1.1 checksum manifest is now downloadable and byte-identical to the validated local manifest. The public universal ZIP was downloaded anonymously and its SHA-256 matches `8e48074e5741c9ad357759538425004624c91541251ae0c2cf15a49ca110b2dc`. The project Cask is updated to version 0.1.1 with this digest and parses successfully with Homebrew. Existing users can run `brew update` followed by `brew upgrade --cask jasonyhz/foldpin/foldpin`. No installed application was upgraded or launched during this check.
