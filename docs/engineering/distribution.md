@@ -26,7 +26,7 @@ The ignored output directory `dist/Foldpin-0.1.0/` contains five public files:
 
 Verify universal architectures, both deployment targets, strict signature integrity, sandbox entitlements, absence of debug permissions, version/build, all eight compiled languages, matching source hashes, ZIP extraction, DMG integrity, checksums, and absence of personal paths or private identifiers in package members. A tag must point to the clean source commit recorded in its build-info.json. Publish the matching source archive alongside the binaries.
 
-The new repository does not inherit old release assets. Recreate the regular release with all five cleaned files; the earlier executables embedded personal build paths. Keep the old packages only in the private local backup. Compare GitHub's SHA-256 for every attachment before recommending installation. See the [cleanup record](public-repository-preparation.md).
+The regular release in the recreated public repository contains all five cleaned files; the earlier executables embedded personal build paths. Keep the old packages only in the private local backup. Compare GitHub's SHA-256 for every attachment before recommending installation. See the [cleanup record](public-repository-preparation.md).
 
 ## Signing and validation limits
 
@@ -36,4 +36,4 @@ Universal compilation does not establish Intel hardware, minimum-OS hardware, fr
 
 ## Homebrew
 
-The prepared [Cask](../../Casks/foldpin.rb) uses the regular universal ZIP. Update its checksum after rebuilding. Verify anonymous downloads and installation after the new release attachments have been uploaded. See [Homebrew preparation](homebrew.md).
+The published [Cask](../../Casks/foldpin.rb) uses the regular universal ZIP. Update its checksum after rebuilding. Public download, temporary-directory installation, and uninstall passed validation without launching the app or removing quarantine. See [Homebrew distribution](homebrew.md).

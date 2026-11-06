@@ -1,6 +1,6 @@
 # Repository privacy cleanup
 
-The maintainer authorized cleanup of repository files and Git history on November 6, 2026. The cleaned published Git history and regular-release replacement assets have been verified. The repository remains private pending the maintainer's visibility decision; the retained-object limitation below still applies.
+The maintainer authorized cleanup of repository files and Git history on November 6, 2026. The cleaned published Git history and regular-release replacement assets have been verified. The maintainer subsequently deleted the old repository and recreated it as public. Clean source, the regular release, and the project-maintained Homebrew tap are now published; see the repository recreation section for the current state.
 
 ## Scope
 
@@ -24,7 +24,7 @@ GitHub may retain unreachable commit objects or cached views after a force-push.
 
 Clone the cleaned repository again. Do not merge or force-push an older clone, backup branch, old tag, or private archive into the cleaned repository. Any existing detached development checkout is local archival state and must not be published.
 
-## Verified cleanup state — November 6, 2026
+## Historical cleanup state — before repository deletion
 
 - Main and both release tags were rewritten and pushed atomically with explicit leases. A new mirror cloned from GitHub contained only main and the two intended tags. A scan of all 648 reachable file objects and commit/tag metadata found no matches for the tested personal-path, private-email, Apple-team, chat-share, private-key, or common credential formats. This is a bounded scan, not proof that every possible secret format is absent.
 - Both package sets were rebuilt from clean source commit `83d150970478d86e1998ebbd2e1a940816f7b0ec`; regular build 2 and Preview 1 build 1 retain their respective application versions. Each passed compiled-language checks, corresponding-source hashes, manifest checksums, strict extracted-app signature checks, and scans of 320 ZIP members. Both DMGs were mounted read-only; 41 files in each matched the ZIP and passed the tested privacy patterns. Both CPU targets remain macOS 26.5.
@@ -39,4 +39,4 @@ Current source and the regular release are ready for open-source distribution un
 
 The maintainer deleted the previous GitHub repository and created a new empty public repository at the same URL on November 6, 2026. The empty remote was verified before upload. Upload only the cleaned main branch and regular v0.1.0 tag; do not push local checkpoint refs, backup refs, or the private archive. Recreate the regular English release with the five already validated privacy-rebuilt assets. The old Preview 1 release is not recreated. The previous retained-object finding belongs to the deleted repository and must be retested against this new repository.
 
-The clean main branch and regular v0.1.0 tag have now been uploaded to the recreated public repository. An anonymous GitHub API request for the previously accessible old commit returned HTTP 422 with "No commit found for SHA"; this verifies that tested old commit is unavailable through the new repository. The original About description was restored with the website left blank. A new English regular-release draft was saved; its five assets await manual upload because the browser extension does not permit local-file upload. The public Homebrew tap cloned successfully, and its Cask metadata matches version 0.1.0 and the validated ZIP digest. Installation validation follows release publication; no official Homebrew submission has been made.
+The clean main branch and regular v0.1.0 tag have now been uploaded to the recreated public repository. An anonymous GitHub API request for the previously accessible old commit returned HTTP 422 with "No commit found for SHA"; this verifies that tested old commit is unavailable through the new repository. The original About description was restored with the website left blank. The maintainer manually uploaded the five validated assets. The English regular release was published as Latest; every GitHub asset SHA-256 matches the cleaned local file. The public Homebrew tap cloned successfully, and its Cask metadata matches version 0.1.0 and the validated ZIP digest. Homebrew downloaded and installed the app into a temporary directory, then uninstalled it successfully. Version/build, both architectures, strict signing, and retained quarantine were verified without launching the app or accessing real notes. No official Homebrew submission has been made.
