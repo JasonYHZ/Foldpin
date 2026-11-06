@@ -131,7 +131,7 @@ final class MarkdownFileImportController: ObservableObject {
                     try Task.checkCancellation()
                     guard storage.library === library, storage.generation == generation, library.directory == root, library.canCreate else { throw LibraryStorageError.changed }
                     commitAttempted = true
-                    let entry = try library.importDocument(document)
+                    let entry = try library.importDocument(document, useDefaultColor: true, useDefaultSize: true)
                     rows[index].noteID = entry.id; rows[index].succeeded = true; rows[index].state = "Imported"
                     rows[index].sourceBytes = count; rows[index].resourceBytes = prepared.resourceBytes
                     resourceBytes += prepared.resourceBytes

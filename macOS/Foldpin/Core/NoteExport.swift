@@ -10,7 +10,7 @@ nonisolated struct NoteExportSource: Sendable {
     let document: NoteDocument
     let assets: URL
     var title: String { document.content.blocks.lazy.map(\.plainText).first { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }?.components(separatedBy: .newlines).first ?? "Untitled" }
-    var hasResources: Bool { document.content.blocks.contains { $0.image != nil || $0.audio != nil || $0.video != nil || $0.attachment != nil } }
+    var hasResources: Bool { document.content.blocks.contains { $0.image != nil || $0.audio != nil || $0.video != nil || $0.attachment != nil || $0.linkPreview?.thumbnail != nil } }
 }
 
 nonisolated enum NoteExportError: Error {
@@ -57,6 +57,11 @@ nonisolated enum NoteExport {
                 return urlPath(path)
             }
             for block in note.document.content.blocks {
+                if let thumbnail = block.linkPreview?.thumbnail {
+                    let path = "assets/" + block.id.uuidString + "-link-preview.jpg"
+                    resources.append(Entry(path: prefix + path, data: thumbnail))
+                    paths[block.id] = (urlPath(path), nil)
+                }
                 if let image = block.image {
                     guard !image.isRemotePlaceholder else { throw NoteExportError.pending }
                     let original = note.assets.appendingPathComponent(image.id.uuidString + ".original")
@@ -172,7 +177,16 @@ nonisolated enum NoteExport {
             }
             if block.kind == .orderedList { ordered = list == "ol" ? ordered + 1 : 1 } else { ordered = 0 }
             list = nextList
-            if let (path, original) = paths[block.id] {
+            if let preview = block.linkPreview {
+                if format == .html {
+                    let image = paths[block.id].map { "<img src=\"\($0.0)\" alt=\"\(html(preview.displayTitle))\" style=\"max-width:240px\">" } ?? ""
+                    pieces.append("<article><a href=\"\(html(preview.url))\">\(image)\(html(preview.displayTitle))</a><p>\(html(preview.summary))</p><small>\(html(preview.url))</small></article>")
+                } else {
+                    let destination = preview.url.replacingOccurrences(of: ">", with: "%3E")
+                    let image = paths[block.id].map { "[![\(markdown(preview.displayTitle))](\($0.0))](<\(destination)>)\n\n" } ?? ""
+                    pieces.append(image + "[\(markdown(preview.displayTitle))](<\(destination)>)" + (preview.summary.isEmpty ? "" : "\n\n" + markdown(preview.summary)) + "\n\n<\(destination)>")
+                }
+            } else if let (path, original) = paths[block.id] {
                 if let image = block.image {
                     var value = format == .html ? "<img src=\"\(path)\" alt=\"\(html(image.name))\">" : "![\(markdown(image.name))](\(path))"
                     if let link = image.clickableLink { value = format == .html ? "<a href=\"\(html(link.absoluteString))\">\(value)</a>" : "[\(value)](<\(link.absoluteString.replacingOccurrences(of: ">", with: "%3E"))>)" }

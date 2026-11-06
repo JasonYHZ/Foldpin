@@ -6,7 +6,7 @@ import Foundation
 @MainActor
 final class NoteWindowSurface: NSView {
     private let hosting: NSView
-    private let glass = NSGlassEffectView()
+    private let glass = BackgroundGlassView()
     private let edge = NoteEdgeView()
     private let resizeHandles = NoteResizeHandleView()
     private var usesGlass: Bool?
@@ -32,7 +32,11 @@ final class NoteWindowSurface: NSView {
         layer?.masksToBounds = true
         glass.cornerRadius = NoteWindowStyle.cornerRadius
         glass.style = .regular
+        glass.contentView = NSView()
         addSubview(glass)
+        // Keep the editor outside the glass view. Fading the native material
+        // must never fade text, controls, selection or their hit regions.
+        addSubview(hosting)
         edge.setAccessibilityElement(false)
         addSubview(edge)
         resizeHandles.setAccessibilityElement(false)
@@ -151,7 +155,7 @@ final class NoteWindowSurface: NSView {
         // do not leave its compositor holding the previous theme's RGB value.
         var tint: NSColor?
         effectiveAppearance.performAsCurrentDrawingAppearance {
-            tint = material == .translucent ? NotePalette.glassTint(for: color)?.usingColorSpace(.sRGB) : nil
+            tint = material == .translucent ? NotePalette.glassTint(for: color, intensity: NoteStyleSettings.shared.values.glassColorIntensity)?.usingColorSpace(.sRGB) : nil
         }
         if glass.tintColor != tint { glass.tintColor = tint }
         needsDisplay = true
@@ -199,7 +203,7 @@ final class NoteWindowSurface: NSView {
         let surface = bounds
         guard surface.width > 0, surface.height > 0 else { return }
         if glass.frame != surface { glass.frame = surface }
-        if usesGlass != true, hosting.frame != surface { hosting.frame = surface }
+        if hosting.frame != surface { hosting.frame = surface }
         if edge.frame != surface { edge.frame = surface }
         if resizeHandles.frame != surface { resizeHandles.frame = surface }
         window?.invalidateCursorRects(for: resizeHandles)
@@ -208,7 +212,8 @@ final class NoteWindowSurface: NSView {
     @objc private func noteStyleChanged(_ notification: Notification) { refreshAppearance() }
 
     private func refreshAppearance() {
-        glass.style = NoteStyleSettings.shared.values.clearGlass ? .clear : .regular
+        let glassStyle: NSGlassEffectView.Style = NoteStyleSettings.shared.values.clearGlass ? .clear : .regular
+        if glass.style != glassStyle { glass.style = glassStyle }
         let choice = NoteAppearance(rawValue: UserDefaults.standard.string(forKey: NoteAppearance.preferenceKey) ?? "") ?? .paper
         material = choice
         let workspace = NSWorkspace.shared
@@ -217,24 +222,14 @@ final class NoteWindowSurface: NSView {
         edge.isPaper = choice == .paper
         edge.needsDisplay = true
         refreshSurfaceColors()
+        if glass.isHidden != !enabled { glass.isHidden = !enabled }
+        let glassOpacity = enabled ? NoteStyleSettings.shared.values.nativeGlassOpacity : 1
+        if glass.alphaValue != glassOpacity { glass.alphaValue = glassOpacity }
         guard usesGlass != enabled else { return }
-        let responder = window?.firstResponder as? NSView
-        let restoreResponder = responder?.isDescendant(of: hosting) == true
-        // Reparent the same hosting view; never rebuild NSTextView or its undo stack.
-        if enabled {
-            hosting.removeFromSuperview()
-            glass.contentView = hosting
-            glass.isHidden = false
-        } else {
-            glass.contentView = nil
-            glass.isHidden = true
-            addSubview(hosting, positioned: .below, relativeTo: edge)
-        }
         usesGlass = enabled
         needsDisplay = true
         needsLayout = true
         schedulePointerRefresh()
-        if restoreResponder, let responder { window?.makeFirstResponder(responder) }
     }
 
     deinit {
@@ -242,6 +237,11 @@ final class NoteWindowSurface: NSView {
         if let preferenceObserver { NotificationCenter.default.removeObserver(preferenceObserver) }
         if let accessibilityObserver { NSWorkspace.shared.notificationCenter.removeObserver(accessibilityObserver) }
     }
+}
+
+/// The background is decorative; the retained hosting view receives input.
+private final class BackgroundGlassView: NSGlassEffectView {
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }
 
 final class TransparentNoteHostingView<Content: View>: NSHostingView<Content> {

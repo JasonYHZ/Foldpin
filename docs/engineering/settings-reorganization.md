@@ -10,7 +10,7 @@
 
 本机 Debug 构建通过（`/private/tmp/Foldpin-settings-reference-build.log`）。更新后的隔离检查通过（`/private/tmp/Foldpin-settings-reference-native/native-check.log`），涵盖中英文明暗两种尺寸、原生两栏最小宽度、标题栏属性、快捷键跳转和原权限／资料库保持。新增原生工具栏后测试最小高度需计入 52 pt 安全区，已修正检查计量并重跑通过。
 
-独立临时 App 的实际 WindowServer 显示已检查：暗色通用／外观、明亮外观、类别鼠标切换、主题菜单切换均正常。首次实机检查发现侧栏顶端空隙和重复标题，已通过 full-size 布局及跟踪工具栏分区修复，并重新截取实机图。正式应用没有启动或替换，测试仅使用空库、模拟登录状态和独立偏好；未注册登录项或打开 MCP。VoiceOver 完整朗读、所有辅助功能组合和多屏拖动仍未实机验收。完整对照见根目录 design-qa.md。
+独立临时 App 的实际 WindowServer 显示已检查：暗色通用／外观、明亮外观、类别鼠标切换、主题菜单切换均正常。首次实机检查发现侧栏顶端空隙和重复标题，已通过 full-size 布局及跟踪工具栏分区修复，并重新截取实机图。正式应用没有启动或替换，测试仅使用空库、模拟登录状态和独立偏好；未注册登录项或打开 MCP。VoiceOver 完整朗读、所有辅助功能组合和多屏拖动仍未实机验收。完整对照见[标题栏视觉检查](settings-header-visual-qa.md)。
 
 ![最终暗色原生窗口](screenshots/settings-s1/reference-dark-live.png)
 

@@ -49,7 +49,7 @@ enum MCPRegistry {
     static func integer(_ min: Int = 0, _ max: Int = 100) -> [String: Any] { ["type": "integer", "minimum": Double(min), "maximum": Double(max)] }
     static func array(_ item: [String: Any], max: Int = 100) -> [String: Any] { ["type": "array", "items": item, "maxItems": max] }
     static func object(_ fields: [String: Any], required: [String] = []) -> [String: Any] { ["type": "object", "properties": fields, "required": required, "additionalProperties": false] }
-    static let block: [String: Any] = object(["id": uuid, "kind": choice(NoteBlockKind.allCases.filter { ![.image,.audio,.video,.file].contains($0) }.map(\.rawValue)), "text": string, "isChecked": boolean, "language": choice(CodeLanguage.allCases.map(\.rawValue)), "table": object(["rows": array(array(string, max: 30), max: 100), "headerRow": boolean, "headerColumn": boolean], required: ["rows"])], required: ["kind"])
+    static let block: [String: Any] = object(["id": uuid, "kind": choice(NoteBlockKind.allCases.filter { ![.image,.audio,.video,.file,.linkPreview].contains($0) }.map(\.rawValue)), "text": string, "isChecked": boolean, "language": choice(CodeLanguage.allCases.map(\.rawValue)), "table": object(["rows": array(array(string, max: 30), max: 100), "headerRow": boolean, "headerColumn": boolean], required: ["rows"])], required: ["kind"])
     static var operations: [MCPOperation] {
         var result: [MCPOperation] = []
         func add(_ name: String, _ description: String, _ permission: MCPPermission? = nil, write: Bool = false, confirm: Bool = false, note: Bool = false, fields: [String: Any] = [:], required: [String] = []) {
@@ -93,7 +93,7 @@ enum MCPRegistry {
         add("list_assets","List resources actually referenced by this note.",.assets,note:true)
         add("read_asset","Read at most 256 KiB as base64; only referenced resources.",.assets,note:true,fields:["blockId":uuid,"offset":integer(0,2_000_000_000),"length":integer(1,262144)],required:["blockId"])
         add("get_settings","Read allowlisted appearance and language settings.",.settings)
-        add("update_settings","Set allowlisted preferences; cannot change MCP grants.",.settings,write:true,fields:["expectedRevision":string,"theme":choice(["system","light","dark"]),"language":choice(["system","zh-Hans","en"]),"appearance":choice(["paper","translucent"])],required:["expectedRevision"])
+        add("update_settings","Set allowlisted preferences; cannot change MCP grants.",.settings,write:true,fields:["expectedRevision":string,"theme":choice(["system","light","dark"]),"language":choice(AppLanguage.allCases.map(\.rawValue)),"appearance":choice(["paper","translucent"])],required:["expectedRevision"])
         for name in ["copy_content","copy_image","copy_block"] { add(name,"Write explicitly selected content to the system clipboard.",.clipboardWrite,write:true,note:true,fields:["blockId":uuid],required:name == "copy_content" ? [] : ["blockId"]) }
         add("paste_clipboard","Append one explicit clipboard snapshot: Markdown/text, authorized Foldpin blocks, images or local files. Editing permission is required; resource pastes also require assets permission.",.clipboardRead,write:true,note:true)
         for name in ["play_media","pause_media","seek_media","set_playback"] { add(name,"Operate on the note's media session. Supported playback parameters depend on media type.",.media,write:true,note:true,fields:["blockId":uuid,"position":["type":"number","minimum":0.0],"rate":["type":"number","minimum":0.5,"maximum":2.0]],required:["blockId"]) }

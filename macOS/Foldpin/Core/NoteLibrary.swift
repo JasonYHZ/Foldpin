@@ -14,6 +14,7 @@ final class NoteLibrary: ObservableObject {
         let legacyID: UUID
     }
     private let createsInitialNote: Bool
+    private let creationDefaults: NoteStyleSettings
     let path: LibraryPath
     var directory: URL { path.root }
     @Published private(set) var entries: [Entry] = []
@@ -24,8 +25,10 @@ final class NoteLibrary: ObservableObject {
     private var assetsURL: URL { directory.appendingPathComponent("assets", isDirectory: true) }
 
     init(directory: URL? = nil, manifest: LibraryManifest? = nil, snapshot: LibrarySnapshot? = nil,
-         localDirectory: URL? = nil, initialError: Error? = nil, createsInitialNote: Bool = true) {
+         localDirectory: URL? = nil, initialError: Error? = nil, createsInitialNote: Bool = true,
+         creationDefaults: NoteStyleSettings? = nil) {
         self.createsInitialNote = createsInitialNote
+        self.creationDefaults = creationDefaults ?? .shared
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         path = LibraryPath(directory ?? support.appendingPathComponent("Foldpin"), manifest: manifest,
             localDirectory: localDirectory ?? support.appendingPathComponent("FoldpinLocalState"))
@@ -93,13 +96,19 @@ final class NoteLibrary: ObservableObject {
         } catch { failure = error }
     }
 
-    @discardableResult func createNote() -> Entry? {
-        persistNewNote(NoteDocument())
+    @discardableResult func createNote(color: NoteColor? = nil) -> Entry? {
+        var document = NoteDocument()
+        document.color = color ?? creationDefaults.values.defaultNoteColor
+        document.initialSize = creationDefaults.values.newNoteSize
+        return persistNewNote(document)
     }
 
-    func importDocument(_ document: NoteDocument) throws -> Entry {
+    func importDocument(_ document: NoteDocument, useDefaultColor: Bool = false, useDefaultSize: Bool = false) throws -> Entry {
         guard canCreate else { throw failure ?? LibraryStorageError.busy }
         if let existing = (entries + deletedEntries).first(where: { $0.id == document.id }) { return existing }
+        var document = document
+        if useDefaultColor { document.color = creationDefaults.values.defaultNoteColor }
+        if useDefaultSize && document.frame == nil && document.initialSize == nil { document.initialSize = creationDefaults.values.newNoteSize }
         let destination = file(for: document.id)
         if path.snapshot.notes[document.id] == nil && !FileManager.default.fileExists(atPath: destination.url.path) {
             try destination.save(document)

@@ -174,7 +174,7 @@ import Testing
     for prefix in ["", "已有文字 ", "中文 🌿　"] {
         let editor = inlineSlashEditor(NoteContent(plainText: prefix))
         editor.insertText("/", replacementRange: editor.selectedRange())
-        let kinds = NoteBlockKind.allCases.filter { $0 != .file }
+        let kinds = NoteBlockKind.allCases.filter { $0 != .file && $0 != .linkPreview }
         let codeIndex = kinds.firstIndex(of: .code)!
         for _ in 0..<(kinds.count + 1 + codeIndex) { editor.moveDown(nil) }
         #expect(editor.hasSlashSuggestions)

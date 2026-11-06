@@ -2,9 +2,9 @@ import Foundation
 
 nonisolated enum NoteBlockKind: String, Codable, CaseIterable, Sendable {
     // Keep the existing H1 / H2 raw values compatible with saved notes.
-    case paragraph, heading, subheading, heading3, heading4, bullet, orderedList, task, quote, divider, table, code, image, audio, video, file
+    case paragraph, heading, subheading, heading3, heading4, bullet, orderedList, task, quote, divider, table, code, image, audio, video, file, linkPreview
 
-    var isAttachment: Bool { [.image, .divider, .table, .audio, .video, .file].contains(self) }
+    var isAttachment: Bool { [.image, .divider, .table, .audio, .video, .file, .linkPreview].contains(self) }
 
     var headingLevel: Int? {
         switch self {
@@ -214,10 +214,11 @@ nonisolated struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
     var audio: NoteAudio?
     var video: NoteVideo?
     var attachment: NoteAttachment?
+    var linkPreview: NoteLinkPreview?
     var table: NoteTable?
 
     init(id: UUID = UUID(), kind: NoteBlockKind = .paragraph, text: String = "", marks: [NoteTextMark] = [],
-         isChecked: Bool = false, language: CodeLanguage? = nil, image: NoteImage? = nil, table: NoteTable? = nil, audio: NoteAudio? = nil, video: NoteVideo? = nil, attachment: NoteAttachment? = nil) {
+         isChecked: Bool = false, language: CodeLanguage? = nil, image: NoteImage? = nil, table: NoteTable? = nil, audio: NoteAudio? = nil, video: NoteVideo? = nil, attachment: NoteAttachment? = nil, linkPreview: NoteLinkPreview? = nil) {
         self.id = id
         self.kind = kind
         self.text = text
@@ -228,10 +229,12 @@ nonisolated struct NoteBlock: Codable, Equatable, Identifiable, Sendable {
         self.audio = audio
         self.video = video
         self.attachment = attachment
+        self.linkPreview = linkPreview
         self.table = table ?? (kind == .table ? NoteTable() : nil)
     }
 
     var plainText: String {
+        if let linkPreview { return linkPreview.url }
         if let attachment { return "[\(attachment.name)]" }
         if let video { return "[\(video.name) · \(NoteAudio.timestamp(video.duration))]" }
         if let audio { return "[\(audio.name) · \(NoteAudio.timestamp(audio.duration))]" }
@@ -282,6 +285,10 @@ nonisolated struct NoteContent: Codable, Equatable, Sendable {
             throw NoteFileError.invalidContent
         }
         for block in blocks {
+            if block.kind == .linkPreview {
+                guard let preview = block.linkPreview, preview.isValid, block.text.isEmpty, block.marks.isEmpty else { throw NoteFileError.invalidContent }
+            } else if block.linkPreview != nil { throw NoteFileError.invalidContent }
+
             if block.kind == .file {
                 guard let attachment = block.attachment, attachment.isValid, block.text.isEmpty, block.marks.isEmpty else { throw NoteFileError.invalidContent }
             } else if block.attachment != nil { throw NoteFileError.invalidContent }

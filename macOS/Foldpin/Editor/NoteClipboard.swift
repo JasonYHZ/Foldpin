@@ -52,7 +52,10 @@ enum NoteClipboard {
     static func copy(_ content: NoteContent, file: NoteFile, to board: NSPasteboard = .general) throws {
         try content.validate()
         var audioData: [UUID: Data] = [:]
-        var audioBytes = 0
+        var audioBytes = content.blocks.compactMap { $0.linkPreview?.thumbnail }.reduce(0) { $0 + $1.count }
+        guard audioBytes <= 32 * 1024 * 1024 else {
+            throw NoteAudioCopyError(message: String(localized: "For media over 32 MB, use Export instead of copying.", bundle: LanguageSettings.shared.bundle))
+        }
         for audio in content.blocks.compactMap(\.audio) where audioData[audio.id] == nil {
             let url = file.audioURL(audio)
             let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
@@ -93,7 +96,12 @@ enum NoteClipboard {
         var portableContent = content
         for index in portableContent.blocks.indices {
             let block = portableContent.blocks[index]
-            if block.image?.isRemotePlaceholder == true {
+            if let preview = block.linkPreview, preview.thumbnail == nil {
+                let text = preview.title.isEmpty ? preview.url : preview.title + "\n" + preview.url
+                portableContent.blocks[index] = NoteBlock(id: block.id, text: text.replacingOccurrences(of: "\n", with: " — "), marks: [])
+                let length = portableContent.blocks[index].text.utf16.count
+                portableContent.blocks[index].marks = [NoteTextMark(location: 0, length: length, link: preview.url)]
+            } else if block.image?.isRemotePlaceholder == true {
                 portableContent.blocks[index] = NoteBlock(id: block.id, text: block.plainText)
             }
         }
@@ -145,6 +153,12 @@ enum NoteClipboard {
             let portable = NSTextAttachment(fileWrapper: wrapper)
             portable.bounds = attachment.bounds
             rendered.addAttribute(.attachment, value: portable, range: range)
+            // External rich-text readers need a native link on the image;
+            // the live editor instead handles clicks on the rounded card.
+            if let metadata = rendered.attribute(.blockLinkPreview, at: range.location, effectiveRange: nil) as? Data,
+               let preview = try? JSONDecoder().decode(NoteLinkPreview.self, from: metadata), let url = preview.destination {
+                rendered.addAttribute(.link, value: url, range: range)
+            }
         }
         for (location, caption) in captions.reversed() {
             rendered.insert(NSAttributedString(string: "\n" + caption, attributes: [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: NSColor.darkGray]), at: location)
@@ -192,7 +206,10 @@ enum NoteClipboard {
                 if let nextList { result += "<\(nextList)>" }
                 list = nextList
             }
-            if block.image?.isRemotePlaceholder == true {
+            if let preview = block.linkPreview {
+                let image = preview.thumbnail.map { "<img src=\"data:image/jpeg;base64,\($0.base64EncodedString())\" alt=\"\(escape(preview.displayTitle))\" width=\"240\"><br>" } ?? ""
+                result += "<p><a href=\"\(escape(preview.url))\">\(image)\(escape(preview.displayTitle))</a><br>\(escape(preview.summary))<br>\(escape(preview.url))</p>"
+            } else if block.image?.isRemotePlaceholder == true {
                 result += "<p>\(escape(block.plainText))</p>"
             } else if let image = block.image, let data = imageData[image.id] {
                 let width = Int(ImageBlockLayout(image: image, availableWidth: 640).imageSize.width)

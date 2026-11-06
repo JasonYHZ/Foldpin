@@ -45,12 +45,16 @@ enum NotePalette {
         paperColors[color] ?? paperBackground
     }
 
-    static func glassTint(for color: NoteColor) -> NSColor? { glassColors[color] }
+    static func glassTint(for color: NoteColor, intensity: Double = 1) -> NSColor? {
+        guard intensity > 0, let tint = glassColors[color] else { return nil }
+        return tint.withAlphaComponent(tint.alphaComponent * min(1, intensity))
+    }
 
     /// The reading fill is ordinary content, so the selected paper color stays
     /// visible even when the system de-emphasizes an inactive glass window.
-    static func glassReadingTint(for color: NoteColor) -> NSColor? {
-        glassColors[color]?.withAlphaComponent(0.18)
+    static func glassReadingTint(for color: NoteColor, intensity: Double = 1) -> NSColor? {
+        guard intensity > 0 else { return nil }
+        return glassColors[color]?.withAlphaComponent(0.18 * min(1, intensity))
     }
 
     static func solidGlassBackground(for color: NoteColor) -> NSColor {

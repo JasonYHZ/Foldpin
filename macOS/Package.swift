@@ -11,7 +11,7 @@ let package = Package(
                           "SettingsView.swift", "ContentView.swift", "CodeThemeSettingsView.swift", "FoldpinApp.swift", "NoteAppearance.swift",
                           "NoteEditor.swift", "NoteIconPicker.swift", "NoteActionsView.swift", "NoteWindowSurface.swift", "ShelfView.swift", "PaperWindowController.swift", "PaperPanel.swift",
                           "LibraryLocationController.swift", "LibraryStorageSettingsView.swift", "ReadinessFeatures.swift", "MCPSettingsView.swift", "MarkdownFileImportController.swift", "LibraryUsageView.swift", "Foldpin.entitlements",
-                          "Assets.xcassets", "Localizable.xcstrings", "InfoPlist.xcstrings", "ThirdPartyNotices.txt"],
+                          "Assets.xcassets", "Localizable.xcstrings", "InfoPlist.xcstrings", "ThirdPartyNotices.txt", "LICENSE.txt"],
                 sources: ["Core", "Editor", "NoteWindowDecoration.swift", "GlobalShortcut.swift", "ShortcutSettingsView.swift", "LanguageSettings.swift", "ThemeSettings.swift"],
                 resources: [.copy("CodeThemes"), .copy("SyntaxResources"), .copy("EmojiResources")]),
         .testTarget(name: "FoldpinCoreTests", dependencies: ["FoldpinCore"], path: "Tests")

@@ -48,7 +48,7 @@ final class PaperWindowController: NSObject, NSWindowDelegate {
 
     private func createPaper(initialFrame: NSRect?) {
         let screen = workingScreen.visibleFrame
-        let initial = store.document.frame ?? initialFrame.map(NoteFrame.init) ?? NoteFrame(CGRect(x: screen.maxX - 452, y: screen.midY - 170, width: 360, height: 340))
+        let initial = store.document.frame ?? initialFrame.map(NoteFrame.init) ?? NoteFrame(NoteCreationLayout.frame(in: screen, preset: store.document.initialSize ?? NoteStyleSettings.shared.values.newNoteSize))
         let frame = initial.fitted(to: NSScreen.screens.map(\.visibleFrame), fallback: screen)
         // Hiding a titled window's title bar keeps its system frame. Use an
         // undecorated panel so only the note's own rounded surface is visible.

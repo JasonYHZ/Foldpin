@@ -3,6 +3,7 @@ import Combine
 
 struct ContentView: View {
     @ObservedObject private var languageSettings = LanguageSettings.shared
+    @ObservedObject private var style = NoteStyleSettings.shared
     @ObservedObject var store: NoteStore
     @AppStorage(NoteAppearance.preferenceKey) private var appearance: NoteAppearance = .paper
     let session: NoteEditingSession
@@ -61,7 +62,9 @@ struct ContentView: View {
                 Spacer(minLength: 0)
                 NoteActionsButton(state: titlebarState, appearance: appearance, onActions: onActions)
             }
-            .padding(.leading, 18).padding(.trailing, 12).padding(.top, 4).padding(.bottom, 8)
+            .padding(.leading, 18).padding(.trailing, 12)
+            .padding(.top, style.values.contentDensity.footerTopInset)
+            .padding(.bottom, style.values.contentDensity.footerBottomInset)
         }
     }
 }
@@ -90,6 +93,7 @@ final class NoteTitlebarState: ObservableObject {
 private struct NoteTitlebar: View {
     @ObservedObject private var shortcuts = ShortcutSettings.shared
     @ObservedObject private var languageSettings = LanguageSettings.shared
+    @ObservedObject private var style = NoteStyleSettings.shared
     @ObservedObject var store: NoteStore
     @ObservedObject var state: NoteTitlebarState
     var ink: Color
@@ -105,7 +109,7 @@ private struct NoteTitlebar: View {
     var onShelve: () -> Void
     var onColorMenu: (() -> NSMenu?)?
     private let closeButtonSize: CGFloat = 26
-    private var controlsVisible: Bool { state.isPointerInside || state.showsShortcutHints || state.isActionsPresented || focusedAction != nil || voiceOverEnabled || isIconPickerPresented }
+    private var controlsVisible: Bool { style.values.titlebarVisibility == .alwaysVisible || state.isPointerInside || state.showsShortcutHints || state.isActionsPresented || focusedAction != nil || voiceOverEnabled || isIconPickerPresented }
     private let buttonSize: CGFloat = 28
 
     var body: some View {

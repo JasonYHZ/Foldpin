@@ -172,14 +172,14 @@ struct AboutSettingsView: View {
                 Button(readinessText("User Guide"), action: help)
                 Button(readinessText("Feedback…"), action: feedback)
                 if Bundle.main.url(forResource: "ThirdPartyNotices", withExtension: "txt") != nil {
-                    Button(readinessText("Third-Party Licenses")) { showingLicenses = true }
+                    Button(readinessText("Licenses")) { showingLicenses = true }
                 }
             }
         }
         .formStyle(.grouped)
         .sheet(isPresented: $showingLicenses) {
             VStack(alignment: .leading, spacing: 16) {
-                Text(readinessText("Third-Party Licenses")).font(.title2.bold())
+                Text(readinessText("Licenses")).font(.title2.bold())
                 ScrollView {
                     Text(licenseText).font(.system(.body, design: .monospaced))
                         .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
@@ -189,9 +189,12 @@ struct AboutSettingsView: View {
         }
     }
     private var licenseText: String {
-        guard let url = Bundle.main.url(forResource: "ThirdPartyNotices", withExtension: "txt"),
-              let value = try? String(contentsOf: url, encoding: .utf8) else { return "" }
-        return value
+        let notices = ["LICENSE", "ThirdPartyNotices"].compactMap { name -> String? in
+            guard let url = Bundle.main.url(forResource: name, withExtension: "txt") else { return nil }
+            return try? String(contentsOf: url, encoding: .utf8)
+        }
+        return (["Foldpin — GPL-3.0-only\nCopyright (C) 2026 Foldpin contributors"] + notices)
+            .joined(separator: "\n\n")
     }
 }
 

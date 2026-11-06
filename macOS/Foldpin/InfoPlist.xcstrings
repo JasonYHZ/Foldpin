@@ -10,6 +10,42 @@
             "state" : "new",
             "value" : "Foldpin"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin"
+          }
         }
       }
     },
@@ -20,6 +56,42 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : ""
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : ""
           }
         }
@@ -38,6 +110,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用麦克风录制并保存在纸片中的语音。录音仅在你主动开始后进行。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用麥克風錄製並儲存在紙片中的語音。只有在你主動開始錄音後才會使用麥克風。"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin に保存する音声メモを録音します。マイクは自分で録音を開始したときにのみ使用します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foldpin에 저장할 음성 메모를 녹음합니다. 사용자가 녹음을 시작할 때만 마이크를 사용합니다."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nimmt Sprachnotizen auf, die du in Foldpin speicherst. Das Mikrofon wird nur verwendet, wenn du eine Aufnahme startest."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistre les notes vocales que vous conservez dans Foldpin. Le microphone est utilisé uniquement lorsque vous démarrez un enregistrement."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Graba notas de voz para guardarlas en Foldpin. El micrófono solo se usa cuando inicias una grabación."
           }
         }
       }

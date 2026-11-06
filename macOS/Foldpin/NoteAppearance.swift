@@ -36,9 +36,22 @@ struct NoteSheetSurface: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background { NoteSheetFill(appearance: appearance, color: color) }
+            .background {
+                if usesGlass {
+                    // The sample's glass belongs behind its reading fill and
+                    // content. Applying glassEffect to the whole card also
+                    // composites the sample text and controls with the glass.
+                    Color.clear
+                        .glassEffect((style.values.clearGlass ? Glass.clear : Glass.regular)
+                            .tint(NotePalette.glassTint(for: color, intensity: style.values.glassColorIntensity)
+                                .map { Color(nsColor: $0) }), in: .rect(cornerRadius: cornerRadius))
+                        .opacity(style.values.nativeGlassOpacity)
+                        .overlay { NoteSheetFill(appearance: appearance, color: color) }
+                } else {
+                    NoteSheetFill(appearance: appearance, color: color)
+                }
+            }
             .clipShape(.rect(cornerRadius: cornerRadius))
-            .glassEffect(usesGlass ? (style.values.clearGlass ? Glass.clear : Glass.regular).tint(NotePalette.glassTint(for: color).map { Color(nsColor: $0) }) : .identity, in: .rect(cornerRadius: cornerRadius))
     }
 }
 
@@ -61,11 +74,12 @@ struct NoteSheetFill: View {
                 // Glass supplies adaptive blur; this independently adjusts
                 // the reading tint without fading text or controls.
                 Color(nsColor: .textBackgroundColor)
-                    .opacity(style.values.glassOpacity)
+                    .opacity(style.values.readingBackdropOpacity)
                     .overlay {
                         // A persistent color wash inside the existing glass
                         // content survives the system's inactive-window tint.
-                        if let tint = NotePalette.glassReadingTint(for: color) {
+                        if let tint = NotePalette.glassReadingTint(for: color,
+                            intensity: style.values.glassColorIntensity * style.values.nativeGlassOpacity) {
                             Color(nsColor: tint)
                         }
                     }

@@ -1,5 +1,7 @@
 # Foldpin macOS · 原生多纸片原型
 
+通用预览发行：从仓库根目录运行 `python3 scripts/package-release.py`，生成 arm64 + x86_64 的 ZIP / DMG、对应源码和校验清单。许可为 GPL-3.0-only；版本、签名、最低系统及验收边界见[发行说明](../docs/engineering/distribution.md)。以下按日期保留的描述以专题最新说明为准。
+
 2026-09-15：MCP 已接入开发版本，在「设置 → 连接 AI 工具」启用并授权客户端，提供 80 个工具。使用方式及验证边界见 [MCP 接入说明](../docs/engineering/mcp-support.md)。
 
 2026-09-15：新增通用设置、首次启动自动打开的简短使用说明纸片、登录启动系统状态、Markdown 文件批量导入、只读存储用量与大附件定位、帮助及本地反馈模板。更新／发行与 AI 授权按用户指令暂缓；资源清理未开放，历史／剪贴板／共享来源保护仍需完善。实现、入口和验证见[非 AI 功能实现记录](../docs/engineering/non-ai-readiness.md)。
@@ -155,7 +157,7 @@ Git 仓库根目录是产品目录 `../`，统一管理本文、工程、PRD 与
 
 ## 界面语言
 
-点击菜单栏 Foldpin 图标 →「设置…」，在底部 **语言 / Language** 选择 **跟随系统 / 简体中文 / English**。**选择后立即生效，无需重启**，现有纸片、收纳、设置、Foldpin 菜单、状态和应用错误提示一起更新，并自动记住选择。开发时需先在 Xcode 按 ⌘R 运行本次更新后的版本。
+点击菜单栏 Foldpin 图标 →「设置… → 通用」，在 **语言 / Language** 选择跟随系统，或简体中文、繁體中文、English、日本語、한국어、Deutsch、Français、Español。**选择后立即生效，无需重启**，现有纸片、收纳、设置、Foldpin 菜单、状态和应用错误提示一起更新，并自动记住选择。开发时需先在 Xcode 按 ⌘R 运行本次更新后的版本。
 
 `LanguageSettings` 选择应用内对应的语言资源 Bundle，SwiftUI 观察配置并更新 locale，AppKit 原位更新窗口标题和基本菜单标签；正文和窗口对象保持不变。选择仍存入 Foldpin 自身偏好域的 `AppleLanguages`，以便下次启动沿用；「跟随系统」只移除本应用覆盖，并直接读取系统语言列表，无匹配语言时回退英文。
 
@@ -163,7 +165,7 @@ macOS 自带的服务、拼写、窗口排列等子菜单，以及系统生成�
 
 菜单、设置、收纳、操作提示、保存 / 读取错误与辅助功能标签均已翻译，英文外观名称为 **Paper / Glass**。笔记正文、折叠条内容标题与摘要始终显示用户原文。外观偏好和快捷键保持稳定；2026-09-08 编辑器升级的 v2 文件迁移见下方保存说明。
 
-所有应用文案集中在 [Localizable.xcstrings](Foldpin/Localizable.xcstrings)，英文为源语言；新增界面文字应使用本地化 API 并同步补齐中文。编辑器新增菜单与导入提示同步维护中英翻译；此前完成过无窗口的连续语言切换检查，实际双语排版仍需体验确认。
+所有应用文案集中在 [Localizable.xcstrings](Foldpin/Localizable.xcstrings)，英文为源语言；新增界面文字应使用本地化 API 并同步补齐八种语言。麦克风系统提示另在 InfoPlist.xcstrings 中维护。运行 `python3 scripts/check-localizations.py`（仓库根目录）检查覆盖率和格式参数；传入 `--app /绝对路径/Foldpin.app` 可额外核对编译资源。新增语言的母语校对和真实排版仍待验收，详见[多语言说明](../docs/engineering/localization.md)。
 
 ## 外观设置
 
@@ -209,7 +211,7 @@ swift test --disable-sandbox --package-path . --scratch-path /private/tmp/Foldpi
 | 文件 | 职责 |
 | --- | --- |
 | [FoldpinApp.swift](Foldpin/FoldpinApp.swift) | SwiftUI 应用入口、设置与菜单命令 |
-| [Localizable.xcstrings](Foldpin/Localizable.xcstrings) | 简体中文与英文界面文案，包括动态状态、错误和辅助功能标签 |
+| [Localizable.xcstrings](Foldpin/Localizable.xcstrings) | 八种语言界面文案，包括动态状态、错误和辅助功能标签 |
 | [LanguageSettings.swift](Foldpin/LanguageSettings.swift) | 即时语言配置、资源 Bundle、跟随系统与偏好保存 |
 | [ApplicationMenuLocalization.swift](Foldpin/ApplicationMenuLocalization.swift) | 原位翻译 AppKit 基本菜单标签，保留动作、快捷键和系统窗口功能 |
 | [AppDelegate.swift](Foldpin/AppDelegate.swift) | AppKit 窗口、置顶、边缘入口、收纳预览、显示器变化、退出保存 |

@@ -71,7 +71,7 @@ final class NativeEditorHost: NSView {
         editor.isAutomaticSpellingCorrectionEnabled = false
         editor.usesFontPanel = false
         editor.drawsBackground = false
-        editor.textContainerInset = NSSize(width: NoteLayout.editorHorizontalInset, height: 8)
+        editor.textContainerInset = NSSize(width: NoteLayout.editorHorizontalInset, height: NoteStyleSettings.shared.values.contentDensity.editorVerticalInset)
         editor.isVerticallyResizable = true
         editor.isHorizontallyResizable = false
         editor.autoresizingMask = [.width]

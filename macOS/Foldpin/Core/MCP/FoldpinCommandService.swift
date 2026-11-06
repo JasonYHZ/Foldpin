@@ -291,7 +291,7 @@ final class FoldpinCommandService {
                 document=try entry(args.uuid("noteId"),grant,deleted:false).store.document; document.id=createdID!; document.isShelved=true; document.deletedAt=nil; document.conflictOf=nil
                 document.content.blocks=document.content.blocks.map { var b=$0;b.id=UUID();return b }; document.createdAt=Date();document.modifiedAt=document.createdAt
             }
-            try document.validate(); try recordIntendedContent(document.content,note:document.id); return try summary(library().importDocument(document))
+            try document.validate(); try recordIntendedContent(document.content,note:document.id); return try summary(library().importDocument(document, useDefaultColor: short == "create_note" && args["color"] == nil, useDefaultSize: short == "create_note"))
         }
         if ["create_collection","rename_collection","delete_collection","set_collection_membership"].contains(short) {
             guard grant.noteIDs == nil else { throw MCPFailure("permission_denied") }

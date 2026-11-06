@@ -249,7 +249,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         guard let entry = library.createNote() else { showShelf(); rebuildMenu(); return }
         let screen = workingScreen.visibleFrame
         let offset = CGFloat(windows.values.filter(\.isVisible).count % 8) * 24
-        let frame = NSRect(x: screen.maxX - 452 - offset, y: screen.midY - 170 - offset, width: 360, height: 340)
+        let frame = NoteCreationLayout.frame(in: screen, offset: offset,
+                                             preset: entry.store.document.initialSize ?? .standard)
         controller(for: entry, initialFrame: frame).showPaper(focus: true)
     }
 
@@ -312,7 +313,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     private func createMenu() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "square.stack.3d.up", accessibilityDescription: "Foldpin")
+        let menuBarImage = NSImage(named: "MenuBarIcon")
+            ?? NSImage(systemSymbolName: "note.text", accessibilityDescription: "Foldpin")
+        menuBarImage?.size = NSSize(width: 18, height: 18)
+        statusItem.button?.image = menuBarImage
         statusItem.button?.image?.isTemplate = true
         rebuildMenu()
     }

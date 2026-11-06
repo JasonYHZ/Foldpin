@@ -12,3 +12,6 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Local release artifacts (never commit installation packages)
+/dist/

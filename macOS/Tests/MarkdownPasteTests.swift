@@ -87,7 +87,7 @@ import Testing
 }
 
 @Test @MainActor func markdownPasteFallbacksPreserveUnsupportedContentAndOrdinaryText() throws {
-    for text in ["普通文字\n第二行\n\n", "https://example.com/a_b", "a_b_c", "1 + 2", "#hashtag", "\\# literal", "**unclosed", "text /"] {
+    for text in ["普通文字\n第二行\n\n", "a_b_c", "1 + 2", "#hashtag", "\\# literal", "**unclosed", "text /"] {
         #expect(MarkdownPasteParser.parse(text) == nil)
         let editor = pasteEditor()
         editor.insertPastedText(text)

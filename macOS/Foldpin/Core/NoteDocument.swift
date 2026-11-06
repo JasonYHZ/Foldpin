@@ -1,6 +1,18 @@
 import Foundation
 import CoreGraphics
 
+nonisolated enum NoteNewSize: String, Codable, CaseIterable, Identifiable, Sendable {
+    case small, standard, large
+    var id: Self { self }
+    var size: CGSize {
+        switch self {
+        case .small: CGSize(width: 300, height: 260)
+        case .standard: CGSize(width: 360, height: 340)
+        case .large: CGSize(width: 460, height: 440)
+        }
+    }
+}
+
 nonisolated struct NoteDocument: Codable, Equatable, Sendable {
     static let currentVersion = 2
     var version = currentVersion
@@ -20,12 +32,13 @@ nonisolated struct NoteDocument: Codable, Equatable, Sendable {
     var conflictOf: UUID?
     var deletedAt: Date?
     var frame: NoteFrame?
+    var initialSize: NoteNewSize?
     var modifiedAt = Date()
 
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case conflictOf, version, id, text, content, isPinned, isShelved, isCollapsed, color, icon, isFavorite, createdAt, deletedAt, frame, modifiedAt
+        case conflictOf, version, id, text, content, isPinned, isShelved, isCollapsed, color, icon, isFavorite, createdAt, deletedAt, frame, initialSize, modifiedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -50,6 +63,7 @@ nonisolated struct NoteDocument: Codable, Equatable, Sendable {
         conflictOf = try values.decodeIfPresent(UUID.self, forKey: .conflictOf)
         deletedAt = try values.decodeIfPresent(Date.self, forKey: .deletedAt)
         frame = try values.decodeIfPresent(NoteFrame.self, forKey: .frame)
+        initialSize = try? values.decode(NoteNewSize.self, forKey: .initialSize)
         modifiedAt = try values.decode(Date.self, forKey: .modifiedAt)
         createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? modifiedAt
         isFavorite = try values.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
@@ -70,6 +84,7 @@ nonisolated struct NoteDocument: Codable, Equatable, Sendable {
         try values.encodeIfPresent(conflictOf, forKey: .conflictOf)
         try values.encodeIfPresent(deletedAt, forKey: .deletedAt)
         try values.encodeIfPresent(frame, forKey: .frame)
+        try values.encodeIfPresent(initialSize, forKey: .initialSize)
         try values.encode(modifiedAt, forKey: .modifiedAt)
     }
 

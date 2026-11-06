@@ -7,6 +7,7 @@ extension NSAttributedString.Key {
     static let blockLanguage = Self("Foldpin.language")
     static let blockImage = Self("Foldpin.image")
     static let blockFile = Self("Foldpin.file")
+    static let blockLinkPreview = Self("Foldpin.linkPreview")
     static let blockVideo = Self("Foldpin.video")
     static let blockAudio = Self("Foldpin.audio")
     static let blockTable = Self("Foldpin.table")
@@ -35,6 +36,7 @@ enum BlockTextCodec {
             .blockID: block.id.uuidString, .blockKind: block.kind.rawValue,
             .blockChecked: block.isChecked, .blockLanguage: block.language.rawValue
         ]
+        if let preview = block.linkPreview, let data = try? JSONEncoder().encode(preview) { values[.blockLinkPreview] = data }
         if let image = block.image, let data = try? JSONEncoder().encode(image) { values[.blockImage] = data }
         if let attachment = block.attachment, let data = try? JSONEncoder().encode(attachment) { values[.blockFile] = data }
         if let video = block.video, let data = try? JSONEncoder().encode(video) { values[.blockVideo] = data }
@@ -77,7 +79,10 @@ enum BlockTextCodec {
             block.isChecked = attributes[.blockChecked] as? Bool ?? false
             block.language = (attributes[.blockLanguage] as? String).flatMap(CodeLanguage.init(rawValue:)) ?? .plain
             var textRange = range
-            if block.kind == .file, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
+            if block.kind == .linkPreview, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
+               let data = attributes[.blockLinkPreview] as? Data, let preview = try? JSONDecoder().decode(NoteLinkPreview.self, from: data), preview.isValid {
+                block.linkPreview = preview
+            } else if block.kind == .file, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
                let data = attributes[.blockFile] as? Data, let attachment = try? JSONDecoder().decode(NoteAttachment.self, from: data), attachment.isValid {
                 block.attachment = attachment
             } else if block.kind == .video, range.length == 1, storage.attribute(.attachment, at: start, effectiveRange: nil) != nil,
@@ -165,6 +170,17 @@ enum BlockTextCodec {
                 let range = NSRange(location: prefixLength + mark.location, length: mark.length)
                 value.addAttributes(inlineAttributes(mark, block: block, color: color), range: range)
             }
+            if let preview = block.linkPreview {
+                value.setAttributedString(NSAttributedString(attachment: LinkPreviewAttachment.make(preview, width: width, color: color)))
+                value.addAttributes(attributes, range: NSRange(location: 0, length: value.length))
+                // PaperTextView opens the card by its block hit area. Native
+                // link styling decorates the entire attachment rectangle,
+                // including an underline below the rounded card.
+                value.addAttributes([.underlineStyle: 0, .backgroundColor: NSColor.clear,
+                                     .cursor: NSCursor.pointingHand],
+                                    range: NSRange(location: 0, length: value.length))
+                value.addAttribute(.toolTip, value: preview.url, range: NSRange(location: 0, length: value.length))
+            }
             if let file = block.attachment {
                 let attachment = NSTextAttachment()
                 let size = NSSize(width: max(80, width - 2), height: 68)
@@ -240,7 +256,7 @@ enum BlockTextCodec {
     static func style(_ block: NoteBlock, color: NSColor, theme: NativeCodeTheme? = nil, ordinal: Int = 1) -> [NSAttributedString.Key: Any] {
         let theme = theme ?? .github
         let paragraph = NSMutableParagraphStyle()
-        paragraph.paragraphSpacing = block.kind == .code ? 0 : 9
+        paragraph.paragraphSpacing = block.kind == .code ? 0 : NoteStyleSettings.shared.values.contentDensity.blockSpacing
         paragraph.lineSpacing = NoteStyleSettings.shared.values.typography.lineSpacing
         paragraph.lineBreakMode = .byWordWrapping
         if block.kind == .image { paragraph.alignment = .center }
@@ -253,8 +269,8 @@ enum BlockTextCodec {
             paragraph.firstLineHeadIndent = 12
             paragraph.tailIndent = -12
             if block.text.isEmpty {
-                paragraph.paragraphSpacingBefore = 10
-                paragraph.paragraphSpacing = 10
+                paragraph.paragraphSpacingBefore = NoteStyleSettings.shared.values.contentDensity.codeOuterSpacing
+                paragraph.paragraphSpacing = NoteStyleSettings.shared.values.contentDensity.codeOuterSpacing
             }
         }
         var attrs = metadata(block)
@@ -294,8 +310,8 @@ enum BlockTextCodec {
         while start < source.length {
             let range = source.paragraphRange(for: NSRange(location: start, length: 0))
             let paragraph = base.mutableCopy() as! NSMutableParagraphStyle
-            paragraph.paragraphSpacingBefore = start == 0 ? 10 : 0
-            paragraph.paragraphSpacing = NSMaxRange(range) == source.length ? 10 : 0
+            paragraph.paragraphSpacingBefore = start == 0 ? NoteStyleSettings.shared.values.contentDensity.codeOuterSpacing : 0
+            paragraph.paragraphSpacing = NSMaxRange(range) == source.length ? NoteStyleSettings.shared.values.contentDensity.codeOuterSpacing : 0
             text.addAttribute(.paragraphStyle, value: paragraph, range: range)
             start = NSMaxRange(range)
         }

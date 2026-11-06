@@ -72,6 +72,12 @@ final class PaperTextView: NSTextView {
     private var imageCaptionBlock: NoteBlock?
     private var imageControlsScheduled = false
     private var updatingImageControls = false
+    var openWebLink: (URL) -> Bool = { NSWorkspace.shared.open($0) }
+    var fetchLinkPreview: @Sendable (URL) async throws -> NoteLinkPreview = LinkPreviewFetcher.fetch
+    private var linkPreviewTasks: [UUID: (token: UUID, url: String, task: Task<Void, Never>)] = [:]
+    private var linkPreviewQueue: [UUID] = []
+    private var linkPreviewCache: [String: NoteLinkPreview] = [:]
+    private var linkPreviewCacheUpdateScheduled = false
     var fetchRemoteImage: @Sendable (URL) async throws -> Data = RemoteImageImporter.fetch
     var onRemoteImageCommit: (() -> Bool)?
     private var remoteImageQueue: [UUID] = []
@@ -129,7 +135,7 @@ final class PaperTextView: NSTextView {
     private var findIndex = 0
     private var findBusy = false
     private var findHistoryTargetsNote = false
-    var content = NoteContent() { didSet { scheduleNoteSearch(); reconcileRemoteImages() } }
+    var content = NoteContent() { didSet { scheduleNoteSearch(); reconcileRemoteImages(); reconcileLinkPreviews() } }
     private var spans: [NoteBlockSpan] = [] { didSet { invalidateBlockGeometry() } }
     private var tableLayouts: [UUID: TableBlockLayout] = [:]
     private var geometryCache: (bounds: NSRect, visible: NSRect, size: NSSize, origin: NSPoint,
@@ -164,7 +170,7 @@ final class PaperTextView: NSTextView {
     var hasSlashSuggestions: Bool { slashMenu != nil }
     private var importInProgress = false
     var hasPendingFileImport: Bool { importInProgress }
-    var hasPendingLibraryFileWork: Bool { importInProgress || !remoteImageTasks.isEmpty || !remoteImageQueue.isEmpty }
+    var hasPendingLibraryFileWork: Bool { importInProgress || !remoteImageTasks.isEmpty || !remoteImageQueue.isEmpty || !linkPreviewTasks.isEmpty || !linkPreviewQueue.isEmpty }
     var hasPendingLibraryWork: Bool {
         hasPendingLibraryFileWork || AudioBlockModel.recording != nil || imageCaptionBlock != nil || imageResize != nil
     }
@@ -288,6 +294,11 @@ final class PaperTextView: NSTextView {
             guard let self else { return }
             let ranges = self.selectedRanges
             let origin = self.enclosingScrollView?.contentView.bounds.origin
+            let verticalInset = NoteStyleSettings.shared.values.contentDensity.editorVerticalInset
+            if self.textContainerInset.height != verticalInset {
+                self.textContainerInset.height = verticalInset
+                self.invalidateBlockGeometry()
+            }
             self.tableLayouts.removeAll()
             self.refreshStyles(force: true)
             self.selectedRanges = ranges
@@ -384,7 +395,7 @@ final class PaperTextView: NSTextView {
             case .task: label = String(localized: "To-do", bundle: bundle)
             case .quote: label = String(localized: "Quote", bundle: bundle)
             case .code: label = String(localized: "Type or paste code", bundle: bundle)
-            case .image, .divider, .table, .audio, .video, .file: return nil
+            case .image, .divider, .table, .audio, .video, .file, .linkPreview: return nil
             }
             let paragraph = NSMutableParagraphStyle()
             paragraph.lineBreakMode = .byTruncatingTail
@@ -1061,6 +1072,10 @@ final class PaperTextView: NSTextView {
         dismissSlashMenu()
         let point = convert(event.locationInWindow, from: nil)
         let hitIDs = Set(blockSurfaces().filter { $0.rect.contains(point) }.map(\.blockID))
+        if event.clickCount == 1, !hasMarkedText(), event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+           let url = content.blocks.first(where: { hitIDs.contains($0.id) && $0.linkPreview != nil })?.linkPreview?.destination {
+            _ = openWebLink(url); return
+        }
         if event.clickCount == 2, !hasMarkedText(), let block = content.blocks.first(where: { hitIDs.contains($0.id) && $0.attachment != nil }) {
             _ = openAttachment(blockID: block.id); return
         }
@@ -1198,6 +1213,9 @@ final class PaperTextView: NSTextView {
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
         if window !== newWindow {
+            linkPreviewQueue.removeAll()
+            for entry in linkPreviewTasks.values { entry.task.cancel() }
+            linkPreviewTasks.removeAll()
             remoteImageQueue.removeAll()
             for entry in remoteImageTasks.values { entry.task.cancel() }
             remoteImageTasks.removeAll()
@@ -1303,7 +1321,7 @@ final class PaperTextView: NSTextView {
         if slashMenuContext != context {
             dismissSlashMenu()
             let blockID = context.source.id
-            var entries = NoteBlockKind.allCases.filter { $0 != .file }.map {
+            var entries = NoteBlockKind.allCases.filter { $0 != .file && $0 != .linkPreview }.map {
                 SlashCommandMenu.Entry(kind: $0, title: $0 == .paragraph ? String(localized: "Text", bundle: bundle) : $0 == .audio ? String(localized: "Record Audio", bundle: bundle) : title($0))
             }
             entries.append(.init(kind: .audio, title: String(localized: "Import Audio…", bundle: bundle), importsAudio: true))
@@ -1382,11 +1400,11 @@ final class PaperTextView: NSTextView {
             setSelectedRange(NSRange(location: position, length: 0))
         }
         window?.makeFirstResponder(self)
-        return makeTextActionMenu(blockID: block.id)
+        return makeTextActionMenu(blockID: block.id, linkPosition: position)
     }
 
-    func makeTextActionMenu(blockID: UUID) -> NSMenu? {
-        guard let blockMenu = makeBlockActionMenu(blockID: blockID) else { return nil }
+    func makeTextActionMenu(blockID: UUID, linkPosition: Int? = nil) -> NSMenu? {
+        guard let blockMenu = makeBlockActionMenu(blockID: blockID, linkPosition: linkPosition) else { return nil }
         let menu = NSMenu()
         menu.autoenablesItems = false
         if let conversion = blockMenu.items.first(where: { $0.submenu != nil }) {
@@ -1395,6 +1413,12 @@ final class PaperTextView: NSTextView {
         }
         if let links = blockMenu.items.first(where: { ($0.representedObject as? BlockMenuCommand)?.action == .renderTextLinks }) {
             blockMenu.removeItem(links); menu.addItem(links)
+        }
+        if let card = blockMenu.items.first(where: { item in
+            if case .convertTextLink = (item.representedObject as? BlockMenuCommand)?.action { return true }
+            return false
+        }) {
+            blockMenu.removeItem(card); menu.addItem(card)
         }
         if canFormatSelection {
             for (label, selector, key, symbol, mark) in [
@@ -1427,7 +1451,7 @@ final class PaperTextView: NSTextView {
 
     private func makeBlockMenu() -> NSMenu {
         let menu = NSMenu()
-        for kind in NoteBlockKind.allCases where kind != .image && kind != .audio && kind != .video && kind != .file {
+        for kind in NoteBlockKind.allCases where kind != .image && kind != .audio && kind != .video && kind != .file && kind != .linkPreview {
             let item = NSMenuItem(title: title(kind), action: #selector(selectKind(_:)), keyEquivalent: "")
             item.representedObject = kind.rawValue
             item.target = self
@@ -1494,6 +1518,7 @@ final class PaperTextView: NSTextView {
         case .task: String(localized: "To-do", bundle: bundle)
         case .quote: String(localized: "Quote", bundle: bundle)
         case .code: String(localized: "Code Block", bundle: bundle)
+        case .linkPreview: String(localized: "Link Preview", bundle: bundle)
         case .file: String(localized: "Attachment", bundle: bundle)
         case .video: String(localized: "Video", bundle: bundle)
         case .audio: String(localized: "Audio", bundle: bundle)
@@ -1507,6 +1532,7 @@ final class PaperTextView: NSTextView {
     }
 
     func changeKind(_ kind: NoteBlockKind) {
+        guard kind != .linkPreview else { return }
         if kind == .file { chooseAttachments(nil); return }
         if kind == .video { chooseVideo(nil); return }
         if kind == .audio { recordAudio(nil); return }
@@ -1706,7 +1732,7 @@ final class PaperTextView: NSTextView {
             return
         }
         if importVideo(from: board) || importAudio(from: board) || importImages(from: board) { return }
-        if let text = board.string(forType: .string) {
+        if let text = board.string(forType: .string) ?? board.string(forType: .URL) {
             insertPastedText(text)
         }
     }
@@ -1720,13 +1746,28 @@ final class PaperTextView: NSTextView {
         let previous = suppressMarkdownShortcuts
         suppressMarkdownShortcuts = true
         defer { suppressMarkdownShortcuts = previous }
-        if interpretingMarkdown, !hasMarkedText(), activeSpan?.block.kind != .code,
-           let parsed = MarkdownPasteParser.parse(text) {
-            let previousIDs = Set(content.blocks.map(\.id))
-            if insertPastedBlocks(parsed) {
-                let added = content.blocks.filter { !previousIDs.contains($0.id) && $0.image?.isRemotePlaceholder == true }.map(\.id)
-                if onRemoteImageCommit?() != false { enqueueRemoteImages(added) }
-                return
+        if interpretingMarkdown, !hasMarkedText(), activeSpan?.block.kind != .code {
+            let selected = selectedRange()
+            let wholeParagraph = activeSpan.map { $0.block.kind == .paragraph &&
+                ($0.block.text.isEmpty || (selected.location <= $0.textRange.location && NSMaxRange(selected) >= NSMaxRange($0.textRange))) } ?? false
+            if wholeParagraph, let url = PastedWebLinks.standalone(text) {
+                let oldIDs = Set(content.blocks.map(\.id))
+                let preview = linkPreviewCache[url.absoluteString] ?? NoteLinkPreview(url: url.absoluteString)
+                if insertPastedBlocks(NoteContent(blocks: [NoteBlock(kind: .linkPreview, linkPreview: preview)])) {
+                    enqueueLinkPreviews(content.blocks.filter { !oldIDs.contains($0.id) && $0.linkPreview?.state == .pending }.map(\.id))
+                    return
+                }
+            }
+            let markdown = MarkdownPasteParser.parse(text)
+            let source = markdown ?? NoteContent(plainText: text)
+            let parsed = NoteContent(blocks: source.blocks.map { PastedWebLinks.recognizing(in: $0) })
+            if markdown != nil || parsed != source {
+                let previousIDs = Set(content.blocks.map(\.id))
+                if insertPastedBlocks(parsed) {
+                    let added = content.blocks.filter { !previousIDs.contains($0.id) && $0.image?.isRemotePlaceholder == true }.map(\.id)
+                    if onRemoteImageCommit?() != false { enqueueRemoteImages(added) }
+                    return
+                }
             }
         }
         if !hasMarkedText() { updateTypingStyle(preservingInlineFormat: true) }
@@ -2075,7 +2116,7 @@ extension PaperTextView {
         blockHandle?.isHidden = true
     }
 
-    func makeBlockActionMenu(blockID: UUID, tableCell: (row: Int, column: Int)? = nil) -> NSMenu? {
+    func makeBlockActionMenu(blockID: UUID, tableCell: (row: Int, column: Int)? = nil, linkPosition: Int? = nil) -> NSMenu? {
         guard isEditable, !hasMarkedText(), tableCellEditor?.hasMarkedText() != true,
               let index = content.blocks.firstIndex(where: { $0.id == blockID }) else { return nil }
         let block = content.blocks[index]
@@ -2112,6 +2153,18 @@ extension PaperTextView {
         if !block.kind.isAttachment { menu.addItem(convert) }
         if MarkdownTextLinks.render(block) != nil {
             menu.addItem(item(String(localized: "Render Text Links", bundle: bundle), .renderTextLinks, symbol: "link"))
+        }
+        let span = spans[index]
+        let selected = linkPosition.map { NSRange(location: $0, length: 0) } ?? selectedRange()
+        let localSelection = selected.location >= span.textRange.location && NSMaxRange(selected) <= NSMaxRange(span.textRange)
+            ? NSRange(location: selected.location - span.textRange.location, length: selected.length) : nil
+        if let target = LinkCardConversion.target(in: block, selection: localSelection), target.label.utf8.count <= 131_072 {
+            menu.addItem(item(String(localized: "Convert to Link Card", bundle: bundle), .convertTextLink(target), symbol: "rectangle.and.text.magnifyingglass"))
+        }
+        if block.linkPreview != nil {
+            menu.addItem(item(String(localized: "Open Link", bundle: bundle), .openLinkPreview, symbol: "arrow.up.right.square"))
+            menu.addItem(item(String(localized: "Refresh Link Preview", bundle: bundle), .refreshLinkPreview, symbol: "arrow.clockwise", enabled: linkPreviewTasks[blockID] == nil))
+            menu.addItem(item(String(localized: "Convert to Text Link", bundle: bundle), .restoreLinkText, symbol: "link"))
         }
         if block.kind == .code {
             menu.addItem(.separator())
@@ -2224,6 +2277,40 @@ extension PaperTextView {
             next.blocks[index] = converted.block
             replaceDocument(next, block: index, offset: converted.offset(oldOffset))
             undoManager?.setActionName(String(localized: "Render Text Links", bundle: bundle))
+            return true
+        case .convertTextLink(let target):
+            // The menu owns a snapshot, not whatever happens to own the caret
+            // later. Refuse a stale target rather than replacing unrelated text.
+            guard content.blocks[index] == target.source,
+                  LinkCardConversion.target(in: target.source, selection: target.range) == target else { return false }
+            var preview = linkPreviewCache[target.url] ?? NoteLinkPreview(url: target.url)
+            preview.textLabel = target.label == target.url ? nil : target.label
+            guard preview.isValid,
+                  let insertion = BlockPasteInsertion.inserting(NoteContent(blocks: [NoteBlock(kind: .linkPreview, linkPreview: preview)]),
+                    into: content, from: .init(index: index, offset: target.range.location),
+                    to: .init(index: index, offset: NSMaxRange(target.range))) else { return false }
+            let oldIDs = Set(content.blocks.map(\.id))
+            replaceDocument(insertion.content, block: insertion.index, offset: insertion.offset)
+            undoManager?.setActionName(String(localized: "Convert to Link Card", bundle: bundle))
+            enqueueLinkPreviews(content.blocks.filter { !oldIDs.contains($0.id) && $0.linkPreview?.state == .pending }.map(\.id))
+            return true
+        case .openLinkPreview:
+            guard let url = content.blocks[index].linkPreview?.destination else { return false }
+            return openWebLink(url)
+        case .refreshLinkPreview: enqueueLinkPreviews([blockID]); return true
+        case .restoreLinkText:
+            guard let preview = content.blocks[index].linkPreview else { return false }
+            if preview.state != .pending {
+                if linkPreviewCache.count >= 128 { linkPreviewCache.removeAll() }
+                var cached = preview; cached.textLabel = nil
+                linkPreviewCache[preview.url] = cached
+            }
+            let label = preview.textLabel ?? preview.url
+            var next = content
+            next.blocks[index] = NoteBlock(id: blockID, text: label,
+                marks: [NoteTextMark(location: 0, length: label.utf16.count, link: preview.url)])
+            replaceDocument(next, block: index, offset: label.utf16.count)
+            undoManager?.setActionName(String(localized: "Convert to Text Link", bundle: bundle))
             return true
         case .retryRemoteImage: enqueueRemoteImages([blockID]); return true
         case .openImageLink:
@@ -3656,5 +3743,87 @@ extension PaperTextView {
         guard let window else { return }
         let alert = NSAlert(); alert.messageText = String(localized: "Attachment", bundle: bundle)
         alert.informativeText = message; alert.beginSheetModal(for: window)
+    }
+}
+
+// MARK: - Website previews. Metadata enrichment is not a separate user edit.
+extension PaperTextView {
+    func enqueueLinkPreviews(_ ids: [UUID]) {
+        guard isEditable, !hasMarkedText() else { return }
+        for id in ids.prefix(32) where linkPreviewTasks[id] == nil && !linkPreviewQueue.contains(id) {
+            linkPreviewQueue.append(id)
+        }
+        startLinkPreviewQueue()
+    }
+
+    private func reconcileLinkPreviews() {
+        for (id, entry) in linkPreviewTasks where !content.blocks.contains(where: { $0.id == id && $0.linkPreview?.url == entry.url }) {
+            entry.task.cancel(); linkPreviewTasks.removeValue(forKey: id)
+        }
+        linkPreviewQueue.removeAll { id in !content.blocks.contains { $0.id == id && $0.linkPreview != nil } }
+        // Native undo stores the original placeholder attributes. Restore a
+        // resolved snapshot on redo without another request or undo entry.
+        guard !linkPreviewCacheUpdateScheduled,
+              content.blocks.contains(where: { $0.linkPreview.map { $0.state == .pending && linkPreviewCache[$0.url] != nil } == true }) else { return }
+        linkPreviewCacheUpdateScheduled = true
+        Task { [weak self] in
+            await Task.yield()
+            guard let self else { return }
+            linkPreviewCacheUpdateScheduled = false
+            guard !hasMarkedText(), tableCellEditor?.hasMarkedText() != true, !isRestoringHistory else { return }
+            for block in content.blocks {
+                if let preview = block.linkPreview, preview.state == .pending, let cached = linkPreviewCache[preview.url] {
+                    applyLinkPreview(cached, blockID: block.id)
+                }
+            }
+        }
+    }
+
+    private func startLinkPreviewQueue() {
+        guard isEditable else { return }
+        while linkPreviewTasks.count < 3, !linkPreviewQueue.isEmpty {
+            let id = linkPreviewQueue.removeFirst()
+            guard let preview = content.blocks.first(where: { $0.id == id })?.linkPreview, let url = preview.destination else { continue }
+            let fetch = fetchLinkPreview, token = UUID()
+            let task = Task { [weak self] in
+                defer {
+                    if self?.linkPreviewTasks[id]?.token == token { self?.linkPreviewTasks.removeValue(forKey: id) }
+                    self?.startLinkPreviewQueue()
+                }
+                var resolved: NoteLinkPreview
+                do { resolved = try await fetch(url) }
+                catch is CancellationError { return }
+                catch {
+                    // Keep useful saved metadata when an explicit refresh fails.
+                    resolved = preview
+                    if resolved.state != .loaded { resolved.state = .unavailable }
+                }
+                guard !Task.isCancelled, resolved.url == preview.url, resolved.isValid else { return }
+                while self?.hasMarkedText() == true || self?.tableCellEditor?.hasMarkedText() == true || self?.imageCaptionBlock != nil || self?.imageResize != nil {
+                    do { try await Task.sleep(for: .milliseconds(120)) } catch { return }
+                }
+                guard let self, !Task.isCancelled, linkPreviewTasks[id]?.token == token,
+                      content.blocks.contains(where: { $0.id == id && $0.linkPreview?.url == preview.url }) else { return }
+                if linkPreviewCache.count >= 128 { linkPreviewCache.removeAll() }
+                resolved.textLabel = nil // Labels belong to a block, never the URL cache.
+                linkPreviewCache[preview.url] = resolved
+                applyLinkPreview(resolved, blockID: id)
+            }
+            linkPreviewTasks[id] = (token, preview.url, task)
+        }
+    }
+
+    private func applyLinkPreview(_ preview: NoteLinkPreview, blockID: UUID) {
+        guard isEditable, !applying, !hasMarkedText(), !isRestoringHistory,
+              let index = spans.firstIndex(where: { $0.block.id == blockID && $0.block.linkPreview?.url == preview.url }) else { return }
+        var preview = preview
+        preview.textLabel = spans[index].block.linkPreview?.textLabel
+        guard spans[index].block.linkPreview != preview else { return }
+        // Same attachment character and fixed height: update attributes only.
+        // This preserves caret, scroll position, marked text and native history.
+        spans[index].block.linkPreview = preview
+        content = NoteContent(blocks: spans.map(\.block))
+        refreshStyles(force: true)
+        onContentChange?(content)
     }
 }

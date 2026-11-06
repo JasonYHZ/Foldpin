@@ -4,7 +4,17 @@ import Foundation
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system
     case simplifiedChinese = "zh-Hans"
+    case traditionalChinese = "zh-Hant"
     case english = "en"
+    case japanese = "ja"
+    case korean = "ko"
+    case german = "de"
+    case french = "fr"
+    case spanish = "es"
+
+    static var localizationIdentifiers: [String] {
+        [AppLanguage.english.rawValue] + allCases.filter { $0 != .system && $0 != .english }.map(\.rawValue)
+    }
 
     var id: String { rawValue }
 
@@ -13,7 +23,13 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         case .system: String(localized: "Follow System", bundle: bundle)
         // Autonyms remain recognizable in either interface language.
         case .simplifiedChinese: "简体中文"
+        case .traditionalChinese: "繁體中文"
         case .english: "English"
+        case .japanese: "日本語"
+        case .korean: "한국어"
+        case .german: "Deutsch"
+        case .french: "Français"
+        case .spanish: "Español"
         }
     }
 }
@@ -80,7 +96,7 @@ final class LanguageSettings: ObservableObject {
 
     private static func resolve(_ selection: AppLanguage, resources: Bundle, systemLanguages: [String]) -> Configuration {
         let preferences = selection == .system ? systemLanguages : [selection.rawValue]
-        let identifier = Bundle.preferredLocalizations(from: ["en", "zh-Hans"], forPreferences: preferences).first ?? "en"
+        let identifier = Bundle.preferredLocalizations(from: AppLanguage.localizationIdentifiers, forPreferences: preferences).first ?? "en"
         // Choosing an lproj bundle avoids Bundle.main's launch-time language cache.
         let bundle = resources.url(forResource: identifier, withExtension: "lproj")
             .flatMap(Bundle.init(url:)) ?? resources
@@ -90,7 +106,7 @@ final class LanguageSettings: ObservableObject {
     private static func readSelection(defaults: UserDefaults, applicationID: String) -> AppLanguage {
         guard let languages = defaults.persistentDomain(forName: applicationID)?[preferenceKey] as? [String],
               !languages.isEmpty else { return .system }
-        let match = Bundle.preferredLocalizations(from: ["en", "zh-Hans"], forPreferences: languages).first
+        let match = Bundle.preferredLocalizations(from: AppLanguage.localizationIdentifiers, forPreferences: languages).first
         return match.flatMap(AppLanguage.init(rawValue:)) ?? .system
     }
 }
