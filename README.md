@@ -54,7 +54,7 @@ Use Xcode with a macOS SDK that supports the deployment target. Open `macOS/Fold
 From the repository root, create a universal release:
 
 ```sh
-python3 scripts/package-release.py --version 0.1.0 --build 2 --label 0.1.0
+python3 scripts/package-release.py --version 0.1.0 --build 3 --label 0.1.0
 ```
 
 The script freezes the current source, builds a Release app for both architectures, and generates DMG, ZIP, corresponding source, and checksums under `dist/`. It does not commit, tag, or upload. Build from a clean commit when preparing a published release.

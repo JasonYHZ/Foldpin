@@ -1,6 +1,6 @@
 # Foldpin 0.1.0 release assessment
 
-Version 0.1.0 is the first regular release, application build 2. Preview 1 uses build 1. Both contain the same application functionality. Repository documentation is English-first with a separate Chinese README.
+Version 0.1.0 is the first regular release. Build 3 fixes the Shortcuts settings scope selector overlapping the native toolbar. The original regular release was build 2; Preview 1 was build 1. Repository documentation is English-first with a separate Chinese README.
 
 ## Validation
 
@@ -26,3 +26,7 @@ See each release's build-info.json for the exact clean source commit and per-fil
 The regular privacy rebuild completed from clean source commit `83d150970478d86e1998ebbd2e1a940816f7b0ec`. Both architectures target macOS 26.5; strict extracted-app signing, 5,920 compiled translations, 225 corresponding-source file hashes, all manifest checksums, and scans of every ZIP member passed. The maintainer replaced all five regular-release assets; GitHub digests match the cleaned local files, the release is marked Latest, and the prior Preview 1 release has been deleted.
 
 Homebrew 7.0.12 downloaded and installed the public universal ZIP into a temporary application directory, then uninstalled it successfully. Version/build, both architectures, strict signature integrity, and retained quarantine were checked. The app was not launched; this does not validate Gatekeeper first launch, a fresh user account, or upgrades.
+
+## Build 3 replacement
+
+The maintainer requested new 0.1.0 packages after the scope-selector fix. The targeted isolated native regression and Debug build passed. Build 3 uses the same universal packaging process; publication and the release tag/Cask checksum must be synchronized with the new artifacts after manual upload. Do not mix build 2 and build 3 files. Existing Homebrew users may need `brew reinstall --cask jasonyhz/foldpin/foldpin` after publication because the public version remains 0.1.0.

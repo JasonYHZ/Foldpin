@@ -52,7 +52,7 @@ Foldpin 是一款原生 macOS 桌面随手记工具，使用 SwiftUI、AppKit �
 在仓库根目录生成通用发行包：
 
 ```sh
-python3 scripts/package-release.py --version 0.1.0 --build 2 --label 0.1.0
+python3 scripts/package-release.py --version 0.1.0 --build 3 --label 0.1.0
 ```
 
 脚本冻结当前源码，为两种架构构建 Release，生成 DMG、ZIP、对应源码和校验清单，输出到被 Git 忽略的 `dist/`。脚本不会提交、打标签或上传；发布时应从干净提交构建。

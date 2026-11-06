@@ -7,19 +7,19 @@ struct ShortcutSettingsView: View {
     @State var global = false
     private var bundle: Bundle { language.bundle }
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Picker(String(localized: "Shortcut scope", bundle: bundle), selection: $global) {
-                Text(String(localized: "In App", bundle: bundle)).tag(false)
-                Text(String(localized: "Global", bundle: bundle)).tag(true)
-            }.pickerStyle(.segmented)
-            Text(global ? String(localized: "Available in other apps while Foldpin is running. You can change or clear each shortcut.", bundle: bundle)
-                 : String(localized: "App actions work while Foldpin is active. Note and editor actions apply only to the focused note.", bundle: bundle))
-                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if let error = settings.error ?? settings.globalError {
-                Label(error, systemImage: "exclamationmark.triangle").font(.callout).foregroundStyle(.red)
-                    .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.updatesFrequently)
-            }
-            ScrollView {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Picker(String(localized: "Shortcut scope", bundle: bundle), selection: $global) {
+                    Text(String(localized: "In App", bundle: bundle)).tag(false)
+                    Text(String(localized: "Global", bundle: bundle)).tag(true)
+                }.pickerStyle(.segmented)
+                Text(global ? String(localized: "Available in other apps while Foldpin is running. You can change or clear each shortcut.", bundle: bundle)
+                     : String(localized: "App actions work while Foldpin is active. Note and editor actions apply only to the focused note.", bundle: bundle))
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                if let error = settings.error ?? settings.globalError {
+                    Label(error, systemImage: "exclamationmark.triangle").font(.callout).foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.updatesFrequently)
+                }
                 VStack(alignment: .leading, spacing: 14) {
                     if global {
                         group(String(localized: "Global actions", bundle: bundle), ids: GlobalShortcutAction.allCases.map(\.id))
@@ -36,16 +36,16 @@ struct ShortcutSettingsView: View {
                             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
                 }.padding(.vertical, 4)
-            }.frame(maxHeight: .infinity)
-            Divider()
-            HStack {
-                Text(String(localized: "Changes apply immediately and are saved automatically.", bundle: bundle)).font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Button(String(localized: "Restore Page Defaults", bundle: bundle)) {
-                    settings.reset(global ? GlobalShortcutAction.allCases.map(\.id) : ShortcutSettings.localIDs)
+                Divider()
+                HStack {
+                    Text(String(localized: "Changes apply immediately and are saved automatically.", bundle: bundle)).font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Button(String(localized: "Restore Page Defaults", bundle: bundle)) {
+                        settings.reset(global ? GlobalShortcutAction.allCases.map(\.id) : ShortcutSettings.localIDs)
+                    }
                 }
-            }
-        }.padding(24)
+            }.padding(24)
+        }
         .onChange(of: global) { _, _ in settings.error = nil }
     }
     private func group(_ title: String, ids: [String]) -> some View {

@@ -59,7 +59,7 @@ def source_files():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', default='0.1.0')
-    parser.add_argument('--build', default='2')
+    parser.add_argument('--build', default='3')
     parser.add_argument('--label', help='Release label; defaults to --version')
     parser.add_argument('--derived-data', type=Path,
                         default=Path(tempfile.gettempdir()) / 'Foldpin-Release-DerivedData')

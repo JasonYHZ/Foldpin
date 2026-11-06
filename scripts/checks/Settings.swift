@@ -6,6 +6,14 @@ import ServiceManagement
 
 /// Layout and route checks use an empty temporary library and never enable MCP or login items.
 @Test @MainActor func settingsNativeLayoutAndNavigation() async throws {
+    try await checkSettingsNativeLayout(categories: SettingsCategory.allCases)
+}
+
+@Test @MainActor func settingsShortcutScopeBelowToolbarAndSwitchesBothWays() async throws {
+    try await checkSettingsNativeLayout(categories: [.shortcuts], checksNavigationChrome: false)
+}
+
+@MainActor private func checkSettingsNativeLayout(categories: [SettingsCategory], checksNavigationChrome: Bool = true) async throws {
     let app = NSApplication.shared
     app.setActivationPolicy(.prohibited)
     UserDefaults.standard.removePersistentDomain(forName: "Foldpin.Library.Check")
@@ -32,7 +40,7 @@ import ServiceManagement
         LanguageSettings.shared.select(language)
         for dark in [false, true] {
             app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-            for category in SettingsCategory.allCases {
+            for category in categories {
                 ShortcutSettings.shared.showShortcuts = false
                 let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 680), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
                 window.isReleasedWhenClosed = false
@@ -50,7 +58,7 @@ import ServiceManagement
                     #expect(!window.isOpaque)
                     #expect(window.titlebarAppearsTransparent)
                     #expect(window.title.isEmpty)
-                    #expect(window.titleVisibility == .hidden)
+                    if checksNavigationChrome { #expect(window.titleVisibility == .hidden) }
                     #expect(window.titlebarSeparatorStyle == .none)
                     let split = try #require(settingsSplitControllers(in: view).first)
                     #expect(split.splitViewItems.count == 2)
@@ -67,6 +75,29 @@ import ServiceManagement
                     #expect(headerRect.minX < split.sidebarHost.view.bounds.width + 200)
 
                     #expect(window.toolbar?.items.contains { $0 is NSToolbarItemGroup } == true)
+
+                    if category == .shortcuts {
+                        let split = try #require(settingsSplitControllers(in: view).first)
+                        let picker = try #require(settingsScopePickers(in: split.detailHost.view).first)
+                        let rect = picker.convert(picker.bounds, to: nil)
+                        // A full-size content view must keep interactive header controls below chrome.
+                        #expect(rect.maxY <= window.contentLayoutRect.maxY)
+                        let center = NSPoint(x: picker.bounds.midX, y: picker.bounds.midY)
+                        let hit = picker.hitTest(picker.convert(center, to: picker.superview))
+                        #expect(picker.visibleRect.contains(center))
+                        #expect(hit === picker || hit?.isDescendant(of: picker) == true)
+                        #expect(picker.selectedSegment == 0)
+                        picker.selectedSegment = 1
+                        picker.sendAction(picker.action, to: picker.target)
+                        for _ in 0..<5 { try await Task.sleep(for: .milliseconds(20)); view.layoutSubtreeIfNeeded() }
+                        #expect(picker.selectedSegment == 1)
+                        #expect(settingsRecorders(in: split.detailHost.view).count == GlobalShortcutAction.allCases.count)
+                        picker.selectedSegment = 0
+                        picker.sendAction(picker.action, to: picker.target)
+                        for _ in 0..<5 { try await Task.sleep(for: .milliseconds(20)); view.layoutSubtreeIfNeeded() }
+                        #expect(picker.selectedSegment == 0)
+                        #expect(settingsRecorders(in: split.detailHost.view).count == ShortcutSettings.localIDs.count)
+                    }
 
                     let bitmap = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
                     view.cacheDisplay(in: view.bounds, to: bitmap)
@@ -165,4 +196,13 @@ import ServiceManagement
     #expect(SettingsHeaderLayout.showsTitle(offset: -20, inset: 52))
     #expect(!SettingsHeaderLayout.showsTitle(offset: 0, inset: 0))
     #expect(SettingsHeaderLayout.showsTitle(offset: 40, inset: 0))
+}
+
+@MainActor private func settingsScopePickers(in view: NSView) -> [NSSegmentedControl] {
+    if let picker = view as? NSSegmentedControl { return [picker] }
+    return view.subviews.flatMap { settingsScopePickers(in: $0) }
+}
+@MainActor private func settingsRecorders(in view: NSView) -> [ShortcutRecorder] {
+    if let recorder = view as? ShortcutRecorder { return [recorder] }
+    return view.subviews.flatMap { settingsRecorders(in: $0) }
 }

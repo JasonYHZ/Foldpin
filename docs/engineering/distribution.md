@@ -1,13 +1,13 @@
 # Universal macOS distribution
 
-Foldpin uses GPL-3.0-only source distribution and universal GitHub Release packages. The first regular release is 0.1.0, application build 2; historical Preview 1 uses build 1. The maintainer recreated the GitHub repository as public after cleanup. Only the clean main branch and regular release tag are uploaded to the new repository; the Preview 1 release is not recreated. Homebrew uses the project-maintained tap.
+Foldpin uses GPL-3.0-only source distribution and universal GitHub Release packages. The first regular release is 0.1.0, initially application build 2, followed by the build 3 shortcut-settings fix; historical Preview 1 uses build 1. The maintainer recreated the GitHub repository as public after cleanup. Only the clean main branch and regular release tag are uploaded to the new repository; the Preview 1 release is not recreated. Homebrew uses the project-maintained tap.
 
 ## Build
 
 From a clean source commit, run:
 
 ```sh
-python3 scripts/package-release.py --version 0.1.0 --build 2 --label 0.1.0
+python3 scripts/package-release.py --version 0.1.0 --build 3 --label 0.1.0
 ```
 
 Requirements: Xcode, Python 3, and macOS tools ditto, codesign, and hdiutil. The script freezes application source, tests, scripts, licenses, and selected documentation. It builds outside the checkout, maps compiler source paths, and uses an ad-hoc signature with no development team or debug entitlement. It does not launch the app, commit, tag, or upload.
